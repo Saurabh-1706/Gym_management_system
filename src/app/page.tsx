@@ -1,103 +1,224 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useEffect, useState } from "react";
+import { User, CreditCard, Calendar, DollarSign, Settings, Sliders } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+
+type Member = {
+  _id: string;
+  name: string;
+  date: string;
+  plan: string;
+  mobile: string;
+  price?: string;
+};
+
+export default function DashboardPage() {
+  const [members, setMembers] = useState<Member[]>([]); // recent 5 members
+  const [allMembers, setAllMembers] = useState<Member[]>([]); // all members for metrics
+  const router = useRouter();
+
+  // Function to calculate expiry date
+  const calculateExpiryDateObj = (joinDate: string, plan: string) => {
+    const date = new Date(joinDate);
+    switch (plan.toLowerCase()) {
+      case "monthly":
+        date.setMonth(date.getMonth() + 1);
+        break;
+      case "quarterly":
+        date.setMonth(date.getMonth() + 3);
+        break;
+      case "half yearly":
+        date.setMonth(date.getMonth() + 6);
+        break;
+      case "yearly":
+        date.setFullYear(date.getFullYear() + 1);
+        break;
+    }
+    return date;
+  };
+
+  const calculateExpiryDate = (joinDate: string, plan: string) =>
+    calculateExpiryDateObj(joinDate, plan).toLocaleDateString("en-GB");
+
+  const today = new Date();
+
+  // Fetch members
+  useEffect(() => {
+    const fetchMembers = async () => {
+      try {
+        const res = await fetch("/api/members");
+        if (!res.ok) throw new Error("Failed to fetch members");
+
+        const data: Member[] = await res.json();
+
+        // Sort by _id timestamp for recent members (newest first)
+        const sortedById = data.sort(
+          (a, b) =>
+            parseInt(b._id.substring(0, 8), 16) -
+            parseInt(a._id.substring(0, 8), 16)
+        );
+
+        setMembers(sortedById.slice(0, 5)); // recent 5
+        setAllMembers(data); // all members for metrics
+      } catch (err) {
+        console.error(err);
+        setMembers([]);
+        setAllMembers([]);
+      }
+    };
+
+    fetchMembers();
+  }, []);
+
+  // Metrics
+  const totalMembers = allMembers.length;
+  const totalRevenue = allMembers.reduce(
+    (acc, m) => acc + (m.price ? parseInt(m.price) : 0),
+    0
+  );
+
+  // Active plans = members whose membership hasn't expired
+  const activePlansCount = allMembers.filter(
+    (m) => calculateExpiryDateObj(m.date, m.plan) >= today
+  ).length;
+
+  // Expiring soon = memberships expiring within 7 days
+  const expiringSoonCount = allMembers.filter((m) => {
+    const expiry = calculateExpiryDateObj(m.date, m.plan);
+    const diffDays =
+      (expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24);
+    return diffDays <= 7;
+  }).length;
+
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <div className="p-6">
+      {/*Header */}
+      <div className="flex items-center gap-3 mb-6">
+        <Sliders size={36} className="text-yellow-500" />
+        <h1 className="text-4xl font-bold text-yellow-500">Admin Panel</h1>
+      </div>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10 mt-10">
+        <div className="bg-white p-6 rounded-2xl shadow flex items-center gap-4"
+          onClick={() => router.push("/members")}
+        >
+          <User size={40} className="text-yellow-500" />
+          <div>
+            <p className="text-lg text-gray-700">Total Members</p>
+            <p className="text-2xl font-bold">{totalMembers}</p>
+          </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+
+        <div className="bg-white p-6 rounded-2xl shadow flex items-center gap-4"
+          onClick={() => router.push("/members")}
         >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+          <CreditCard size={40} className="text-green-500" />
+          <div>
+            <p className="text-lg text-gray-700">Active Plans</p>
+            <p className="text-2xl font-bold">{activePlansCount}</p>
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-2xl shadow flex items-center gap-4 cursor-pointer hover:shadow-lg transition"
+          onClick={() => router.push("/expiringsoon")}
         >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+          <Calendar size={40} className="text-orange-500" />
+          <div>
+            <p className="text-lg text-gray-700">Expiring Soon</p>
+              <p className="text-2xl font-bold hover:text-orange-600 transition">
+                {
+                  allMembers.filter((m) => {
+                    const expiry = calculateExpiryDateObj(m.date, m.plan);
+                    return (
+                      expiry >= today &&
+                      expiry <=
+                        new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000)
+                    );
+                  }).length
+                }
+              </p>
+          </div>
+        </div>
+
+        {/* Expired Memberships */}
+        <div
+          className="bg-white p-6 rounded-2xl shadow flex items-center gap-4 cursor-pointer hover:shadow-lg transition"
+          onClick={() => router.push("/expiredmembers")}
         >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+          <Calendar size={40} className="text-red-500" />
+          <div>
+            <p className="text-lg text-gray-700">Expired Memberships</p>
+            <p className="text-2xl font-bold">
+              {
+                allMembers.filter((m) => {
+                  const expiry = calculateExpiryDateObj(m.date, m.plan);
+                  return expiry < today; // expired
+                }).length
+              }
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Recent Members Table */}
+      <div className="overflow-x-auto bg-white rounded-2xl shadow-lg p-6">
+        <h2 className="text-3xl font-bold text-yellow-500 mb-4">
+          Recent Members
+        </h2>
+        <table className="min-w-full divide-y divide-gray-200 rounded-2xl overflow-hidden">
+          <thead className="bg-gradient-to-r from-pink-500 to-purple-500">
+            <tr>
+              <th className="px-6 py-4 text-left text-base font-semibold text-white uppercase tracking-wider">
+                Name
+              </th>
+              <th className="px-6 py-4 text-left text-base font-semibold text-white uppercase tracking-wider">
+                Plan
+              </th>
+              <th className="px-6 py-4 text-left text-base font-semibold text-white uppercase tracking-wider">
+                Mobile
+              </th>
+              <th className="px-6 py-4 text-left text-base font-semibold text-white uppercase tracking-wider">
+                Date Joined
+              </th>
+              <th className="px-6 py-4 text-left text-base font-semibold text-white uppercase tracking-wider">
+                Expire On
+              </th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200 text-lg">
+            {members.map((member, idx) => (
+              <tr
+                key={member._id}
+                className={`${
+                  idx % 2 === 0 ? "bg-pink-50" : "bg-purple-50"
+                } hover:bg-yellow-50 transition-colors duration-300`}
+              >
+                <td className="px-6 py-4 font-semibold text-gray-900">
+                  {member.name}
+                </td>
+                <td className="px-6 py-4">
+                  <span className="px-3 py-1 rounded-full bg-green-100 text-green-800 font-semibold text-base">
+                    {member.plan}
+                  </span>
+                </td>
+                <td className="px-6 py-4 text-gray-700">{member.mobile}</td>
+                <td className="px-6 py-4 text-gray-700">
+                  {new Date(member.date).toLocaleDateString("en-GB")}
+                </td>
+                <td className="px-6 py-4 text-gray-700 font-semibold">
+                  {calculateExpiryDate(member.date, member.plan)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {members.length === 0 && (
+          <p className="text-gray-500 mt-4 text-center">No recent members.</p>
+        )}
+      </div>
     </div>
   );
 }
