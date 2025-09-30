@@ -8,17 +8,17 @@ export async function POST(req: Request) {
     const body = await req.json();
     const plan = await PlanModel.create(body);
     return NextResponse.json({ success: true, plan });
-  } catch (error) {
-    return NextResponse.json({ success: false, error });
+  } catch (error: any) {
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
 
 export async function GET() {
   try {
     await connectToDatabase();
-    const plans = await PlanModel.find().lean();
-    return NextResponse.json(plans);
-  } catch (error) {
-    return NextResponse.json({ error: "Failed to fetch plans" }, { status: 500 });
+    const plans = await PlanModel.find().lean(); // returns array of plans
+    return NextResponse.json({ success: true, plans });
+  } catch (error: any) {
+    return NextResponse.json({ success: false, plans: [], error: error.message }, { status: 500 });
   }
 }

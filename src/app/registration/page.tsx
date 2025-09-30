@@ -9,12 +9,21 @@ export default function RegistrationPage() {
     plan: "",
     email: "",
     date: "",
+    price: "",
+    validity: "",
+    customValidity: "",
+    customValidityUnit: "days",
+    modeOfPayment: "", // <-- add this
   });
 
+  const [errors, setErrors] = useState<{ email?: string; mobile?: string }>({});
   const [status, setStatus] = useState("");
   const [plans, setPlans] = useState<
     { _id: string; name: string; validity: number; amount: number }[]
   >([]);
+  const [useDefaultPrice, setUseDefaultPrice] = useState(true);
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const mobileRegex = /^[6-9]\d{9}$/; // 10-digit Indian mobile
 
   // Fetch plans
   useEffect(() => {
@@ -22,69 +31,155 @@ export default function RegistrationPage() {
       try {
         const res = await fetch("/api/plans");
         const data = await res.json();
-        setPlans(data);
+        if (Array.isArray(data.plans)) {
+          setPlans(data.plans); // <-- now this is actually an array
+        } else {
+          console.error("Plans data is not an array:", data);
+          setPlans([]);
+        }
       } catch (error) {
         console.error("Failed to fetch plans:", error);
+        setPlans([]);
       }
     };
     fetchPlans();
   }, []);
 
+  // Update default price when plan changes
+  useEffect(() => {
+    if (form.plan && useDefaultPrice && form.plan !== "custom") {
+      const selectedPlan = plans.find((p) => p.name === form.plan);
+      if (selectedPlan) {
+        setForm((prev) => ({ ...prev, price: selectedPlan.amount.toString() }));
+      }
+    }
+  }, [form.plan, useDefaultPrice, plans]);
+
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setForm({ ...form, [name]: value });
+
+    // Validate on change
+    if (name === "email") {
+      setErrors((prev) => ({
+        ...prev,
+        email: emailRegex.test(value) ? "" : "Invalid email format",
+      }));
+    }
+
+    if (name === "mobile") {
+      setErrors((prev) => ({
+        ...prev,
+        mobile: mobileRegex.test(value)
+          ? ""
+          : "Mobile must be 10 digits starting with 6-9",
+      }));
+    }
+  };
+
+  const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setUseDefaultPrice(e.target.checked);
+    if (e.target.checked && form.plan !== "custom") {
+      const selectedPlan = plans.find((p) => p.name === form.plan);
+      if (selectedPlan) {
+        setForm((prev) => ({ ...prev, price: selectedPlan.amount.toString() }));
+      }
+    } else if (form.plan !== "custom") {
+      setForm((prev) => ({ ...prev, price: "" }));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Final validation before submit
+    if (!emailRegex.test(form.email)) {
+      setErrors((prev) => ({ ...prev, email: "Invalid email format" }));
+      return;
+    }
+    if (!mobileRegex.test(form.mobile)) {
+      setErrors((prev) => ({
+        ...prev,
+        mobile: "Mobile must be 10 digits starting with 6-9",
+      }));
+      return;
+    }
+
     setStatus("Submitting...");
 
-    const res = await fetch("/api/registration", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
-    });
+    let payload: any = {
+      name: form.name,
+      mobile: form.mobile,
+      email: form.email,
+      date: form.date,
+      plan: form.plan,
+      price: form.price,
+      modeOfPayment: form.modeOfPayment, // ← ADD THIS
+    };
 
-    const result = await res.json();
-    if (result.success) {
-      setStatus("✅ Member registered successfully!");
-      setForm({
-        name: "",
-        mobile: "",
-        plan: "",
-        email: "",
-        date: "",
+    if (form.plan === "custom") {
+      const validity = form.customValidity;
+      const unit = form.customValidityUnit || "days";
+      payload.plan = `Custom(${validity} ${unit})`;
+      payload.price = form.price;
+    }
+
+    try {
+      const res = await fetch("/api/registration", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
       });
-    } else {
+
+      const result = await res.json();
+      if (result.success) {
+        setStatus("✅ Member registered successfully!");
+        setForm({
+          name: "",
+          mobile: "",
+          plan: "",
+          email: "",
+          date: "",
+          price: "",
+          validity: "",
+          customValidity: "",
+          customValidityUnit: "days",
+          modeOfPayment: "",
+        });
+        setUseDefaultPrice(true);
+      } else {
+        setStatus("❌ Registration failed.");
+      }
+    } catch (error) {
+      console.error("Registration error:", error);
       setStatus("❌ Registration failed.");
     }
   };
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-b from-[#1a1a3b] via-[#2a2a5b] to-gray-200 p-10 m-0">
-      {/* Title */}
+    <div className="min-h-screen w-full bg-[#E9ECEF] p-10 m-0">
       <div className="mb-6 text-center">
-        <h2 className="text-xl font-semibold text-yellow-400 tracking-wider uppercase">
+        <h2 className="text-xl font-semibold text-[#212529] tracking-wider uppercase">
           Become a Member
         </h2>
-        <h1 className="text-5xl font-extrabold bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent mt-2 leading-snug">
+        <h1 className="text-5xl font-extrabold text-[#0A2463] mt-2 leading-snug">
           Register Now
         </h1>
-        <p className="text-gray-200 mt-3">
+        <p className="text-[#212529] mt-3">
           Join today & unlock exclusive benefits 🚀
         </p>
       </div>
 
-      {/* Form Card */}
-      <div className="bg-gray-800/40 backdrop-blur-xl rounded-3xl p-10 max-w-4xl mx-auto hover:shadow-yellow-100/40 transition duration-500">
+      <div className="bg-white rounded-3xl p-10 max-w-4xl mx-auto shadow-lg hover:shadow-xl transition duration-500">
         <form
           className="grid grid-cols-1 md:grid-cols-2 gap-8"
           onSubmit={handleSubmit}
         >
-          {/* Full Name */}
+          {/* Name */}
           <div>
-            <label className="block text-sm font-semibold mb-2 text-gray-200">
+            <label className="block text-lg font-semibold mb-2 text-[#212529]">
               Full Name
             </label>
             <input
@@ -93,13 +188,14 @@ export default function RegistrationPage() {
               value={form.name}
               onChange={handleChange}
               placeholder="Enter your full name"
-              className="w-full px-5 py-3 text-lg rounded-xl bg-gray-100 border border-gray-300 focus:ring-2 focus:ring-yellow-400 focus:outline-none transition hover:shadow-md"
+              className="w-full px-5 py-3 text-lg rounded-xl bg-white border border-[#ADB5BD] focus:ring-2 focus:ring-[#0A2463] focus:outline-none transition hover:shadow-md text-[#212529]"
+              required
             />
           </div>
 
           {/* Date */}
           <div>
-            <label className="block text-sm font-semibold mb-2 text-gray-300">
+            <label className="block text-lg font-semibold mb-2 text-[#212529]">
               Date of Join
             </label>
             <input
@@ -107,14 +203,16 @@ export default function RegistrationPage() {
               name="date"
               value={form.date}
               onChange={handleChange}
-              className={`w-full px-5 py-3 text-lg rounded-xl bg-gray-100 border border-gray-300 focus:ring-2 focus:ring-yellow-400 focus:outline-none transition hover:shadow-md
-                ${form.date === "" ? "text-gray-400" : "text-gray-900"}`}
+              className={`w-full px-5 py-3 text-lg rounded-xl bg-white border border-[#ADB5BD] focus:ring-2 focus:ring-[#0A2463] focus:outline-none transition hover:shadow-md ${
+                form.date === "" ? "text-gray-400" : "text-[#212529]"
+              }`}
+              required
             />
           </div>
 
           {/* Email */}
           <div>
-            <label className="block text-sm font-semibold mb-2 text-gray-300">
+            <label className="block text-lg font-semibold mb-2 text-[#212529]">
               Email Address
             </label>
             <input
@@ -123,13 +221,17 @@ export default function RegistrationPage() {
               value={form.email}
               onChange={handleChange}
               placeholder="example@email.com"
-              className="w-full px-5 py-3 text-lg rounded-xl bg-gray-100 border border-gray-300 focus:ring-2 focus:ring-yellow-400 focus:outline-none transition hover:shadow-md"
+              className="w-full px-5 py-3 text-lg rounded-xl bg-white border border-[#ADB5BD] focus:ring-2 focus:ring-[#0A2463] focus:outline-none transition hover:shadow-md text-[#212529]"
+              required
             />
+            {errors.email && (
+              <p className="text-red-500 text-sm mt-1">{errors.email}</p>
+            )}
           </div>
 
           {/* Mobile */}
           <div>
-            <label className="block text-sm font-semibold mb-2 text-gray-300">
+            <label className="block text-lg font-semibold mb-2 text-[#212529]">
               Contact No.
             </label>
             <input
@@ -138,63 +240,196 @@ export default function RegistrationPage() {
               value={form.mobile}
               onChange={handleChange}
               placeholder="Enter your phone number"
-              className="w-full px-5 py-3 text-lg rounded-xl bg-gray-100 border border-gray-300 focus:ring-2 focus:ring-yellow-400 focus:outline-none transition hover:shadow-md"
+              className="w-full px-5 py-3 text-lg rounded-xl bg-white border border-[#ADB5BD] focus:ring-2 focus:ring-[#0A2463] focus:outline-none transition hover:shadow-md text-[#212529]"
+              required
             />
+            {errors.mobile && (
+              <p className="text-red-500 text-sm mt-1">{errors.mobile}</p>
+            )}
           </div>
 
-          {/* Plan */}
-          <div className="md:col-span-2">
-            <label className="block text-sm font-semibold mb-2 text-gray-300">
-              Select Plan
-            </label>
-            <select
-              name="plan"
-              value={form.plan}
-              onChange={handleChange}
-              required
-              className={`w-full px-5 py-3 text-lg bg-gray-100 border border-gray-300 rounded-xl focus:ring-2 focus:ring-yellow-400 focus:outline-none transition hover:shadow-md
-     ${form.plan === "" ? "text-gray-400" : "text-gray-900"}`}
-            >
-              {/* Placeholder only visible when no value is selected */}
-              {form.plan === "" && (
+          {/* Plan + Mode of Payment */}
+          <div className="md:col-span-2 flex gap-8">
+            {/* Choose Plan */}
+            <div className="flex-1">
+              <label className="block text-lg font-semibold mb-2 text-[#212529]">
+                Select Plan
+              </label>
+              <select
+                name="plan"
+                value={form.plan}
+                onChange={handleChange}
+                required
+                className={`w-full px-5 py-3 text-lg bg-white border border-[#ADB5BD] rounded-xl focus:ring-2 focus:ring-[#0A2463] focus:outline-none transition hover:shadow-md ${
+                  form.plan === "" ? "text-gray-400" : "text-[#212529]"
+                }`}
+              >
                 <option value="" disabled hidden>
                   Choose a membership plan
                 </option>
-              )}
+                {plans
+                  .sort((a, b) => a.validity - b.validity)
+                  .map((p) => (
+                    <option
+                      key={p._id}
+                      value={p.name}
+                      className="text-[#212529]"
+                    >
+                      {p.name}
+                    </option>
+                  ))}
+                <option value="custom" className="text-[#212529]">
+                  Custom Plan
+                </option>
+              </select>
+            </div>
 
-              {plans
-                .sort((a, b) => a.validity - b.validity) // sort ascending by validity
-                .map((p) => (
-                  <option key={p._id} value={p.name} className="text-gray-900">
-                    {p.name} - ₹{p.amount}
-                  </option>
-                ))}
-            </select>
+            {/* Mode of Payment */}
+            <div className="flex-1">
+              <label className="block text-lg font-semibold mb-2 text-[#212529]">
+                Mode of Payment
+              </label>
+              <select
+                name="modeOfPayment"
+                value={form.modeOfPayment || ""}
+                onChange={handleChange}
+                required
+                className={`w-full px-3 py-3 text-lg bg-white border border-[#ADB5BD] rounded-xl focus:ring-2 focus:ring-[#0A2463] focus:outline-none transition hover:shadow-md ${
+                  form.modeOfPayment ? "text-gray-800" : "text-gray-400"
+                }`}
+              >
+                <option value="" disabled hidden>
+                  Choose Mode of Payment
+                </option>
+                <option value="Cash" className="text-gray-800">
+                  Cash
+                </option>
+                <option value="UPI" className="text-gray-800">
+                  UPI
+                </option>
+              </select>
+            </div>
           </div>
+
+          {/* Custom Plan Fields */}
+          {form.plan === "custom" && (
+            <>
+              {/* Custom Validity */}
+              <div>
+                <label className="block text-lg font-semibold mb-2 text-[#212529]">
+                  Validity
+                </label>
+                <div className="flex gap-3">
+                  <input
+                    type="number"
+                    name="customValidity"
+                    value={form.customValidity || ""}
+                    onChange={handleChange}
+                    placeholder="Enter Validity"
+                    className="w-2/3 px-5 py-3 text-lg rounded-xl bg-white border border-[#ADB5BD] focus:ring-2 focus:ring-[#0A2463] focus:outline-none transition hover:shadow-md text-[#212529]"
+                  />
+                  <select
+                    name="customValidityUnit"
+                    value={form.customValidityUnit || "days"}
+                    onChange={handleChange}
+                    className="w-1/3 px-3 py-3 text-lg rounded-xl bg-white border border-[#ADB5BD] focus:ring-2 focus:ring-[#0A2463] focus:outline-none transition hover:shadow-md text-[#212529]"
+                  >
+                    <option value="days">Days</option>
+                    <option value="months">Months</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Custom Price */}
+              <div>
+                <label className="block text-lg font-semibold mb-2 text-[#212529]">
+                  Price
+                </label>
+                <input
+                  type="number"
+                  name="price"
+                  value={form.price}
+                  onChange={handleChange}
+                  placeholder="Enter price"
+                  className="w-full px-5 py-3 text-lg rounded-xl bg-white border border-[#ADB5BD] focus:ring-2 focus:ring-[#0A2463] focus:outline-none transition hover:shadow-md text-[#212529]"
+                  required
+                />
+              </div>
+            </>
+          )}
+
+          {/* Default price checkbox and optional custom price for non-custom plans */}
+          {form.plan !== "custom" && (
+            <>
+              <div className="md:col-span-2 flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  checked={useDefaultPrice}
+                  onChange={handleCheckboxChange}
+                  id="defaultPrice"
+                  className="w-5 h-5"
+                />
+                <label
+                  htmlFor="defaultPrice"
+                  className="text-[#212529] text-lg font-medium"
+                >
+                  Continue with fixed price (₹{form.price})
+                </label>
+              </div>
+
+              {/* Show new price input if unchecked */}
+              {!useDefaultPrice && (
+                <div className="md:col-span-2">
+                  <label className="block text-lg font-semibold mb-2 text-[#212529]">
+                    Enter New Price
+                  </label>
+                  <input
+                    type="number"
+                    name="price"
+                    value={form.price}
+                    onChange={handleChange}
+                    placeholder="Enter Price"
+                    className="w-full px-5 py-3 text-lg rounded-xl bg-white border border-[#ADB5BD] focus:ring-2 focus:ring-[#0A2463] focus:outline-none transition hover:shadow-md text-[#212529]"
+                    required
+                  />
+                </div>
+              )}
+            </>
+          )}
 
           {/* Buttons */}
           <div className="md:col-span-2 flex justify-end mt-8 gap-6">
             <button
               type="submit"
-              className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-lg px-10 py-3 rounded-xl font-bold shadow-md hover:shadow-yellow-400/60 hover:scale-105 transform transition"
+              className="bg-[#0A2463] text-white text-lg px-10 py-3 rounded-xl font-bold shadow-md hover:shadow-lg hover:scale-105 transform transition"
             >
               🚀 Avail Membership
             </button>
             <button
               type="button"
               onClick={() =>
-                setForm({ name: "", mobile: "", plan: "", email: "", date: "" })
+                setForm({
+                  name: "",
+                  mobile: "",
+                  plan: "",
+                  email: "",
+                  date: "",
+                  price: "",
+                  validity: "",
+                  customValidity: "",
+                  customValidityUnit: "days",
+                  modeOfPayment: "",
+                })
               }
-              className="bg-gray-700 text-white text-lg px-10 py-3 rounded-xl font-semibold hover:bg-gray-600 transition"
+              className="bg-[#ADB5BD] text-[#212529] text-lg px-10 py-3 rounded-xl font-semibold hover:bg-gray-400 transition"
             >
               ❌ Cancel
             </button>
           </div>
         </form>
 
-        {/* Status */}
         {status && (
-          <p className="text-center mt-6 font-medium text-gray-200 animate-pulse">
+          <p className="text-center mt-6 font-medium text-[#FFC107] animate-pulse">
             {status}
           </p>
         )}

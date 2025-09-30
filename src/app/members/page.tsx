@@ -1,26 +1,33 @@
-'use client';
+"use client";
 
 import { useEffect, useState } from "react";
 import {
   User,
   Phone,
-  Mail,
   Calendar,
   CreditCard,
-  Trash2,
-  Edit,
   Users,
+  LayoutGrid,
+  Table as TableIcon,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
+
+type Payment = {
+  _id: string;
+  plan: string;
+  price: number;
+  date: string;
+  modeOfPayment: string;
+};
 
 type Member = {
   _id: string;
   name: string;
-  date: string;
-  plan: string;
   mobile: string;
   email?: string;
-  price?: string;
-  editMode?: boolean;
+  plan: string;
+  date: string; // initial join date
+  payments?: Payment[];
 };
 
 type Plan = {
@@ -36,49 +43,128 @@ export default function MembersPage() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedPlan, setSelectedPlan] = useState("All");
+  const [viewMode, setViewMode] = useState<"card" | "table">("card");
+  const [sortBy, setSortBy] = useState<"name" | "expiry" | "newest">("expiry");
 
-  // Fetch members
+  const router = useRouter();
+
   useEffect(() => {
     const fetchMembers = async () => {
       const res = await fetch("/api/members");
       const data = await res.json();
-      setMembers(Array.isArray(data) ? data : []);
+      setMembers(Array.isArray(data.members) ? data.members : []);
     };
     fetchMembers();
   }, []);
 
-  // Fetch plans for dropdown
   useEffect(() => {
     const fetchPlans = async () => {
       const res = await fetch("/api/plans");
-      const data = await res.json();
-      setPlans(Array.isArray(data) ? data : []);
+      if (res.ok) {
+        const data = await res.json();
+        console.log("📌 Plans fetched:", data); // <---- add this
+        if (Array.isArray(data.plans)) {
+          const sortedPlans: Plan[] = data.plans.map((p: any) => ({
+            _id: p._id,
+            name: p.name || p.plan, // handle both cases
+            validity: p.validity,
+          }));
+          plans.sort((a, b) => a.validity - b.validity);
+
+          setPlans(sortedPlans);
+        }
+      }
     };
     fetchPlans();
   }, []);
 
-  // Calculate expiry
-  const calculateExpiryDate = (joinDate: string, plan: string) => {
-    const date = new Date(joinDate);
-    switch (plan.toLowerCase()) {
+  // ✅ Get latest join/renewal date
+  const getJoinDate = (member: Member) => {
+    if (member.payments && member.payments.length > 0) {
+      return new Date(member.payments[member.payments.length - 1].date);
+    }
+    return new Date(member.date);
+  };
+
+  // ✅ Expiry calculation
+  const calculateExpiryDate = (member: Member) => {
+    const date = getJoinDate(member);
+
+    // Match formats like "Custom(10 days)" OR "2 months" OR "14 days"
+    const match = member.plan.match(
+      /(\d+)\s*(day|days|month|months|year|years)/i
+    );
+
+    if (match) {
+      const value = parseInt(match[1], 10);
+      const unit = match[2].toLowerCase();
+
+      switch (unit) {
+        case "day":
+        case "days":
+          date.setDate(date.getDate() + value);
+          break;
+        case "month":
+        case "months":
+          date.setMonth(date.getMonth() + value);
+          break;
+        case "year":
+        case "years":
+          date.setFullYear(date.getFullYear() + value);
+          break;
+      }
+
+      return date;
+    }
+
+    // fallback for other predefined plans
+    switch (member.plan.toLowerCase()) {
       case "monthly":
+      case "1 month":
+      case "1 months":
         date.setMonth(date.getMonth() + 1);
         break;
       case "quarterly":
+      case "3 months":
+      case "3 month":
         date.setMonth(date.getMonth() + 3);
         break;
       case "half yearly":
+      case "6 month":
+      case "6 months":
         date.setMonth(date.getMonth() + 6);
         break;
       case "yearly":
+      case "1 year":
+      case "12 months":
         date.setFullYear(date.getFullYear() + 1);
         break;
+      default:
+        date.setMonth(date.getMonth() + 1); // fallback
     }
-    return date.toLocaleDateString("en-GB", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    });
+
+    return date;
+  };
+
+  //Status
+  // ✅ Updated status calculation
+  const getStatus = (member: Member) => {
+    const expiryDate = calculateExpiryDate(member);
+    const today = new Date();
+
+    // Add 7 days buffer after expiry
+    const bufferDate = new Date(expiryDate);
+    bufferDate.setDate(bufferDate.getDate() + 7);
+
+    return today <= bufferDate ? "Active" : "Inactive";
+  };
+
+  // Plan display
+  const getPlanDisplay = (member: Member) => {
+    if (member.plan.toLowerCase().startsWith("custom")) {
+      return member.plan;
+    }
+    return member.plan;
   };
 
   const handleDelete = async () => {
@@ -93,52 +179,48 @@ export default function MembersPage() {
     } else alert("Delete failed");
   };
 
-  const handleSaveEdit = async () => {
-    if (!selectedMember) return;
-    // Validation
-    if (
-      !selectedMember.mobile ||
-      !selectedMember.plan ||
-      !selectedMember.date
-    ) {
-      alert("Please fill all required fields");
-      return;
-    }
+  // Filtered and sorted members
+  // Filtered and sorted members
+  const filteredMembers = members
+    .filter((m) => {
+      const matchesSearch =
+        m.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        m.mobile.includes(searchQuery);
 
-    const res = await fetch(`/api/members/${selectedMember._id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(selectedMember),
+      const matchesPlan =
+        selectedPlan === "All" ||
+        (selectedPlan === "Custom"
+          ? m.plan.toLowerCase().startsWith("custom")
+          : m.plan === selectedPlan);
+
+      return matchesSearch && matchesPlan;
+    })
+    .sort((a, b) => {
+      if (sortBy === "name") {
+        return a.name.localeCompare(b.name);
+      } else if (sortBy === "expiry") {
+        const expiryA = calculateExpiryDate(a);
+        const expiryB = calculateExpiryDate(b);
+        return expiryA.getTime() - expiryB.getTime();
+      } else if (sortBy === "newest") {
+        return getJoinDate(b).getTime() - getJoinDate(a).getTime();
+      }
+      return 0;
     });
 
-    if (res.ok) {
-      setMembers((prev) =>
-        prev.map((m) => (m._id === selectedMember._id ? selectedMember : m))
-      );
-      setSelectedMember({ ...selectedMember, editMode: false });
-    } else alert("Update failed");
-  };
-
-  const filteredMembers = members.filter((m) => {
-    const matchesSearch = m.name
-      .toLowerCase()
-      .includes(searchQuery.toLowerCase());
-    const matchesPlan = selectedPlan === "All" || m.plan === selectedPlan;
-    return matchesSearch && matchesPlan;
-  });
-
   return (
-    <div className="p-6 relative">
+    <div className="p-6 relative bg-[#E9ECEF]">
       {/* Header */}
       <div className="flex justify-between items-center mb-8">
-        <h2 className="text-[42px] font-bold text-yellow-500 flex items-center gap-3">
-          <Users size={42} className="text-yellow-500" />
+        <h2 className="text-[42px] font-bold text-[#0A2463] flex items-center gap-3">
+          <Users size={42} className="text-[#FFC107]" />
           View Members
         </h2>
 
         <div className="flex items-center gap-4">
+          {/* Search bar */}
           <div className="relative">
-            <span className="absolute inset-y-0 left-3 flex items-center text-gray-400">
+            <span className="absolute inset-y-0 left-3 flex items-center text-gray-600">
               🔍
             </span>
             <input
@@ -146,262 +228,207 @@ export default function MembersPage() {
               placeholder="Search member..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 pr-4 py-2 rounded-xl border border-gray-300 shadow-sm w-52 text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300"
+              className="pl-10 pr-4 py-2 rounded-2xl border bg-gray-100 border-gray-400 shadow-sm w-52 text-[#212529] focus:outline-none focus:ring-2 focus:ring-[#0A2463] transition-all duration-300"
             />
           </div>
 
-          {/* Filter menu */}
+          {/* Plan Filter */}
           <div className="relative w-52">
             <select
               value={selectedPlan}
               onChange={(e) => setSelectedPlan(e.target.value)}
-              className="w-full appearance-none border border-gray-300 rounded-xl py-2 pl-4 pr-10 text-gray-200 font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-all duration-300 cursor-pointer"
+              className="w-full appearance-none border border-gray-400 rounded-2xl py-2 pl-4 pr-10 text-[#212529] font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FFC107] focus:border-[#FFC107] transition-all duration-300 cursor-pointer bg-white"
             >
               <option value="All">All Plans</option>
               {plans
                 .sort((a, b) => a.validity - b.validity)
                 .map((plan) => (
-                  <option key={plan._id} value={plan.name} className="text-gray-700">
+                  <option key={plan._id} value={plan.name}>
                     {plan.name}
                   </option>
                 ))}
+              <option value="Custom">Custom</option>
             </select>
-
-            {/* Custom arrow icon */}
             <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
-              <svg
-                className="w-5 h-5 text-gray-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M19 9l-7 7-7-7"
-                />
-              </svg>
+              ▼
             </div>
+          </div>
+
+          {/* Sort By */}
+          <div className="relative w-52">
+            <select
+              value={sortBy}
+              onChange={(e) =>
+                setSortBy(e.target.value as "name" | "expiry" | "newest")
+              }
+              className="w-full appearance-none border border-gray-400 rounded-2xl py-2 pl-4 pr-7 text-[#212529] font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FFC107] focus:border-[#FFC107] transition-all duration-300 cursor-pointer bg-white"
+            >
+              <option value="name">Sort by Name</option>
+              <option value="expiry">Sort by Expiring Soon</option>
+              <option value="newest">Sort by Newest Joined</option>
+            </select>
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+              ▼
+            </div>
+          </div>
+
+          {/* View Switcher */}
+          <div className="flex items-center gap-2 bg-white border border-gray-400 rounded-2xl px-2 py-1 shadow-sm">
+            <button
+              onClick={() => setViewMode("card")}
+              className={`p-2 rounded-xl ${
+                viewMode === "card"
+                  ? "bg-[#FFC107] text-white"
+                  : "text-gray-400 hover:bg-gray-200"
+              }`}
+            >
+              <LayoutGrid size={20} />
+            </button>
+            <button
+              onClick={() => setViewMode("table")}
+              className={`p-2 rounded-lg ${
+                viewMode === "table"
+                  ? "bg-[#FFC107] text-white"
+                  : "text-gray-400 hover:bg-gray-200"
+              }`}
+            >
+              <TableIcon size={20} />
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Title + Total Members */}
+      {/* Total count */}
       <div className="flex items-center mb-6">
-        <span className="ml-auto text-2xl font-semibold text-gray-100">
+        <span className="ml-auto text-2xl font-semibold text-[#0A2463]">
           Total Members: {filteredMembers.length}
         </span>
       </div>
 
-      {/* Members Grid */}
-      <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-        {filteredMembers.map((member, index) => (
-          <div
-            key={member._id}
-            className="bg-white rounded-2xl shadow-lg p-6 border border-gray-200 hover:shadow-2xl hover:scale-[1.03] transition duration-300 cursor-pointer relative"
-            onClick={() => setSelectedMember({ ...member, editMode: false })}
-          >
-            {/* Registration number */}
-            <span className="absolute top-3 left-3 text-sm font-semibold text-gray-700">
-              #{index + 1}
-            </span>
+      {/* Card / Table */}
+      {viewMode === "card" ? (
+        <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+          {filteredMembers.map((member, index) => {
+            const expiryDate = calculateExpiryDate(member);
+            const today = new Date();
+            const diffDays = Math.ceil(
+              (expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+            );
+            const status = getStatus(member);
 
-            <h2 className="text-2xl font-bold text-[#1f1f4a] flex items-center gap-2 px-4 mb-3">
-              <User size={24} className="text-yellow-500" />
-              {member.name}
-            </h2>
-
-            <div className="space-y-2 text-gray-700 px-4 text-[16px]">
-              <p className="flex items-center gap-2 text-lg">
-                <Calendar size={18} className="text-blue-500" />
-                Joined: {new Date(member.date).toLocaleDateString("en-GB")}
-              </p>
-              <p className="flex items-center gap-2">
-                <CreditCard size={18} className="text-green-600" />
-                <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-base font-semibold">
-                  {member.plan}
+            return (
+              <div
+                key={member._id}
+                className="bg-white rounded-2xl shadow-lg p-6 border border-gray-200 hover:shadow-2xl hover:scale-[1.03] transition duration-300 cursor-pointer relative"
+                onClick={() => router.push(`/members/${member._id}`)}
+              >
+                <span className="absolute top-3 left-3 text-sm font-semibold text-gray-500">
+                  #{index + 1}
                 </span>
-              </p>
-              <p className="flex items-center gap-2 text-lg">
-                <Phone size={18} className="text-purple-500" />
-                {member.mobile}
-              </p>
-            </div>
-          </div>
-        ))}
-      </div>
 
-      {/* Backdrop */}
-      {(selectedMember || showDeleteModal) && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40"></div>
-      )}
+                {/* Status dot */}
+                <span
+                  className={`absolute top-3 right-3 w-5 h-5 rounded-full ${
+                    status === "Active" ? "bg-green-500" : "bg-red-600"
+                  }`}
+                ></span>
 
-      {/* Member Modal */}
-      {selectedMember && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="bg-white rounded-2xl p-10 shadow-2xl w-full max-w-2xl relative">
-            <button
-              className="absolute top-3 right-4 text-gray-500 text-2xl hover:text-red-600"
-              onClick={() => setSelectedMember(null)}
-            >
-              &times;
-            </button>
-
-            {selectedMember.editMode ? (
-              <div className="backdrop-blur-sm">
-                <h2 className="text-3xl font-bold text-center mb-6">
-                  Edit {selectedMember.name}
+                <h2 className="text-2xl font-bold text-[#0A2463] flex items-center gap-2 px-4 mb-3">
+                  <User size={24} className="text-[#FFC107]" />
+                  {member.name}
                 </h2>
-                <div className="space-y-4">
-                  <div>
-                    <label className="font-semibold">Mobile</label>
-                    <input
-                      type="text"
-                      value={selectedMember.mobile}
-                      onChange={(e) =>
-                        setSelectedMember({
-                          ...selectedMember,
-                          mobile: e.target.value,
-                        })
-                      }
-                      className="w-full px-3 py-2 rounded border border-gray-300"
-                    />
-                  </div>
-                  <div>
-                    <label className="font-semibold">Email</label>
-                    <input
-                      type="email"
-                      value={selectedMember.email || ""}
-                      onChange={(e) =>
-                        setSelectedMember({
-                          ...selectedMember,
-                          email: e.target.value,
-                        })
-                      }
-                      className="w-full px-3 py-2 rounded border border-gray-300"
-                    />
-                  </div>
-                  <div>
-                    <label className="font-semibold">Date Joined</label>
-                    <input
-                      type="date"
-                      value={selectedMember.date.split("T")[0]}
-                      onChange={(e) =>
-                        setSelectedMember({
-                          ...selectedMember,
-                          date: e.target.value,
-                        })
-                      }
-                      className="w-full px-3 py-2 rounded border border-gray-300"
-                    />
-                  </div>
-                  <div>
-                    <label className="font-semibold">Plan</label>
-                    <select
-                      value={selectedMember.plan}
-                      onChange={(e) =>
-                        setSelectedMember({
-                          ...selectedMember,
-                          plan: e.target.value,
-                        })
-                      }
-                      className="w-full px-3 py-2 rounded border border-gray-300"
-                    >
-                      {plans.map((plan) => (
-                        <option key={plan._id} value={plan.name}>
-                          {plan.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+
+                <div className="space-y-2 text-[#212529] px-4 text-[16px]">
+                  <p className="flex items-center gap-2 text-lg">
+                    <Calendar size={18} className="text-[#0A2463]" />
+                    Joined: {getJoinDate(member).toLocaleDateString("en-GB")}
+                  </p>
+                  <p className="flex items-center gap-2">
+                    <CreditCard size={18} className="text-green-600" />
+                    <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-base font-semibold">
+                      {getPlanDisplay(member)}
+                    </span>
+                  </p>
+                  <p className="flex items-center gap-2 text-lg">
+                    <Phone size={18} className="text-purple-500" />
+                    {member.mobile}
+                  </p>
                 </div>
 
-                <div className="flex justify-center gap-4 mt-6">
-                  <button
-                    onClick={handleSaveEdit}
-                    className="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700"
+                {/* Expiry badge */}
+                {diffDays < 8 && (
+                  <div
+                    className={`absolute bottom-3 right-3 px-3 py-1 rounded-full text-sm font-semibold shadow-lg ${
+                      diffDays < 0
+                        ? "bg-red-600 text-white"
+                        : "bg-orange-400 text-white"
+                    }`}
                   >
-                    Save
-                  </button>
-                  <button
-                    onClick={() =>
-                      setSelectedMember({ ...selectedMember, editMode: false })
-                    }
-                    className="bg-gray-300 px-6 py-2 rounded hover:bg-gray-400"
-                  >
-                    Cancel
-                  </button>
-                </div>
+                    {diffDays < 0
+                      ? `Expired on ${expiryDate.toLocaleDateString("en-GB")}`
+                      : `Expiring in ${diffDays} days`}
+                  </div>
+                )}
               </div>
-            ) : (
-              <>
-                <h2 className="text-4xl font-bold text-center text-[#1f1f4a] mb-6">
-                  {selectedMember.name}
-                </h2>
-
-                <div className="space-y-4 text-[18px] text-gray-800">
-                  <p className="flex items-center gap-2">
-                    <Phone size={20} className="text-purple-500" />
-                    <strong>Mobile:</strong> {selectedMember.mobile}
-                  </p>
-                  {selectedMember.email && (
-                    <p className="flex items-center gap-2">
-                      <Mail size={20} className="text-red-400" />
-                      <strong>Email:</strong> {selectedMember.email}
-                    </p>
-                  )}
-                  <p className="flex items-center gap-2">
-                    <Calendar size={20} className="text-blue-500" />
-                    <strong>Date Joined:</strong>{" "}
-                    {new Date(selectedMember.date).toLocaleDateString("en-GB")}
-                  </p>
-                  <p className="flex items-center gap-2">
-                    <CreditCard size={20} className="text-green-600" />
-                    <strong>Plan:</strong> {selectedMember.plan}
-                  </p>
-                  {selectedMember.price && (
-                    <p className="flex items-center gap-2">
-                      <CreditCard size={20} className="text-yellow-500" />
-                      <strong>Price:</strong> ₹{selectedMember.price}
-                    </p>
-                  )}
-                  <p className="text-red-600 font-semibold">
-                    Membership Ends:{" "}
-                    {calculateExpiryDate(selectedMember.date, selectedMember.plan)}
-                  </p>
-                </div>
-
-                <div className="flex justify-center mt-6 gap-4">
-                  <button
-                    onClick={() =>
-                      setSelectedMember({ ...selectedMember, editMode: true })
-                    }
-                    className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 flex items-center gap-2"
+            );
+          })}
+        </div>
+      ) : (
+        <div className="overflow-x-auto bg-white rounded-2xl shadow-lg">
+          <table className="w-full text-left border-collapse">
+            <thead className="bg-[#FFC107] text-white text-[22px]">
+              <tr>
+                <th className="p-3">Sr.No.</th>
+                <th className="p-3">Name</th>
+                <th className="p-3">Mobile</th>
+                <th className="p-3">Email</th>
+                <th className="p-3">Plan</th>
+                <th className="p-3">Joined</th>
+                <th className="p-3">Expiry</th>
+                <th className="p-3">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredMembers.map((member, index) => {
+                const status = getStatus(member);
+                return (
+                  <tr
+                    key={member._id}
+                    className="border-b text-[18px] hover:bg-gray-100 cursor-pointer"
+                    onClick={() => router.push(`/members/${member._id}`)}
                   >
-                    <Edit size={16} />
-                    Edit
-                  </button>
-
-                  <button
-                    onClick={() => setShowDeleteModal(true)}
-                    className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 flex items-center gap-2 "
-                  >
-                    <Trash2 size={16} /> Delete
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
+                    <td className="p-3">{index + 1}</td>
+                    <td className="p-3">{member.name}</td>
+                    <td className="p-3">{member.mobile}</td>
+                    <td className="p-3">{member.email || "—"}</td>
+                    <td className="p-3">{getPlanDisplay(member)}</td>
+                    <td className="p-3">
+                      {getJoinDate(member).toLocaleDateString("en-GB")}
+                    </td>
+                    <td className="p-3">
+                      {calculateExpiryDate(member).toLocaleDateString("en-GB")}
+                    </td>
+                    <td className="p-3 flex items-center gap-2">
+                      <span
+                        className={`w-3 h-3 rounded-full ${
+                          status === "Active" ? "bg-green-500" : "bg-red-600"
+                        }`}
+                      ></span>
+                      {status}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       )}
 
-      {/* Delete Confirmation Modal */}
+      {/* Delete Modal */}
       {showDeleteModal && selectedMember && (
         <div className="fixed inset-0 z-60 flex items-center justify-center backdrop-blur-sm">
           <div className="bg-white rounded-2xl p-6 shadow-2xl w-full max-w-md relative">
-            <h3 className="text-xl font-semibold text-gray-800 mb-4">
+            <h3 className="text-xl font-semibold text-[#0A2463] mb-4">
               Are you sure you want to delete {selectedMember.name}?
             </h3>
 
@@ -415,7 +442,7 @@ export default function MembersPage() {
 
               <button
                 onClick={() => setShowDeleteModal(false)}
-                className="bg-gray-300 text-black px-4 py-2 rounded-lg hover:bg-gray-400 transition"
+                className="bg-gray-300 text-[#212529] px-4 py-2 rounded-lg hover:bg-gray-400 transition"
               >
                 Cancel
               </button>
