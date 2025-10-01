@@ -34,7 +34,13 @@ type Member = {
   plan: string;
   payments?: Payment[];
   profilePicture?: string;
-  status?: "Active" | "Inactive"; // ✅ use directly from API
+  status?: "Active" | "Inactive";
+};
+
+type Plan = {
+  _id?: string;
+  name: string;
+  validity: number; // months or days depending on DB
 };
 
 // Get initials from name
@@ -86,7 +92,7 @@ export default function MemberProfilePage() {
 
   const [customValidity, setCustomValidity] = useState<number | "">("");
   const [customUnit, setCustomUnit] = useState("days");
-  const [allPlans, setAllPlans] = useState<string[]>([]);
+  const [allPlans, setAllPlans] = useState<Plan[]>([]); // ✅ full plans, not just names
   const [newProfilePicture, setNewProfilePicture] = useState<string | null>(
     null
   );
@@ -94,7 +100,7 @@ export default function MemberProfilePage() {
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [showCropper, setShowCropper] = useState(false);
-  const [showLightbox, setShowLightbox] = useState(false); // ✅ Lightbox state
+  const [showLightbox, setShowLightbox] = useState(false);
 
   const handleProfilePictureChange = (
     e: React.ChangeEvent<HTMLInputElement>
@@ -102,7 +108,7 @@ export default function MemberProfilePage() {
     const file = e.target.files?.[0];
     if (file) {
       setSelectedFile(file);
-      setShowCropper(true); // open cropper modal
+      setShowCropper(true);
     }
   };
 
@@ -129,20 +135,11 @@ export default function MemberProfilePage() {
     }
   };
 
-  // ✅ Get latest join/renewal date
-  const getJoinDate = (member: Member) => {
-    if (member.payments && member.payments.length > 0) {
-      return new Date(member.payments[member.payments.length - 1].date);
-    }
-    return new Date(member.date);
-  };
-
-  // ✅ Expiry calculation based on latest payment
+  // ✅ Expiry calculation
   const calculateExpiryDate = (member: Member) => {
-    // Get latest payment if available
     const latestPayment =
       member.payments && member.payments.length > 0
-        ? member.payments.sort(
+        ? [...member.payments].sort(
             (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
           )[0]
         : null;
@@ -152,9 +149,10 @@ export default function MemberProfilePage() {
       ? new Date(latestPayment.date)
       : new Date(member.date);
 
-    const match = planStr.match(/(\d+)\s*(day|days|month|months|year|years)/i);
+    let expiryDate = new Date(startDate);
 
-    const expiryDate = new Date(startDate);
+    // 1️⃣ Regex check like "30 days" / "3 months"
+    const match = planStr.match(/(\d+)\s*(day|days|month|months|year|years)/i);
 
     if (match) {
       const value = parseInt(match[1], 10);
@@ -177,28 +175,18 @@ export default function MemberProfilePage() {
       return expiryDate;
     }
 
-    // fallback for named plans
-    switch (planStr.toLowerCase()) {
-      case "monthly":
-      case "1 month":
-        expiryDate.setMonth(expiryDate.getMonth() + 1);
-        break;
-      case "quarterly":
-      case "3 months":
-        expiryDate.setMonth(expiryDate.getMonth() + 3);
-        break;
-      case "half yearly":
-      case "6 months":
-        expiryDate.setMonth(expiryDate.getMonth() + 6);
-        break;
-      case "yearly":
-      case "12 months":
-        expiryDate.setFullYear(expiryDate.getFullYear() + 1);
-        break;
-      default:
-        expiryDate.setMonth(expiryDate.getMonth() + 1); // default to 1 month
+    // 2️⃣ Fallback: check DB plans list
+    const dbPlan = allPlans.find(
+      (p) => p.name?.toLowerCase() === planStr.toLowerCase()
+    );
+
+    if (dbPlan && typeof dbPlan.validity === "number" && dbPlan.validity > 0) {
+      expiryDate.setMonth(expiryDate.getMonth() + dbPlan.validity);
+      return expiryDate;
     }
 
+    // 3️⃣ Default 1 month
+    expiryDate.setMonth(expiryDate.getMonth() + 1);
     return expiryDate;
   };
 
@@ -235,10 +223,9 @@ export default function MemberProfilePage() {
         const res = await fetch("/api/plans");
         if (!res.ok) throw new Error("Failed to fetch plans");
         const data = await res.json();
-        const planNames = Array.isArray(data.plans)
-          ? data.plans.map((p: { name: string }) => p.name)
-          : [];
-        setAllPlans(planNames);
+
+        // ✅ store full objects
+        setAllPlans(Array.isArray(data.plans) ? data.plans : []);
       } catch (err) {
         console.error(err);
         setAllPlans([]);
@@ -640,8 +627,8 @@ export default function MemberProfilePage() {
 
                   {/* Dynamically show plans from DB */}
                   {allPlans.map((p) => (
-                    <option key={p} value={p}>
-                      {p}
+                    <option key={p._id} value={p.name}>
+                      {p.name} {p.validity ? `- ${p.validity} months` : ""}
                     </option>
                   ))}
 

@@ -60,7 +60,7 @@ export default function PlanPage() {
           onClick={() => setShowAddModal(true)}
           className="bg-yellow-400 text-[#15145a] px-8 py-3 text-xl flex items-center gap-2 rounded-full font-bold shadow hover:bg-yellow-500 transition"
         >
-           <PlusCircle size={20} /> Add Plan
+          <PlusCircle size={20} /> Add Plan
         </button>
       </div>
 
@@ -155,7 +155,44 @@ export default function PlanPage() {
             <form
               onSubmit={async (e) => {
                 e.preventDefault();
-                // form submission logic remains unchanged
+
+                // Simple validation
+                const newErrors: Record<string, string> = {};
+                if (!form.name.trim()) newErrors.name = "Plan name is required";
+                if (!form.validity) newErrors.validity = "Validity is required";
+                if (!form.amount) newErrors.amount = "Amount is required";
+
+                if (Object.keys(newErrors).length > 0) {
+                  setErrors(newErrors);
+                  return;
+                }
+
+                try {
+                  const res = await fetch("/api/plans", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      name: form.name,
+                      validity: Number(form.validity),
+                      amount: Number(form.amount),
+                    }),
+                  });
+
+                  const data = await res.json();
+
+                  if (data.success) {
+                    // refresh plan list
+                    await fetchPlans();
+                    // reset form + close modal
+                    setForm({ name: "", validity: "", amount: "" });
+                    setShowAddModal(false);
+                    setErrors({});
+                  } else {
+                    console.error(data.message || "Failed to add plan");
+                  }
+                } catch (err) {
+                  console.error("Error adding plan:", err);
+                }
               }}
             >
               <div className="space-y-6">

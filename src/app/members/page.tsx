@@ -33,7 +33,7 @@ type Member = {
 type Plan = {
   _id: string;
   name: string;
-  validity: number;
+  validity: number; // assumed to be in months
 };
 
 export default function MembersPage() {
@@ -62,16 +62,17 @@ export default function MembersPage() {
       const res = await fetch("/api/plans");
       if (res.ok) {
         const data = await res.json();
-        console.log("📌 Plans fetched:", data); // <---- add this
         if (Array.isArray(data.plans)) {
-          const sortedPlans: Plan[] = data.plans.map((p: any) => ({
+          const mapped: Plan[] = data.plans.map((p: any) => ({
             _id: p._id,
-            name: p.name || p.plan, // handle both cases
-            validity: p.validity,
+            name: p.name || p.plan,
+            validity: Number(p.validity) || 0,
           }));
-          plans.sort((a, b) => a.validity - b.validity);
 
-          setPlans(sortedPlans);
+          // sort the mapped array, not the state variable directly
+          mapped.sort((a, b) => a.validity - b.validity);
+
+          setPlans(mapped);
         }
       }
     };
@@ -88,13 +89,12 @@ export default function MembersPage() {
 
   // ✅ Expiry calculation
   const calculateExpiryDate = (member: Member) => {
-    const date = getJoinDate(member);
+    const joinDate = getJoinDate(member);
+    // copy to avoid mutating original
+    const date = new Date(joinDate.getTime());
 
-    // Match formats like "Custom(10 days)" OR "2 months" OR "14 days"
-    const match = member.plan.match(
-      /(\d+)\s*(day|days|month|months|year|years)/i
-    );
-
+    // 1) If plan text explicitly contains a numeric duration ("1 month", "14 days", "2 years", etc.) use that
+    const match = member.plan.match(/(\d+)\s*(day|days|month|months|year|years)/i);
     if (match) {
       const value = parseInt(match[1], 10);
       const unit = match[2].toLowerCase();
@@ -117,7 +117,24 @@ export default function MembersPage() {
       return date;
     }
 
-    // fallback for other predefined plans
+    // 2) If plan looks like a "custom" plan but doesn't include numeric units, assume it's custom and fallback to 1 month (or you can change this logic)
+    if (member.plan.toLowerCase().startsWith("custom")) {
+      // If you store custom validity elsewhere, use that; otherwise fallback to 1 month
+      date.setMonth(date.getMonth() + 1);
+      return date;
+    }
+
+    // 3) Try to find the plan in the plans list and use its `validity` (assumed in months)
+    const planFromList = plans.find(
+      (p) => p.name?.toLowerCase() === member.plan?.toLowerCase()
+    );
+
+    if (planFromList && typeof planFromList.validity === "number" && planFromList.validity > 0) {
+      date.setMonth(date.getMonth() + planFromList.validity);
+      return date;
+    }
+
+    // 4) Fallback for common plan-name strings (backwards compatibility)
     switch (member.plan.toLowerCase()) {
       case "monthly":
       case "1 month":
@@ -140,7 +157,8 @@ export default function MembersPage() {
         date.setFullYear(date.getFullYear() + 1);
         break;
       default:
-        date.setMonth(date.getMonth() + 1); // fallback
+        // final fallback: add 1 month
+        date.setMonth(date.getMonth() + 1);
     }
 
     return date;
@@ -179,7 +197,6 @@ export default function MembersPage() {
     } else alert("Delete failed");
   };
 
-  // Filtered and sorted members
   // Filtered and sorted members
   const filteredMembers = members
     .filter((m) => {
@@ -402,12 +419,8 @@ export default function MembersPage() {
                     <td className="p-3">{member.mobile}</td>
                     <td className="p-3">{member.email || "—"}</td>
                     <td className="p-3">{getPlanDisplay(member)}</td>
-                    <td className="p-3">
-                      {getJoinDate(member).toLocaleDateString("en-GB")}
-                    </td>
-                    <td className="p-3">
-                      {calculateExpiryDate(member).toLocaleDateString("en-GB")}
-                    </td>
+                    <td className="p-3">{getJoinDate(member).toLocaleDateString("en-GB")}</td>
+                    <td className="p-3">{calculateExpiryDate(member).toLocaleDateString("en-GB")}</td>
                     <td className="p-3 flex items-center gap-2">
                       <span
                         className={`w-3 h-3 rounded-full ${
@@ -428,7 +441,7 @@ export default function MembersPage() {
       {showDeleteModal && selectedMember && (
         <div className="fixed inset-0 z-60 flex items-center justify-center backdrop-blur-sm">
           <div className="bg-white rounded-2xl p-6 shadow-2xl w-full max-w-md relative">
-            <h3 className="text-xl font-semibold text-[#0A2463] mb-4">
+            <h3 className="Text-xl font-semibold text-[#0A2463] mb-4">
               Are you sure you want to delete {selectedMember.name}?
             </h3>
 
