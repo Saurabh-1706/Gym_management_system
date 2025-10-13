@@ -8,6 +8,7 @@ type Plan = {
   name: string;
   validity: number;
   amount: number;
+  validityType?: "days" | "months";
 };
 
 export default function PlanPage() {
@@ -17,6 +18,7 @@ export default function PlanPage() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [validityType, setValidityType] = useState<"months" | "days">("months");
 
   const fetchPlans = async () => {
     try {
@@ -46,6 +48,33 @@ export default function PlanPage() {
   // Before rendering Plan Cards
   const sortedPlans = [...plans].sort((a, b) => a.validity - b.validity); // ascending validity
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const newPlan = {
+      name: form.name.trim(),
+      validity: Number(form.validity),
+      validityType: validityType, // ✅ include this
+      amount: Number(form.amount),
+    };
+
+    const res = await fetch("/api/plans", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(newPlan),
+    });
+
+    const data = await res.json();
+    if (data.success) {
+      fetchPlans();
+      setForm({ name: "", validity: "", amount: "" });
+      setValidityType("months"); // reset
+      setShowAddModal(false);
+    } else {
+      console.error(data.error || "Failed to add plan");
+    }
+  };
+
   return (
     <div className="p-6">
       {/* Header with Add Plan Button */}
@@ -74,7 +103,9 @@ export default function PlanPage() {
               className="bg-white text-[#15145a] p-6 rounded-2xl shadow-lg hover:shadow-2xl transition-all"
             >
               <h3 className="text-3xl font-bold mb-2">{plan.name}</h3>
-              <p className="text-gray-800 text-2xl">⏱ {plan.validity} Months</p>
+              <p className="text-gray-800 text-2xl">
+                ⏱ {plan.validity} {plan.validityType || "Months"}
+              </p>
               <p className="text-gray-800 mb-4 text-2xl">💰 ₹{plan.amount}</p>
 
               <div className="flex justify-end gap-3">
@@ -152,49 +183,7 @@ export default function PlanPage() {
             </button>
 
             <h2 className="text-3xl font-bold mb-6">Add New Plan</h2>
-            <form
-              onSubmit={async (e) => {
-                e.preventDefault();
-
-                // Simple validation
-                const newErrors: Record<string, string> = {};
-                if (!form.name.trim()) newErrors.name = "Plan name is required";
-                if (!form.validity) newErrors.validity = "Validity is required";
-                if (!form.amount) newErrors.amount = "Amount is required";
-
-                if (Object.keys(newErrors).length > 0) {
-                  setErrors(newErrors);
-                  return;
-                }
-
-                try {
-                  const res = await fetch("/api/plans", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                      name: form.name,
-                      validity: Number(form.validity),
-                      amount: Number(form.amount),
-                    }),
-                  });
-
-                  const data = await res.json();
-
-                  if (data.success) {
-                    // refresh plan list
-                    await fetchPlans();
-                    // reset form + close modal
-                    setForm({ name: "", validity: "", amount: "" });
-                    setShowAddModal(false);
-                    setErrors({});
-                  } else {
-                    console.error(data.message || "Failed to add plan");
-                  }
-                } catch (err) {
-                  console.error("Error adding plan:", err);
-                }
-              }}
-            >
+            <form onSubmit={handleSubmit}>
               <div className="space-y-6">
                 <div>
                   <label className="block mb-2 font-bold text-lg">
@@ -215,25 +204,43 @@ export default function PlanPage() {
                   )}
                 </div>
 
-                <div>
-                  <label className="block mb-2 font-bold text-lg">
-                    Validity (months)
-                  </label>
-                  <input
-                    name="validity"
-                    type="number"
-                    value={form.validity}
-                    onChange={handleChange}
-                    className={`w-full px-4 py-3 rounded text-black bg-gray-100 text-lg ${
-                      errors.validity ? "border border-red-500" : ""
-                    }`}
-                    placeholder="Months"
-                  />
-                  {errors.validity && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {errors.validity}
-                    </p>
-                  )}
+                <div className="flex gap-4 items-end">
+                  <div className="flex-1">
+                    <label className="block mb-2 font-bold text-lg">
+                      Validity
+                    </label>
+                    <input
+                      name="validity"
+                      type="number"
+                      value={form.validity}
+                      onChange={handleChange}
+                      className={`w-full px-4 py-3 rounded text-black bg-gray-100 text-lg ${
+                        errors.validity ? "border border-red-500" : ""
+                      }`}
+                      placeholder={`Enter ${validityType}`}
+                    />
+                    {errors.validity && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {errors.validity}
+                      </p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block mb-2 font-bold text-lg">
+                      &nbsp;
+                    </label>
+                    <select
+                      value={validityType}
+                      onChange={(e) =>
+                        setValidityType(e.target.value as "months" | "days")
+                      }
+                      className="px-4 py-3 rounded text-black bg-gray-100 text-lg"
+                    >
+                      <option value="months">Months</option>
+                      <option value="days">Days</option>
+                    </select>
+                  </div>
                 </div>
 
                 <div>

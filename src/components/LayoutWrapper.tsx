@@ -5,7 +5,7 @@ import Navbar from "@/components/Navbar";
 
 export default function LayoutWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const hideNavbar = pathname === "/login";
+  const hideNavbar = pathname === "/auth";
 
   return (
     <div className="flex min-h-screen bg-[#E9ECEF]">

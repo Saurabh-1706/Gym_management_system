@@ -22,6 +22,7 @@ function calculateExpiryDate(member: any): Date {
 
   if (!plan) return baseDate;
 
+  // Handle custom format like "Custom(30 days)" or "3 months"
   const match = plan.match(/(?:Custom\()?(\d+)\s*(day|days|month|months|year|years)\)?/i);
   if (match) {
     const value = parseInt(match[1], 10);
@@ -41,6 +42,7 @@ function calculateExpiryDate(member: any): Date {
         break;
     }
   } else {
+    // Fallback for default plan names
     switch (plan.toLowerCase()) {
       case "monthly":
       case "1 month":
@@ -91,7 +93,6 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
       return NextResponse.json({ success: false, message: "Member not found" }, { status: 404 });
     }
 
-    // ✅ Update status with 7-day grace
     member.status = determineStatus(member);
     await member.save();
 
@@ -115,9 +116,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
       return NextResponse.json({ success: false, message: "Member not found" }, { status: 404 });
     }
 
-    // ------------------
     // Handle Renewal
-    // ------------------
     if (body.plan && body.price && body.date && body.modeOfPayment) {
       member.payments.push({
         plan: body.plan,
@@ -130,17 +129,15 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
       member.date = new Date(body.date);
     }
 
-    // ------------------
-    // Handle General Edit (including profilePicture)
-    // ------------------
-    const editableFields = ["name", "mobile", "email", "profilePicture"];
+    // Handle General Edit (including profilePicture and dob)
+    const editableFields = ["name", "mobile", "email", "profilePicture", "dob"];
     editableFields.forEach((field) => {
-      if (body[field] !== undefined) member[field] = body[field];
+      if (body[field] !== undefined) {
+        member[field] = field === "dob" ? new Date(body[field]) : body[field];
+      }
     });
 
-    // ✅ Update status with 7-day grace
     member.status = determineStatus(member);
-
     await member.save();
 
     return NextResponse.json({ success: true, member });

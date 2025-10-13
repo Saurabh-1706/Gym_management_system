@@ -13,17 +13,18 @@ const paymentSchema = new mongoose.Schema(
   { _id: false }
 );
 
-// Member schema
+// Member schema (include dob)
 const memberSchema = new mongoose.Schema({
   name: String,
   mobile: String,
   email: String,
-  plan: String,      // "Monthly" or "Custom(10 days)"
-  date: Date,        // join date
+  plan: String,
+  date: Date,
   price: Number,
-  expiryDate: Date,   // calculated automatically
+  expiryDate: Date,
+  dob: { type: Date, required: true }, // ✅ new field
   payments: { type: [paymentSchema], default: [] },
-  status: { type: String, default: "Active" }, // Active / Inactive
+  status: { type: String, default: "Active" },
 });
 
 const Member = mongoose.models.Member || mongoose.model("Member", memberSchema);
@@ -32,13 +33,35 @@ export async function POST(req: Request) {
   try {
     await connectToDatabase();
     const body = await req.json();
-    const { date, plan, customValidity, customUnit, price, modeOfPayment } = body;
+    const {
+      date,
+      plan,
+      customValidity,
+      customUnit,
+      price,
+      modeOfPayment,
+      mobile,
+      dob, // ✅ from frontend
+    } = body;
 
+    // ✅ Check if a member with same mobile & dob already exists
+    const existingMember = await Member.findOne({
+      mobile,
+      dob: new Date(dob),
+    });
+
+    if (existingMember) {
+      return NextResponse.json({
+        success: false,
+        error: "Member with same mobile number and date of birth already exists.",
+      });
+    }
+
+    // Calculate expiry date
     let finalPlan = plan;
     let joinDate = new Date(date);
     let expiryDate = new Date(joinDate);
 
-    // Handle custom plan validity
     if (plan.toLowerCase() === "custom" && customValidity && customUnit) {
       finalPlan = `Custom(${customValidity} ${customUnit})`;
 
@@ -48,7 +71,6 @@ export async function POST(req: Request) {
         expiryDate.setMonth(expiryDate.getMonth() + parseInt(customValidity, 10));
       }
     } else {
-      // Default plan durations (you can extend with DB lookup)
       switch (plan.toLowerCase()) {
         case "monthly":
         case "1 month":
@@ -67,11 +89,11 @@ export async function POST(req: Request) {
           expiryDate.setFullYear(expiryDate.getFullYear() + 1);
           break;
         default:
-          expiryDate.setMonth(expiryDate.getMonth() + 1); // fallback
+          expiryDate.setMonth(expiryDate.getMonth() + 1);
       }
     }
 
-    // Construct initial payment entry
+    // Payment record
     const initialPayment = {
       plan: finalPlan,
       price: Number(price),
@@ -79,10 +101,9 @@ export async function POST(req: Request) {
       modeOfPayment: modeOfPayment || "Cash",
     };
 
-    // Determine status based on expiry
     const status = expiryDate >= new Date() ? "Active" : "Inactive";
 
-    // Save member
+    // ✅ Save member with dob
     const newMember = new Member({
       ...body,
       plan: finalPlan,
@@ -91,6 +112,7 @@ export async function POST(req: Request) {
       payments: [initialPayment],
       expiryDate,
       status,
+      dob: new Date(dob),
     });
 
     await newMember.save();

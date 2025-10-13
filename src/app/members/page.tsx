@@ -33,7 +33,8 @@ type Member = {
 type Plan = {
   _id: string;
   name: string;
-  validity: number; // assumed to be in months
+  validity: number;
+  validityType?: "months" | "days"; // assumed to be in months
 };
 
 export default function MembersPage() {
@@ -63,10 +64,12 @@ export default function MembersPage() {
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data.plans)) {
+          // --- inside useEffect for fetching plans ---
           const mapped: Plan[] = data.plans.map((p: any) => ({
             _id: p._id,
             name: p.name || p.plan,
             validity: Number(p.validity) || 0,
+            validityType: p.validityType || "months", // ✅ add validityType here
           }));
 
           // sort the mapped array, not the state variable directly
@@ -87,14 +90,30 @@ export default function MembersPage() {
     return new Date(member.date);
   };
 
-  // ✅ Expiry calculation
+  // --- updated calculateExpiryDate function ---
   const calculateExpiryDate = (member: Member) => {
     const joinDate = getJoinDate(member);
-    // copy to avoid mutating original
-    const date = new Date(joinDate.getTime());
+    const date = new Date(joinDate.getTime()); // copy to avoid mutation
 
-    // 1) If plan text explicitly contains a numeric duration ("1 month", "14 days", "2 years", etc.) use that
-    const match = member.plan.match(/(\d+)\s*(day|days|month|months|year|years)/i);
+    // 1️⃣ Lookup predefined plan from plans list
+    const planFromList = plans.find(
+      (p) => p.name?.toLowerCase() === member.plan?.toLowerCase()
+    );
+
+    if (planFromList && typeof planFromList.validity === "number") {
+      const type = planFromList.validityType || "months"; // ✅ use validityType from DB
+      if (type === "days") {
+        date.setDate(date.getDate() + planFromList.validity);
+      } else {
+        date.setMonth(date.getMonth() + planFromList.validity);
+      }
+      return date;
+    }
+
+    // 2️⃣ Parse numeric units from member.plan text (custom plans like "45 days")
+    const match = member.plan.match(
+      /(\d+)\s*(day|days|month|months|year|years)/i
+    );
     if (match) {
       const value = parseInt(match[1], 10);
       const unit = match[2].toLowerCase();
@@ -113,28 +132,16 @@ export default function MembersPage() {
           date.setFullYear(date.getFullYear() + value);
           break;
       }
-
       return date;
     }
 
-    // 2) If plan looks like a "custom" plan but doesn't include numeric units, assume it's custom and fallback to 1 month (or you can change this logic)
+    // 3️⃣ Handle custom plans without numeric units (fallback to 1 month)
     if (member.plan.toLowerCase().startsWith("custom")) {
-      // If you store custom validity elsewhere, use that; otherwise fallback to 1 month
       date.setMonth(date.getMonth() + 1);
       return date;
     }
 
-    // 3) Try to find the plan in the plans list and use its `validity` (assumed in months)
-    const planFromList = plans.find(
-      (p) => p.name?.toLowerCase() === member.plan?.toLowerCase()
-    );
-
-    if (planFromList && typeof planFromList.validity === "number" && planFromList.validity > 0) {
-      date.setMonth(date.getMonth() + planFromList.validity);
-      return date;
-    }
-
-    // 4) Fallback for common plan-name strings (backwards compatibility)
+    // 4️⃣ Backward compatibility for common plan strings
     switch (member.plan.toLowerCase()) {
       case "monthly":
       case "1 month":
@@ -157,8 +164,7 @@ export default function MembersPage() {
         date.setFullYear(date.getFullYear() + 1);
         break;
       default:
-        // final fallback: add 1 month
-        date.setMonth(date.getMonth() + 1);
+        date.setMonth(date.getMonth() + 1); // fallback default
     }
 
     return date;
@@ -419,8 +425,12 @@ export default function MembersPage() {
                     <td className="p-3">{member.mobile}</td>
                     <td className="p-3">{member.email || "—"}</td>
                     <td className="p-3">{getPlanDisplay(member)}</td>
-                    <td className="p-3">{getJoinDate(member).toLocaleDateString("en-GB")}</td>
-                    <td className="p-3">{calculateExpiryDate(member).toLocaleDateString("en-GB")}</td>
+                    <td className="p-3">
+                      {getJoinDate(member).toLocaleDateString("en-GB")}
+                    </td>
+                    <td className="p-3">
+                      {calculateExpiryDate(member).toLocaleDateString("en-GB")}
+                    </td>
                     <td className="p-3 flex items-center gap-2">
                       <span
                         className={`w-3 h-3 rounded-full ${

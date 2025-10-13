@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import Navbar from "@/components/Navbar";
 import Providers from "@/components/providers";
 import LayoutWrapper from "@/components/LayoutWrapper";
 
@@ -23,7 +22,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className="min-h-screen">
+      <body className={`min-h-screen ${geistSans.variable} ${geistMono.variable}`}>
         <Providers>
           <LayoutWrapper>{children}</LayoutWrapper>
         </Providers>

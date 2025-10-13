@@ -35,7 +35,7 @@ const navItems = [
       { label: "Sale Report", href: "/report/sale" },
       { label: "New Joinee", href: "/report/new_joinee" },
       { label: "Electricity Bill", href: "/report/electricity_bill" },
-      { label: "Miscellaneous", href: "/report/miscellaneous"},
+      { label: "Miscellaneous", href: "/report/miscellaneous" },
     ],
   },
 ];
@@ -60,12 +60,12 @@ export default function Navbar() {
       {/* Top Section */}
       <div>
         {/* Logo / Brand */}
-        <Link
-          href="/"
-          className="flex items-center gap-3 mb-12 text-3xl font-bold hover:opacity-80 transition-colors"
-        >
-          <Dumbbell size={28} className="text-[#FFC107]" />
-          Mojad Fitness
+        <Link href="/" className="block mb-8 mr-4">
+          <img
+            src="/logo-removebg-preview.png"
+            alt="Mojad Fitness Logo"
+            className="w- h-full object-contain object-center mx-auto"
+          />
         </Link>
 
         {/* Navigation Links */}
@@ -150,7 +150,7 @@ export default function Navbar() {
       {session && (
         <div className="mt-auto">
           <button
-            onClick={() => signOut({ callbackUrl: "/login" })}
+            onClick={() => signOut({ callbackUrl: "/auth" })}
             className="flex items-center gap-3 px-5 py-3 w-full bg-[#0A2463] hover:bg-[#0F3C78] rounded-lg font-semibold text-white transition-colors shadow"
           >
             <LogOut size={22} />

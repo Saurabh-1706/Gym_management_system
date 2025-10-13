@@ -6,14 +6,15 @@ export default function RegistrationPage() {
   const [form, setForm] = useState({
     name: "",
     mobile: "",
-    plan: "",
     email: "",
+    plan: "",
     date: "",
+    dob: "", // ✅ new field
     price: "",
     validity: "",
     customValidity: "",
     customValidityUnit: "days",
-    modeOfPayment: "", // <-- add this
+    modeOfPayment: "",
   });
 
   const [errors, setErrors] = useState<{ email?: string; mobile?: string }>({});
@@ -23,7 +24,7 @@ export default function RegistrationPage() {
   >([]);
   const [useDefaultPrice, setUseDefaultPrice] = useState(true);
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  const mobileRegex = /^[6-9]\d{9}$/; // 10-digit Indian mobile
+  const mobileRegex = /^[6-9]\d{9}$/;
 
   // Fetch plans
   useEffect(() => {
@@ -32,20 +33,18 @@ export default function RegistrationPage() {
         const res = await fetch("/api/plans");
         const data = await res.json();
         if (Array.isArray(data.plans)) {
-          setPlans(data.plans); // <-- now this is actually an array
+          setPlans(data.plans);
         } else {
-          console.error("Plans data is not an array:", data);
           setPlans([]);
         }
-      } catch (error) {
-        console.error("Failed to fetch plans:", error);
+      } catch {
         setPlans([]);
       }
     };
     fetchPlans();
   }, []);
 
-  // Update default price when plan changes
+  // Auto-set default price when plan changes
   useEffect(() => {
     if (form.plan && useDefaultPrice && form.plan !== "custom") {
       const selectedPlan = plans.find((p) => p.name === form.plan);
@@ -61,7 +60,6 @@ export default function RegistrationPage() {
     const { name, value } = e.target;
     setForm({ ...form, [name]: value });
 
-    // Validate on change
     if (name === "email") {
       setErrors((prev) => ({
         ...prev,
@@ -94,7 +92,6 @@ export default function RegistrationPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Final validation before submit
     if (!emailRegex.test(form.email)) {
       setErrors((prev) => ({ ...prev, email: "Invalid email format" }));
       return;
@@ -114,16 +111,16 @@ export default function RegistrationPage() {
       mobile: form.mobile,
       email: form.email,
       date: form.date,
+      dob: form.dob, // ✅ send DOB
       plan: form.plan,
       price: form.price,
-      modeOfPayment: form.modeOfPayment, // ← ADD THIS
+      modeOfPayment: form.modeOfPayment,
     };
 
     if (form.plan === "custom") {
-      const validity = form.customValidity;
-      const unit = form.customValidityUnit || "days";
-      payload.plan = `Custom(${validity} ${unit})`;
-      payload.price = form.price;
+      payload.plan = "custom";
+      payload.customValidity = form.customValidity;
+      payload.customUnit = form.customValidityUnit;
     }
 
     try {
@@ -139,9 +136,10 @@ export default function RegistrationPage() {
         setForm({
           name: "",
           mobile: "",
-          plan: "",
           email: "",
+          plan: "",
           date: "",
+          dob: "",
           price: "",
           validity: "",
           customValidity: "",
@@ -150,10 +148,10 @@ export default function RegistrationPage() {
         });
         setUseDefaultPrice(true);
       } else {
-        setStatus("❌ Registration failed.");
+        // Show duplicate or generic error
+        setStatus(`❌ ${result.error || "Registration failed."}`);
       }
-    } catch (error) {
-      console.error("Registration error:", error);
+    } catch {
       setStatus("❌ Registration failed.");
     }
   };
@@ -188,12 +186,27 @@ export default function RegistrationPage() {
               value={form.name}
               onChange={handleChange}
               placeholder="Enter your full name"
-              className="w-full px-5 py-3 text-lg rounded-xl bg-white border border-[#ADB5BD] focus:ring-2 focus:ring-[#0A2463] focus:outline-none transition hover:shadow-md text-[#212529]"
+              className="w-full px-5 py-3 text-lg rounded-xl border border-[#ADB5BD] focus:ring-2 focus:ring-[#0A2463] focus:outline-none"
               required
             />
           </div>
 
-          {/* Date */}
+          {/* Date of Birth ✅ */}
+          <div>
+            <label className="block text-lg font-semibold mb-2 text-[#212529]">
+              Date of Birth
+            </label>
+            <input
+              type="date"
+              name="dob"
+              value={form.dob}
+              onChange={handleChange}
+              className="w-full px-5 py-3 text-lg rounded-xl border border-[#ADB5BD] focus:ring-2 focus:ring-[#0A2463] focus:outline-none text-[#212529]"
+              required
+            />
+          </div>
+
+          {/* Date of Join */}
           <div>
             <label className="block text-lg font-semibold mb-2 text-[#212529]">
               Date of Join
@@ -203,9 +216,7 @@ export default function RegistrationPage() {
               name="date"
               value={form.date}
               onChange={handleChange}
-              className={`w-full px-5 py-3 text-lg rounded-xl bg-white border border-[#ADB5BD] focus:ring-2 focus:ring-[#0A2463] focus:outline-none transition hover:shadow-md ${
-                form.date === "" ? "text-gray-400" : "text-[#212529]"
-              }`}
+              className="w-full px-5 py-3 text-lg rounded-xl border border-[#ADB5BD] focus:ring-2 focus:ring-[#0A2463] focus:outline-none text-[#212529]"
               required
             />
           </div>
@@ -221,12 +232,8 @@ export default function RegistrationPage() {
               value={form.email}
               onChange={handleChange}
               placeholder="example@email.com"
-              className="w-full px-5 py-3 text-lg rounded-xl bg-white border border-[#ADB5BD] focus:ring-2 focus:ring-[#0A2463] focus:outline-none transition hover:shadow-md text-[#212529]"
-              required
+              className="w-full px-5 py-3 text-lg rounded-xl border border-[#ADB5BD] focus:ring-2 focus:ring-[#0A2463] focus:outline-none text-[#212529]"
             />
-            {errors.email && (
-              <p className="text-red-500 text-sm mt-1">{errors.email}</p>
-            )}
           </div>
 
           {/* Mobile */}
@@ -240,7 +247,7 @@ export default function RegistrationPage() {
               value={form.mobile}
               onChange={handleChange}
               placeholder="Enter your phone number"
-              className="w-full px-5 py-3 text-lg rounded-xl bg-white border border-[#ADB5BD] focus:ring-2 focus:ring-[#0A2463] focus:outline-none transition hover:shadow-md text-[#212529]"
+              className="w-full px-5 py-3 text-lg rounded-xl border border-[#ADB5BD] focus:ring-2 focus:ring-[#0A2463] focus:outline-none text-[#212529]"
               required
             />
             {errors.mobile && (
@@ -259,7 +266,6 @@ export default function RegistrationPage() {
                 name="plan"
                 value={form.plan}
                 onChange={handleChange}
-                required
                 className={`w-full px-5 py-3 text-lg bg-white border border-[#ADB5BD] rounded-xl focus:ring-2 focus:ring-[#0A2463] focus:outline-none transition hover:shadow-md ${
                   form.plan === "" ? "text-gray-400" : "text-[#212529]"
                 }`}
@@ -293,7 +299,6 @@ export default function RegistrationPage() {
                 name="modeOfPayment"
                 value={form.modeOfPayment || ""}
                 onChange={handleChange}
-                required
                 className={`w-full px-3 py-3 text-lg bg-white border border-[#ADB5BD] rounded-xl focus:ring-2 focus:ring-[#0A2463] focus:outline-none transition hover:shadow-md ${
                   form.modeOfPayment ? "text-gray-800" : "text-gray-400"
                 }`}
@@ -367,11 +372,11 @@ export default function RegistrationPage() {
                   checked={useDefaultPrice}
                   onChange={handleCheckboxChange}
                   id="defaultPrice"
-                  className="w-5 h-5"
+                  className="w-5 h-5 accent-green-600"
                 />
                 <label
                   htmlFor="defaultPrice"
-                  className="text-[#212529] text-lg font-medium"
+                  className="text-[#212925] text-lg font-medium"
                 >
                   Continue with fixed price (₹{form.price})
                 </label>
@@ -414,6 +419,7 @@ export default function RegistrationPage() {
                   plan: "",
                   email: "",
                   date: "",
+                  dob: "",
                   price: "",
                   validity: "",
                   customValidity: "",

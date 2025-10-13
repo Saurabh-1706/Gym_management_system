@@ -30,6 +30,7 @@ type Member = {
   name: string;
   mobile: string;
   email?: string;
+  dob: string;
   date: string;
   plan: string;
   payments?: Payment[];
@@ -40,7 +41,8 @@ type Member = {
 type Plan = {
   _id?: string;
   name: string;
-  validity: number; // months or days depending on DB
+  validity: number;
+  validityType: "months" | "days";
 };
 
 // Get initials from name
@@ -135,7 +137,6 @@ export default function MemberProfilePage() {
     }
   };
 
-  // ✅ Expiry calculation
   const calculateExpiryDate = (member: Member) => {
     const latestPayment =
       member.payments && member.payments.length > 0
@@ -148,20 +149,19 @@ export default function MemberProfilePage() {
     const startDate = latestPayment
       ? new Date(latestPayment.date)
       : new Date(member.date);
+    const expiryDate = new Date(startDate);
 
-    let expiryDate = new Date(startDate);
-
-    // 1️⃣ Regex check like "30 days" / "3 months"
-    const match = planStr.match(/(\d+)\s*(day|days|month|months|year|years)/i);
-
-    if (match) {
-      const value = parseInt(match[1], 10);
-      const unit = match[2].toLowerCase();
-
+    // 1️⃣ Custom Plan like "Custom(10 days)"
+    const customMatch = planStr.match(
+      /Custom\((\d+)\s*(day|days|month|months|year|years)\)/i
+    );
+    if (customMatch) {
+      const value = parseInt(customMatch[1], 10);
+      const unit = customMatch[2].toLowerCase();
       switch (unit) {
         case "day":
         case "days":
-          expiryDate.setDate(expiryDate.getDate() + value);
+          expiryDate.setDate(expiryDate.getDate() + value - 1);
           break;
         case "month":
         case "months":
@@ -175,17 +175,25 @@ export default function MemberProfilePage() {
       return expiryDate;
     }
 
-    // 2️⃣ Fallback: check DB plans list
+    // 2️⃣ Predefined Plan from DB
     const dbPlan = allPlans.find(
-      (p) => p.name?.toLowerCase() === planStr.toLowerCase()
+      (p) => p.name.toLowerCase() === planStr.toLowerCase()
     );
-
-    if (dbPlan && typeof dbPlan.validity === "number" && dbPlan.validity > 0) {
-      expiryDate.setMonth(expiryDate.getMonth() + dbPlan.validity);
+    if (dbPlan && dbPlan.validity > 0) {
+      switch (dbPlan.validityType) {
+        case "days":
+          expiryDate.setDate(expiryDate.getDate() + dbPlan.validity);
+          break;
+        case "months":
+          expiryDate.setMonth(expiryDate.getMonth() + dbPlan.validity);
+          break;
+        default:
+          expiryDate.setMonth(expiryDate.getMonth() + 1); // fallback
+      }
       return expiryDate;
     }
 
-    // 3️⃣ Default 1 month
+    // 3️⃣ Default fallback: 1 month
     expiryDate.setMonth(expiryDate.getMonth() + 1);
     return expiryDate;
   };
@@ -253,6 +261,8 @@ export default function MemberProfilePage() {
 
   const handleRenew = async () => {
     let finalPlan = renewPlan;
+
+    // Handle Custom Plan
     if (renewPlan === "Custom") {
       if (!customValidity || !customUnit) {
         alert("Enter validity for custom plan");
@@ -402,6 +412,12 @@ export default function MemberProfilePage() {
                 <Phone size={20} className="text-purple-600" />
                 <strong>Mobile:</strong> {member.mobile}
               </p>
+              <p className="flex items-center gap-3">
+                <Calendar size={20} className="text-pink-600" />
+                <strong>Date of Birth:</strong>{" "}
+                {new Date(member.dob).toLocaleDateString("en-GB")}
+              </p>
+
               {member.email && (
                 <p className="flex items-center gap-3">
                   <Mail size={20} className="text-red-600" />
