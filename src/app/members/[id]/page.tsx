@@ -23,6 +23,7 @@ type Payment = {
   price: number;
   date: string;
   modeOfPayment?: string;
+  paymentStatus: "Paid" | "Unpaid";
 };
 
 type Member = {
@@ -36,6 +37,7 @@ type Member = {
   payments?: Payment[];
   profilePicture?: string;
   status?: "Active" | "Inactive";
+  paymentStatus?: "Paid" | "Unpaid"; // ✅ add this
 };
 
 type Plan = {
@@ -76,6 +78,16 @@ function getLatestPlan(member: Member): string {
   return member.plan;
 }
 
+function isPlanPaid(member: Member, currentPlan: string): boolean {
+  if (!member.payments || member.payments.length === 0) return false;
+
+  const payment = member.payments
+    .filter((p) => p.plan.toLowerCase() === currentPlan.toLowerCase())
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
+
+  return payment?.paymentStatus === "Paid";
+}
+
 export default function MemberProfilePage() {
   const { id } = useParams();
   const router = useRouter();
@@ -92,9 +104,13 @@ export default function MemberProfilePage() {
   const [renewMode, setRenewMode] = useState("");
   const [renewDate, setRenewDate] = useState("");
 
+  const [renewPaymentStatus, setRenewPaymentStatus] = useState<
+    "Paid" | "Unpaid"
+  >("Unpaid"); // ✅ default Unpaid
+
   const [customValidity, setCustomValidity] = useState<number | "">("");
   const [customUnit, setCustomUnit] = useState("days");
-  const [allPlans, setAllPlans] = useState<Plan[]>([]); // ✅ full plans, not just names
+  const [allPlans, setAllPlans] = useState<Plan[]>([]);
   const [newProfilePicture, setNewProfilePicture] = useState<string | null>(
     null
   );
@@ -151,10 +167,12 @@ export default function MemberProfilePage() {
       : new Date(member.date);
     const expiryDate = new Date(startDate);
 
-    // 1️⃣ Custom Plan like "Custom(10 days)"
+    if (!planStr) return expiryDate; // ✅ safely return if null or undefined
+
     const customMatch = planStr.match(
       /Custom\((\d+)\s*(day|days|month|months|year|years)\)/i
     );
+
     if (customMatch) {
       const value = parseInt(customMatch[1], 10);
       const unit = customMatch[2].toLowerCase();
@@ -175,7 +193,6 @@ export default function MemberProfilePage() {
       return expiryDate;
     }
 
-    // 2️⃣ Predefined Plan from DB
     const dbPlan = allPlans.find(
       (p) => p.name.toLowerCase() === planStr.toLowerCase()
     );
@@ -188,12 +205,11 @@ export default function MemberProfilePage() {
           expiryDate.setMonth(expiryDate.getMonth() + dbPlan.validity);
           break;
         default:
-          expiryDate.setMonth(expiryDate.getMonth() + 1); // fallback
+          expiryDate.setMonth(expiryDate.getMonth() + 1);
       }
       return expiryDate;
     }
 
-    // 3️⃣ Default fallback: 1 month
     expiryDate.setMonth(expiryDate.getMonth() + 1);
     return expiryDate;
   };
@@ -231,8 +247,6 @@ export default function MemberProfilePage() {
         const res = await fetch("/api/plans");
         if (!res.ok) throw new Error("Failed to fetch plans");
         const data = await res.json();
-
-        // ✅ store full objects
         setAllPlans(Array.isArray(data.plans) ? data.plans : []);
       } catch (err) {
         console.error(err);
@@ -262,7 +276,6 @@ export default function MemberProfilePage() {
   const handleRenew = async () => {
     let finalPlan = renewPlan;
 
-    // Handle Custom Plan
     if (renewPlan === "Custom") {
       if (!customValidity || !customUnit) {
         alert("Enter validity for custom plan");
@@ -285,6 +298,7 @@ export default function MemberProfilePage() {
           price: Number(renewAmount),
           date: renewDate ? new Date(renewDate) : new Date(),
           modeOfPayment: renewMode,
+          paymentStatus: renewPaymentStatus, // ✅ use selected value
         }),
       });
 
@@ -295,17 +309,31 @@ export default function MemberProfilePage() {
         );
         setMember({ ...updated.member, payments: sortedPayments });
         setShowRenewModal(false);
+
         setRenewPlan("");
         setRenewAmount("");
         setRenewMode("");
+        setRenewPaymentStatus("Unpaid");
         setCustomValidity("");
         setCustomUnit("days");
-      } else alert("Renewal failed");
+        setRenewDate("");
+      } else {
+        alert("Renewal failed");
+      }
     } catch (err) {
       console.error(err);
       alert("Renewal failed");
     }
   };
+
+  const latestPayment =
+    member.payments && member.payments.length > 0
+      ? [...member.payments].sort(
+          (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+        )[0]
+      : null;
+
+  const currentPaymentStatus = latestPayment?.paymentStatus || "Unpaid";
 
   return (
     <div className="min-h-screen w-full bg-gradient-to-b from-[#E9ECEF] via-[#F8F9FA] to-white p-10 space-y-10">
@@ -431,7 +459,17 @@ export default function MemberProfilePage() {
               <p className="flex items-center gap-3">
                 <CreditCard size={20} className="text-green-600" />
                 <strong>Current Plan:</strong> {currentPlan}
+                {currentPaymentStatus === "Paid" ? (
+                  <span className="ml-3 px-3 py-1 text-sm font-semibold rounded-full bg-green-100 text-green-700 border border-green-300">
+                    Paid
+                  </span>
+                ) : (
+                  <span className="ml-3 px-3 py-1 text-sm font-semibold rounded-full bg-red-100 text-red-700 border border-red-300">
+                    Unpaid
+                  </span>
+                )}
               </p>
+
               <p className="flex items-center gap-3 text-[#ff0707] font-semibold">
                 <ClockAlert size={20} className="text-red-600" />
                 Membership Ends On:
@@ -498,6 +536,59 @@ export default function MemberProfilePage() {
                         </td>
                         <td className="px-6 py-4 text-gray-600 text-center">
                           {new Date(p.date).toLocaleDateString("en-GB")}
+                        </td>
+                        <td className="px-6 py-4 text-center">
+                          {p.paymentStatus === "Paid" ? (
+                            <span className="px-3 py-1 text-sm font-semibold rounded-full bg-green-100 text-green-700 border border-green-300">
+                              Paid
+                            </span>
+                          ) : (
+                            <button
+                              onClick={async () => {
+                                try {
+                                  const res = await fetch(
+                                    `/api/members/${member._id}`,
+                                    {
+                                      method: "PUT",
+                                      headers: {
+                                        "Content-Type": "application/json",
+                                      },
+                                      body: JSON.stringify({
+                                        paymentId: p._id,
+                                        paymentStatus: "Paid",
+                                      }),
+                                    }
+                                  );
+
+                                  if (!res.ok)
+                                    throw new Error("Failed to update payment");
+
+                                  const updated = await res.json();
+
+                                  // Sort payments by date descending
+                                  const sortedPayments = [
+                                    ...(updated.member.payments || []),
+                                  ].sort(
+                                    (a, b) =>
+                                      new Date(b.date).getTime() -
+                                      new Date(a.date).getTime()
+                                  );
+
+                                  // Update member state immediately
+                                  setMember({
+                                    ...updated.member,
+                                    payments: sortedPayments,
+                                  });
+                                } catch (err) {
+                                  console.error(err);
+                                  alert("Failed to mark as Paid");
+                                }
+                              }}
+                              className="px-3 py-1 text-sm font-semibold rounded-full bg-blue-100 text-blue-700 border border-blue-300 hover:bg-blue-200"
+                            >
+                              Mark as Paid
+                            </button>
+                          )}
                         </td>
                       </tr>
                     ))}
@@ -616,7 +707,7 @@ export default function MemberProfilePage() {
         </div>
       )}
 
-      {/* Renew Plan Modal */}
+      {/* ✅ Renew Modal Payment Status */}
       {showRenewModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/40">
           <div className="bg-white p-10 rounded-3xl max-w-md w-full shadow-2xl border border-gray-200">
@@ -624,7 +715,6 @@ export default function MemberProfilePage() {
               <RefreshCcw size={28} className="text-[#FFC107]" />
               Renew Plan
             </h3>
-
             <div className="flex flex-col gap-6">
               {/* Select Plan */}
               <div className="flex flex-col">
@@ -644,7 +734,10 @@ export default function MemberProfilePage() {
                   {/* Dynamically show plans from DB */}
                   {allPlans.map((p) => (
                     <option key={p._id} value={p.name}>
-                      {p.name} {p.validity ? `- ${p.validity} months` : ""}
+                      {p.name}{" "}
+                      {p.validity
+                        ? `- ${p.validity} ${p.validityType || "months"}`
+                        : ""}
                     </option>
                   ))}
 
@@ -702,6 +795,24 @@ export default function MemberProfilePage() {
                   onChange={(e) => setRenewDate(e.target.value)}
                   className="w-full px-4 py-3 rounded-lg border border-gray-300 bg-gray-50 text-[#0A2463] focus:ring-2 focus:ring-[#FFC107] focus:outline-none"
                 />
+              </div>
+
+              {/* Payment Status Select */}
+              <div className="flex flex-col">
+                <label className="text-[#0A2463] text-lg font-semibold mb-2">
+                  Payment Status <span className="text-red-500">*</span>
+                </label>
+                <select
+                  required
+                  value={renewPaymentStatus}
+                  onChange={(e) =>
+                    setRenewPaymentStatus(e.target.value as "Paid" | "Unpaid")
+                  }
+                  className="w-full px-4 py-3 rounded-lg border border-gray-300 bg-gray-50 text-[#0A2463] focus:ring-2 focus:ring-[#FFC107] focus:outline-none"
+                >
+                  <option value="Paid">Paid</option>
+                  <option value="Unpaid">Unpaid</option>
+                </select>
               </div>
 
               {/* Mode of Payment */}

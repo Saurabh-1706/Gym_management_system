@@ -2,8 +2,17 @@ import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import Member from "@/models/Member";
 
+type Payment = {
+  _id?: string;
+  plan: string;
+  price: number;
+  date: string | Date;
+  modeOfPayment?: string;
+  paymentStatus: "Paid" | "Unpaid";
+};
+
 // ------------------
-// Helper: Calculate expiry date based on latest plan/payment
+// Helper: Calculate expiry date
 // ------------------
 function calculateExpiryDate(member: any): Date {
   let baseDate: Date;
@@ -22,7 +31,6 @@ function calculateExpiryDate(member: any): Date {
 
   if (!plan) return baseDate;
 
-  // Handle custom format like "Custom(30 days)" or "3 months"
   const match = plan.match(/(?:Custom\()?(\d+)\s*(day|days|month|months|year|years)\)?/i);
   if (match) {
     const value = parseInt(match[1], 10);
@@ -42,25 +50,20 @@ function calculateExpiryDate(member: any): Date {
         break;
     }
   } else {
-    // Fallback for default plan names
     switch (plan.toLowerCase()) {
       case "monthly":
       case "1 month":
-      case "1 months":
         baseDate.setMonth(baseDate.getMonth() + 1);
         break;
       case "quarterly":
       case "3 months":
-      case "3 month":
         baseDate.setMonth(baseDate.getMonth() + 3);
         break;
       case "half yearly":
-      case "6 month":
       case "6 months":
         baseDate.setMonth(baseDate.getMonth() + 6);
         break;
       case "yearly":
-      case "1 year":
       case "12 months":
         baseDate.setFullYear(baseDate.getFullYear() + 1);
         break;
@@ -73,12 +76,12 @@ function calculateExpiryDate(member: any): Date {
 }
 
 // ------------------
-// Determine status with 7-day grace period
+// Determine member status with 7-day grace period
 // ------------------
 function determineStatus(member: any): "Active" | "Inactive" {
   const expiry = calculateExpiryDate(member);
   const graceDate = new Date(expiry);
-  graceDate.setDate(graceDate.getDate() + 7); // 7-day grace
+  graceDate.setDate(graceDate.getDate() + 7);
   return graceDate >= new Date() ? "Active" : "Inactive";
 }
 
@@ -89,12 +92,9 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   try {
     await connectToDatabase();
     const member = await Member.findById(params.id);
-    if (!member) {
-      return NextResponse.json({ success: false, message: "Member not found" }, { status: 404 });
-    }
+    if (!member) return NextResponse.json({ success: false, message: "Member not found" }, { status: 404 });
 
     member.status = determineStatus(member);
-    await member.save();
 
     return NextResponse.json({ success: true, member });
   } catch (error) {
@@ -110,28 +110,35 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
   try {
     await connectToDatabase();
     const body = await req.json();
-
     const member = await Member.findById(params.id);
-    if (!member) {
-      return NextResponse.json({ success: false, message: "Member not found" }, { status: 404 });
-    }
+    if (!member) return NextResponse.json({ success: false, message: "Member not found" }, { status: 404 });
 
-    // Handle Renewal
+    // ---- Renewal: add new payment ----
     if (body.plan && body.price && body.date && body.modeOfPayment) {
-      member.payments.push({
+      const newPayment: Payment = {
         plan: body.plan,
         price: Number(body.price),
         date: new Date(body.date),
         modeOfPayment: body.modeOfPayment || "Cash",
-      });
+        paymentStatus: body.paymentStatus || "Paid",
+      };
+      member.payments.push(newPayment);
 
       member.plan = body.plan;
       member.date = new Date(body.date);
     }
 
-    // Handle General Edit (including profilePicture and dob)
+    // ---- Update specific paymentStatus ----
+    if (body.paymentId && body.paymentStatus) {
+      const payment = (member.payments as Payment[]).find((p: Payment) => p._id?.toString() === body.paymentId);
+      if (payment) {
+        payment.paymentStatus = body.paymentStatus;
+      }
+    }
+
+    // ---- Update general editable fields ----
     const editableFields = ["name", "mobile", "email", "profilePicture", "dob"];
-    editableFields.forEach((field) => {
+    editableFields.forEach(field => {
       if (body[field] !== undefined) {
         member[field] = field === "dob" ? new Date(body[field]) : body[field];
       }
@@ -154,9 +161,8 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
   try {
     await connectToDatabase();
     const deleted = await Member.findByIdAndDelete(params.id);
-    if (!deleted) {
-      return NextResponse.json({ success: false, message: "Member not found" }, { status: 404 });
-    }
+    if (!deleted) return NextResponse.json({ success: false, message: "Member not found" }, { status: 404 });
+
     return NextResponse.json({ success: true, message: "Member deleted successfully" });
   } catch (error) {
     console.error("❌ Delete member error:", error);

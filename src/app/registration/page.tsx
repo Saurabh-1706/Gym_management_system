@@ -1,61 +1,23 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 
 export default function RegistrationPage() {
   const [form, setForm] = useState({
     name: "",
     mobile: "",
     email: "",
-    plan: "",
     date: "",
-    dob: "", // ✅ new field
-    price: "",
-    validity: "",
-    customValidity: "",
-    customValidityUnit: "days",
-    modeOfPayment: "",
+    dob: "",
   });
 
   const [errors, setErrors] = useState<{ email?: string; mobile?: string }>({});
   const [status, setStatus] = useState("");
-  const [plans, setPlans] = useState<
-    { _id: string; name: string; validity: number; amount: number }[]
-  >([]);
-  const [useDefaultPrice, setUseDefaultPrice] = useState(true);
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const mobileRegex = /^[6-9]\d{9}$/;
 
-  // Fetch plans
-  useEffect(() => {
-    const fetchPlans = async () => {
-      try {
-        const res = await fetch("/api/plans");
-        const data = await res.json();
-        if (Array.isArray(data.plans)) {
-          setPlans(data.plans);
-        } else {
-          setPlans([]);
-        }
-      } catch {
-        setPlans([]);
-      }
-    };
-    fetchPlans();
-  }, []);
-
-  // Auto-set default price when plan changes
-  useEffect(() => {
-    if (form.plan && useDefaultPrice && form.plan !== "custom") {
-      const selectedPlan = plans.find((p) => p.name === form.plan);
-      if (selectedPlan) {
-        setForm((prev) => ({ ...prev, price: selectedPlan.amount.toString() }));
-      }
-    }
-  }, [form.plan, useDefaultPrice, plans]);
-
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    e: React.ChangeEvent<HTMLInputElement>
   ) => {
     const { name, value } = e.target;
     setForm({ ...form, [name]: value });
@@ -77,18 +39,6 @@ export default function RegistrationPage() {
     }
   };
 
-  const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setUseDefaultPrice(e.target.checked);
-    if (e.target.checked && form.plan !== "custom") {
-      const selectedPlan = plans.find((p) => p.name === form.plan);
-      if (selectedPlan) {
-        setForm((prev) => ({ ...prev, price: selectedPlan.amount.toString() }));
-      }
-    } else if (form.plan !== "custom") {
-      setForm((prev) => ({ ...prev, price: "" }));
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -106,28 +56,11 @@ export default function RegistrationPage() {
 
     setStatus("Submitting...");
 
-    let payload: any = {
-      name: form.name,
-      mobile: form.mobile,
-      email: form.email,
-      date: form.date,
-      dob: form.dob, // ✅ send DOB
-      plan: form.plan,
-      price: form.price,
-      modeOfPayment: form.modeOfPayment,
-    };
-
-    if (form.plan === "custom") {
-      payload.plan = "custom";
-      payload.customValidity = form.customValidity;
-      payload.customUnit = form.customValidityUnit;
-    }
-
     try {
       const res = await fetch("/api/registration", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(form),
       });
 
       const result = await res.json();
@@ -137,18 +70,10 @@ export default function RegistrationPage() {
           name: "",
           mobile: "",
           email: "",
-          plan: "",
           date: "",
           dob: "",
-          price: "",
-          validity: "",
-          customValidity: "",
-          customValidityUnit: "days",
-          modeOfPayment: "",
         });
-        setUseDefaultPrice(true);
       } else {
-        // Show duplicate or generic error
         setStatus(`❌ ${result.error || "Registration failed."}`);
       }
     } catch {
@@ -157,7 +82,7 @@ export default function RegistrationPage() {
   };
 
   return (
-    <div className="min-h-screen w-full bg-[#E9ECEF] p-10 m-0">
+    <div className="min-h-screen w-full bg-[#E9ECEF] p-10">
       <div className="mb-6 text-center">
         <h2 className="text-xl font-semibold text-[#212529] tracking-wider uppercase">
           Become a Member
@@ -175,7 +100,7 @@ export default function RegistrationPage() {
           className="grid grid-cols-1 md:grid-cols-2 gap-8"
           onSubmit={handleSubmit}
         >
-          {/* Name */}
+          {/* Full Name */}
           <div>
             <label className="block text-lg font-semibold mb-2 text-[#212529]">
               Full Name
@@ -185,13 +110,14 @@ export default function RegistrationPage() {
               type="text"
               value={form.name}
               onChange={handleChange}
-              placeholder="Enter your full name"
-              className="w-full px-5 py-3 text-lg rounded-xl border border-[#ADB5BD] focus:ring-2 focus:ring-[#0A2463] focus:outline-none"
+              placeholder="Enter full name"
+              className="w-full px-5 py-3 text-lg rounded-xl border border-[#ADB5BD] 
+                         focus:ring-2 focus:ring-[#0A2463] focus:outline-none"
               required
             />
           </div>
 
-          {/* Date of Birth ✅ */}
+          {/* Date of Birth */}
           <div>
             <label className="block text-lg font-semibold mb-2 text-[#212529]">
               Date of Birth
@@ -201,12 +127,13 @@ export default function RegistrationPage() {
               name="dob"
               value={form.dob}
               onChange={handleChange}
-              className="w-full px-5 py-3 text-lg rounded-xl border border-[#ADB5BD] focus:ring-2 focus:ring-[#0A2463] focus:outline-none text-[#212529]"
+              className="w-full px-5 py-3 text-lg rounded-xl border border-[#ADB5BD] 
+                         focus:ring-2 focus:ring-[#0A2463] focus:outline-none text-[#212529]"
               required
             />
           </div>
 
-          {/* Date of Join */}
+          {/* Join Date */}
           <div>
             <label className="block text-lg font-semibold mb-2 text-[#212529]">
               Date of Join
@@ -216,7 +143,8 @@ export default function RegistrationPage() {
               name="date"
               value={form.date}
               onChange={handleChange}
-              className="w-full px-5 py-3 text-lg rounded-xl border border-[#ADB5BD] focus:ring-2 focus:ring-[#0A2463] focus:outline-none text-[#212529]"
+              className="w-full px-5 py-3 text-lg rounded-xl border border-[#ADB5BD] 
+                         focus:ring-2 focus:ring-[#0A2463] focus:outline-none text-[#212529]"
               required
             />
           </div>
@@ -232,12 +160,16 @@ export default function RegistrationPage() {
               value={form.email}
               onChange={handleChange}
               placeholder="example@email.com"
-              className="w-full px-5 py-3 text-lg rounded-xl border border-[#ADB5BD] focus:ring-2 focus:ring-[#0A2463] focus:outline-none text-[#212529]"
+              className="w-full px-5 py-3 text-lg rounded-xl border border-[#ADB5BD] 
+                         focus:ring-2 focus:ring-[#0A2463] focus:outline-none text-[#212529]"
             />
+            {errors.email && (
+              <p className="text-red-500 text-sm mt-1">{errors.email}</p>
+            )}
           </div>
 
           {/* Mobile */}
-          <div>
+          <div className="md:col-span-2">
             <label className="block text-lg font-semibold mb-2 text-[#212529]">
               Contact No.
             </label>
@@ -246,8 +178,9 @@ export default function RegistrationPage() {
               name="mobile"
               value={form.mobile}
               onChange={handleChange}
-              placeholder="Enter your phone number"
-              className="w-full px-5 py-3 text-lg rounded-xl border border-[#ADB5BD] focus:ring-2 focus:ring-[#0A2463] focus:outline-none text-[#212529]"
+              placeholder="Enter phone number"
+              className="w-98 px-5 py-3 text-lg rounded-xl border border-[#ADB5BD] 
+                         focus:ring-2 focus:ring-[#0A2463] focus:outline-none text-[#212529]"
               required
             />
             {errors.mobile && (
@@ -255,160 +188,14 @@ export default function RegistrationPage() {
             )}
           </div>
 
-          {/* Plan + Mode of Payment */}
-          <div className="md:col-span-2 flex gap-8">
-            {/* Choose Plan */}
-            <div className="flex-1">
-              <label className="block text-lg font-semibold mb-2 text-[#212529]">
-                Select Plan
-              </label>
-              <select
-                name="plan"
-                value={form.plan}
-                onChange={handleChange}
-                className={`w-full px-5 py-3 text-lg bg-white border border-[#ADB5BD] rounded-xl focus:ring-2 focus:ring-[#0A2463] focus:outline-none transition hover:shadow-md ${
-                  form.plan === "" ? "text-gray-400" : "text-[#212529]"
-                }`}
-              >
-                <option value="" disabled hidden>
-                  Choose a membership plan
-                </option>
-                {plans
-                  .sort((a, b) => a.validity - b.validity)
-                  .map((p) => (
-                    <option
-                      key={p._id}
-                      value={p.name}
-                      className="text-[#212529]"
-                    >
-                      {p.name}
-                    </option>
-                  ))}
-                <option value="custom" className="text-[#212529]">
-                  Custom Plan
-                </option>
-              </select>
-            </div>
-
-            {/* Mode of Payment */}
-            <div className="flex-1">
-              <label className="block text-lg font-semibold mb-2 text-[#212529]">
-                Mode of Payment
-              </label>
-              <select
-                name="modeOfPayment"
-                value={form.modeOfPayment || ""}
-                onChange={handleChange}
-                className={`w-full px-3 py-3 text-lg bg-white border border-[#ADB5BD] rounded-xl focus:ring-2 focus:ring-[#0A2463] focus:outline-none transition hover:shadow-md ${
-                  form.modeOfPayment ? "text-gray-800" : "text-gray-400"
-                }`}
-              >
-                <option value="" disabled hidden>
-                  Choose Mode of Payment
-                </option>
-                <option value="Cash" className="text-gray-800">
-                  Cash
-                </option>
-                <option value="UPI" className="text-gray-800">
-                  UPI
-                </option>
-              </select>
-            </div>
-          </div>
-
-          {/* Custom Plan Fields */}
-          {form.plan === "custom" && (
-            <>
-              {/* Custom Validity */}
-              <div>
-                <label className="block text-lg font-semibold mb-2 text-[#212529]">
-                  Validity
-                </label>
-                <div className="flex gap-3">
-                  <input
-                    type="number"
-                    name="customValidity"
-                    value={form.customValidity || ""}
-                    onChange={handleChange}
-                    placeholder="Enter Validity"
-                    className="w-2/3 px-5 py-3 text-lg rounded-xl bg-white border border-[#ADB5BD] focus:ring-2 focus:ring-[#0A2463] focus:outline-none transition hover:shadow-md text-[#212529]"
-                  />
-                  <select
-                    name="customValidityUnit"
-                    value={form.customValidityUnit || "days"}
-                    onChange={handleChange}
-                    className="w-1/3 px-3 py-3 text-lg rounded-xl bg-white border border-[#ADB5BD] focus:ring-2 focus:ring-[#0A2463] focus:outline-none transition hover:shadow-md text-[#212529]"
-                  >
-                    <option value="days">Days</option>
-                    <option value="months">Months</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Custom Price */}
-              <div>
-                <label className="block text-lg font-semibold mb-2 text-[#212529]">
-                  Price
-                </label>
-                <input
-                  type="number"
-                  name="price"
-                  value={form.price}
-                  onChange={handleChange}
-                  placeholder="Enter price"
-                  className="w-full px-5 py-3 text-lg rounded-xl bg-white border border-[#ADB5BD] focus:ring-2 focus:ring-[#0A2463] focus:outline-none transition hover:shadow-md text-[#212529]"
-                  required
-                />
-              </div>
-            </>
-          )}
-
-          {/* Default price checkbox and optional custom price for non-custom plans */}
-          {form.plan !== "custom" && (
-            <>
-              <div className="md:col-span-2 flex items-center gap-3">
-                <input
-                  type="checkbox"
-                  checked={useDefaultPrice}
-                  onChange={handleCheckboxChange}
-                  id="defaultPrice"
-                  className="w-5 h-5 accent-green-600"
-                />
-                <label
-                  htmlFor="defaultPrice"
-                  className="text-[#212925] text-lg font-medium"
-                >
-                  Continue with fixed price (₹{form.price})
-                </label>
-              </div>
-
-              {/* Show new price input if unchecked */}
-              {!useDefaultPrice && (
-                <div className="md:col-span-2">
-                  <label className="block text-lg font-semibold mb-2 text-[#212529]">
-                    Enter New Price
-                  </label>
-                  <input
-                    type="number"
-                    name="price"
-                    value={form.price}
-                    onChange={handleChange}
-                    placeholder="Enter Price"
-                    className="w-full px-5 py-3 text-lg rounded-xl bg-white border border-[#ADB5BD] focus:ring-2 focus:ring-[#0A2463] focus:outline-none transition hover:shadow-md text-[#212529]"
-                    required
-                  />
-                </div>
-              )}
-            </>
-          )}
-
           {/* Buttons */}
           <div className="md:col-span-2 flex justify-end mt-8 gap-6">
             <button
               type="submit"
-              className="bg-[#0A2463] text-white text-lg px-10 py-3 rounded-xl font-bold shadow-md hover:shadow-lg hover:scale-105 transform transition"
+              className="bg-[#0A2463] text-white text-lg px-10 py-3 rounded-xl font-bold 
+                         shadow-md hover:shadow-lg hover:scale-105 transform transition"
             >
-              🚀 Avail Membership
+              🚀 Register
             </button>
             <button
               type="button"
@@ -416,18 +203,13 @@ export default function RegistrationPage() {
                 setForm({
                   name: "",
                   mobile: "",
-                  plan: "",
                   email: "",
                   date: "",
                   dob: "",
-                  price: "",
-                  validity: "",
-                  customValidity: "",
-                  customValidityUnit: "days",
-                  modeOfPayment: "",
                 })
               }
-              className="bg-[#ADB5BD] text-[#212529] text-lg px-10 py-3 rounded-xl font-semibold hover:bg-gray-400 transition"
+              className="bg-[#ADB5BD] text-[#212529] text-lg px-10 py-3 rounded-xl 
+                         font-semibold hover:bg-gray-400 transition"
             >
               ❌ Cancel
             </button>

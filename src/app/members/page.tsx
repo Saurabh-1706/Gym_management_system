@@ -18,6 +18,7 @@ type Payment = {
   price: number;
   date: string;
   modeOfPayment: string;
+  paymentStatus: string;
 };
 
 type Member = {
@@ -25,8 +26,8 @@ type Member = {
   name: string;
   mobile: string;
   email?: string;
-  plan: string;
-  date: string; // initial join date
+  plan?: string; // ✅ optional now
+  date?: string;
   payments?: Payment[];
 };
 
@@ -34,7 +35,7 @@ type Plan = {
   _id: string;
   name: string;
   validity: number;
-  validityType?: "months" | "days"; // assumed to be in months
+  validityType?: "months" | "days";
 };
 
 export default function MembersPage() {
@@ -49,32 +50,40 @@ export default function MembersPage() {
 
   const router = useRouter();
 
+  // ✅ Fetch Members
   useEffect(() => {
     const fetchMembers = async () => {
-      const res = await fetch("/api/members");
-      const data = await res.json();
-      setMembers(Array.isArray(data.members) ? data.members : []);
+      try {
+        const res = await fetch("/api/members");
+        const data = await res.json();
+        const membersArray = Array.isArray(data)
+          ? data
+          : Array.isArray(data.members)
+          ? data.members
+          : data.data || [];
+        setMembers(membersArray);
+      } catch (err) {
+        console.error("Error fetching members:", err);
+        setMembers([]);
+      }
     };
     fetchMembers();
   }, []);
 
+  // ✅ Fetch Plans
   useEffect(() => {
     const fetchPlans = async () => {
       const res = await fetch("/api/plans");
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data.plans)) {
-          // --- inside useEffect for fetching plans ---
           const mapped: Plan[] = data.plans.map((p: any) => ({
             _id: p._id,
             name: p.name || p.plan,
             validity: Number(p.validity) || 0,
-            validityType: p.validityType || "months", // ✅ add validityType here
+            validityType: p.validityType || "months",
           }));
-
-          // sort the mapped array, not the state variable directly
           mapped.sort((a, b) => a.validity - b.validity);
-
           setPlans(mapped);
         }
       }
@@ -85,23 +94,31 @@ export default function MembersPage() {
   // ✅ Get latest join/renewal date
   const getJoinDate = (member: Member) => {
     if (member.payments && member.payments.length > 0) {
-      return new Date(member.payments[member.payments.length - 1].date);
+      const sortedPayments = [...member.payments].sort(
+        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+      );
+      return new Date(sortedPayments[0].date);
     }
-    return new Date(member.date);
+    return member.date ? new Date(member.date) : new Date();
   };
 
-  // --- updated calculateExpiryDate function ---
+  // ✅ Handle missing plan safely
   const calculateExpiryDate = (member: Member) => {
     const joinDate = getJoinDate(member);
-    const date = new Date(joinDate.getTime()); // copy to avoid mutation
+    const date = new Date(joinDate.getTime());
+    const planName = member.plan || "";
 
-    // 1️⃣ Lookup predefined plan from plans list
+    if (!planName) {
+      // No plan yet, just return join date
+      return date;
+    }
+
     const planFromList = plans.find(
-      (p) => p.name?.toLowerCase() === member.plan?.toLowerCase()
+      (p) => p.name?.toLowerCase() === planName.toLowerCase()
     );
 
     if (planFromList && typeof planFromList.validity === "number") {
-      const type = planFromList.validityType || "months"; // ✅ use validityType from DB
+      const type = planFromList.validityType || "months";
       if (type === "days") {
         date.setDate(date.getDate() + planFromList.validity);
       } else {
@@ -110,14 +127,10 @@ export default function MembersPage() {
       return date;
     }
 
-    // 2️⃣ Parse numeric units from member.plan text (custom plans like "45 days")
-    const match = member.plan.match(
-      /(\d+)\s*(day|days|month|months|year|years)/i
-    );
+    const match = planName.match(/(\d+)\s*(day|days|month|months|year|years)/i);
     if (match) {
       const value = parseInt(match[1], 10);
       const unit = match[2].toLowerCase();
-
       switch (unit) {
         case "day":
         case "days":
@@ -135,14 +148,7 @@ export default function MembersPage() {
       return date;
     }
 
-    // 3️⃣ Handle custom plans without numeric units (fallback to 1 month)
-    if (member.plan.toLowerCase().startsWith("custom")) {
-      date.setMonth(date.getMonth() + 1);
-      return date;
-    }
-
-    // 4️⃣ Backward compatibility for common plan strings
-    switch (member.plan.toLowerCase()) {
+    switch (planName.toLowerCase()) {
       case "monthly":
       case "1 month":
       case "1 months":
@@ -150,45 +156,41 @@ export default function MembersPage() {
         break;
       case "quarterly":
       case "3 months":
-      case "3 month":
         date.setMonth(date.getMonth() + 3);
         break;
       case "half yearly":
-      case "6 month":
       case "6 months":
         date.setMonth(date.getMonth() + 6);
         break;
       case "yearly":
-      case "1 year":
       case "12 months":
         date.setFullYear(date.getFullYear() + 1);
         break;
       default:
-        date.setMonth(date.getMonth() + 1); // fallback default
+        date.setMonth(date.getMonth() + 1);
     }
 
     return date;
   };
 
-  //Status
-  // ✅ Updated status calculation
+  // ✅ Determine status
   const getStatus = (member: Member) => {
-    const expiryDate = calculateExpiryDate(member);
-    const today = new Date();
-
-    // Add 7 days buffer after expiry
-    const bufferDate = new Date(expiryDate);
-    bufferDate.setDate(bufferDate.getDate() + 7);
-
-    return today <= bufferDate ? "Active" : "Inactive";
+    if (!member.plan) return "Inactive";
+    const expiry = calculateExpiryDate(member);
+    const grace = new Date(expiry);
+    grace.setDate(grace.getDate() + 7);
+    return grace >= new Date() ? "Active" : "Inactive";
   };
 
-  // Plan display
-  const getPlanDisplay = (member: Member) => {
-    if (member.plan.toLowerCase().startsWith("custom")) {
-      return member.plan;
+  // ✅ Plan display
+  const getPlanDisplay = (member: Member) => member.plan || "No Plan";
+
+  const getPaymentStatus = (member: Member) => {
+    if (member.payments && member.payments.length > 0) {
+      const lastPayment = member.payments[member.payments.length - 1];
+      return lastPayment.paymentStatus || "Unpaid";
     }
-    return member.plan;
+    return "Unpaid";
   };
 
   const handleDelete = async () => {
@@ -203,31 +205,27 @@ export default function MembersPage() {
     } else alert("Delete failed");
   };
 
-  // Filtered and sorted members
+  // ✅ Filter and sort
   const filteredMembers = members
     .filter((m) => {
       const matchesSearch =
-        m.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        m.mobile.includes(searchQuery);
-
+        m.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        m.mobile?.includes(searchQuery);
       const matchesPlan =
         selectedPlan === "All" ||
         (selectedPlan === "Custom"
-          ? m.plan.toLowerCase().startsWith("custom")
+          ? m.plan?.toLowerCase().startsWith("custom")
           : m.plan === selectedPlan);
-
       return matchesSearch && matchesPlan;
     })
     .sort((a, b) => {
-      if (sortBy === "name") {
-        return a.name.localeCompare(b.name);
-      } else if (sortBy === "expiry") {
-        const expiryA = calculateExpiryDate(a);
-        const expiryB = calculateExpiryDate(b);
-        return expiryA.getTime() - expiryB.getTime();
-      } else if (sortBy === "newest") {
+      if (sortBy === "name") return a.name.localeCompare(b.name);
+      else if (sortBy === "expiry")
+        return (
+          calculateExpiryDate(a).getTime() - calculateExpiryDate(b).getTime()
+        );
+      else if (sortBy === "newest")
         return getJoinDate(b).getTime() - getJoinDate(a).getTime();
-      }
       return 0;
     });
 
@@ -350,11 +348,26 @@ export default function MembersPage() {
                 </span>
 
                 {/* Status dot */}
-                <span
-                  className={`absolute top-3 right-3 w-5 h-5 rounded-full ${
-                    status === "Active" ? "bg-green-500" : "bg-red-600"
-                  }`}
-                ></span>
+                {/* Status dot + Payment badge */}
+                <div className="absolute top-3 right-3 flex items-center gap-2">
+                  {/* Status dot */}
+                  <span
+                    className={`w-4 h-4 rounded-full ${
+                      status === "Active" ? "bg-green-500" : "bg-red-600"
+                    }`}
+                  ></span>
+
+                  {/* Payment badge */}
+                  <span
+                    className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                      getPaymentStatus(member) === "Paid"
+                        ? "bg-green-100 text-green-800"
+                        : "bg-red-100 text-red-800"
+                    }`}
+                  >
+                    {getPaymentStatus(member)}
+                  </span>
+                </div>
 
                 <h2 className="text-2xl font-bold text-[#0A2463] flex items-center gap-2 px-4 mb-3">
                   <User size={24} className="text-[#FFC107]" />
@@ -372,6 +385,7 @@ export default function MembersPage() {
                       {getPlanDisplay(member)}
                     </span>
                   </p>
+
                   <p className="flex items-center gap-2 text-lg">
                     <Phone size={18} className="text-purple-500" />
                     {member.mobile}
@@ -404,16 +418,17 @@ export default function MembersPage() {
                 <th className="p-3">Sr.No.</th>
                 <th className="p-3">Name</th>
                 <th className="p-3">Mobile</th>
-                <th className="p-3">Email</th>
                 <th className="p-3">Plan</th>
                 <th className="p-3">Joined</th>
                 <th className="p-3">Expiry</th>
+                <th className="p-3">Payment Status</th>
                 <th className="p-3">Status</th>
               </tr>
             </thead>
             <tbody>
               {filteredMembers.map((member, index) => {
                 const status = getStatus(member);
+                const paymentStatus = getPaymentStatus(member);
                 return (
                   <tr
                     key={member._id}
@@ -423,7 +438,6 @@ export default function MembersPage() {
                     <td className="p-3">{index + 1}</td>
                     <td className="p-3">{member.name}</td>
                     <td className="p-3">{member.mobile}</td>
-                    <td className="p-3">{member.email || "—"}</td>
                     <td className="p-3">{getPlanDisplay(member)}</td>
                     <td className="p-3">
                       {getJoinDate(member).toLocaleDateString("en-GB")}
@@ -431,6 +445,20 @@ export default function MembersPage() {
                     <td className="p-3">
                       {calculateExpiryDate(member).toLocaleDateString("en-GB")}
                     </td>
+                    <td className="p-3">
+                      <div className="flex items-center ml-10">
+                        <span
+                          className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                            paymentStatus === "Paid"
+                              ? "bg-green-100 text-green-800"
+                              : "bg-red-100 text-red-800"
+                          }`}
+                        >
+                          {paymentStatus}
+                        </span>
+                      </div>
+                    </td>
+
                     <td className="p-3 flex items-center gap-2">
                       <span
                         className={`w-3 h-3 rounded-full ${
