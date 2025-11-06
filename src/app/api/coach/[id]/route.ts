@@ -5,17 +5,20 @@ import mongoose from "mongoose";
 
 export async function GET(
   req: Request,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
   try {
     await connectToDatabase();
 
-    if (!mongoose.Types.ObjectId.isValid(params.id)) {
+    const { id } = context.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
       return NextResponse.json({ success: false, error: "Invalid coach ID" });
     }
 
-    const coach = await CoachModel.findById(params.id).lean();
-    if (!coach) return NextResponse.json({ success: false, error: "Coach not found" });
+    const coach = await CoachModel.findById(id).lean();
+    if (!coach)
+      return NextResponse.json({ success: false, error: "Coach not found" });
 
     return NextResponse.json({ success: true, coach });
   } catch (err) {
@@ -23,9 +26,14 @@ export async function GET(
   }
 }
 
-export async function PUT(req: Request, { params }: { params: { id: string } }) {
+export async function PUT(
+  req: Request,
+  context: { params: { id: string } }
+) {
   try {
     await connectToDatabase();
+
+    const { id } = context.params;
     const { name, mobile, email, status } = await req.json();
 
     // Build update object only with fields that are provided
@@ -36,7 +44,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
     if (status !== undefined) updateData.status = status;
 
     const updatedCoach = await CoachModel.findByIdAndUpdate(
-      params.id,
+      id,
       updateData,
       { new: true } // Return the updated document
     );
