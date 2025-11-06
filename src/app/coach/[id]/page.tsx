@@ -165,15 +165,17 @@ export default function CoachProfile() {
       return;
     }
     try {
-      const res = await fetch(`/api/coach/${coach._id}/salary`, {
+      const res = await fetch(`/api/coach/payout`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          amountPaid: payAmount,
-          paidOn: payDate,
+          coachId: coach._id,
+          amount: payAmount,
+          date: payDate,
           modeOfPayment: payMode,
         }),
       });
+
       if (res.ok) {
         const updated = await res.json();
         setCoach(updated.coach);

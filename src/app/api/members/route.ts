@@ -31,26 +31,30 @@ export async function GET(req: Request) {
   }
 }
 
-// --------------------
-// POST new member (registration only – no plan/payment)
-// --------------------
+
 export async function POST(req: Request) {
   try {
     await connectToDatabase();
     const body = await req.json();
-    const { name, mobile, email, dob, profilePicture } = body;
+    const { name, mobile, email, dob, date, profilePicture } = body;
 
-    if (!name || !mobile || !dob) {
+    if (!name || !mobile || !dob || !date) {
       return NextResponse.json(
-        { success: false, message: "Name, mobile, and date of birth are required." },
+        {
+          success: false,
+          message: "Name, mobile, date of birth, and join date are required.",
+        },
         { status: 400 }
       );
     }
 
-    // ✅ Duplicate check using mobile + dob (date only)
+    // ✅ Directly use UTC dates from frontend (no timezone reset)
     const dobDate = new Date(dob);
+    const joinDate = new Date(date);
+
+    // ✅ Duplicate check using mobile + dob (date only)
     const nextDay = new Date(dobDate);
-    nextDay.setDate(nextDay.getDate() + 1);
+    nextDay.setUTCDate(nextDay.getUTCDate() + 1);
 
     const existingMember = await Member.findOne({
       mobile,
@@ -59,22 +63,26 @@ export async function POST(req: Request) {
 
     if (existingMember) {
       return NextResponse.json(
-        { success: false, message: "Member with same mobile number and date of birth already exists." },
+        {
+          success: false,
+          message:
+            "Member with same mobile number and date of birth already exists.",
+        },
         { status: 400 }
       );
     }
 
-    // ✅ Create a new member (Inactive by default, with defaults)
+    // ✅ Create new member using provided joinDate (exact date)
     const newMember = await Member.create({
       name,
       mobile,
       email,
-      dob: new Date(dob),
+      dob: dobDate,
+      joinDate,
       profilePicture: profilePicture || "",
-      plan: "No Plan", // 🟢 default value (prevents undefined errors)
-      joinDate: new Date(), // 🟢 store current join date
-      status: "Inactive", // 🟢 not active until plan/payment added
-      payments: [], // 🟢 empty until plan/payment is added
+      plan: "No Plan",
+      status: "Inactive",
+      payments: [],
     });
 
     return NextResponse.json({ success: true, member: newMember });
@@ -86,3 +94,4 @@ export async function POST(req: Request) {
     );
   }
 }
+

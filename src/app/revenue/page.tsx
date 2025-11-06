@@ -1,26 +1,50 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { BarChart2, CreditCard, Calendar, Users, FileText } from "lucide-react";
+import {
+  BarChart2,
+  CreditCard,
+  Calendar,
+  Users,
+  FileText,
+  BarChart as BarIcon,
+  PieChart as PieIcon,
+} from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  Legend,
+} from "recharts";
+
+type Installment = {
+  amountPaid: number;
+  paymentDate: string;
+  modeOfPayment: string;
+};
 
 type Payment = {
-  _id: string;
   plan: string;
-  price: number;
-  date: string;
-  modeOfPayment?: string;
+  actualAmount: number;
+  installments: Installment[];
 };
 
 type Member = {
   _id: string;
   name: string;
-  payments?: Payment[];
+  payments: Payment[];
 };
 
 type Salary = {
-  _id: string;
   amountPaid: number;
   paidOn: string;
 };
@@ -28,7 +52,7 @@ type Salary = {
 type Coach = {
   _id: string;
   name: string;
-  salaryHistory?: Salary[];
+  salaryHistory: Salary[];
 };
 
 type MiscCost = {
@@ -46,15 +70,6 @@ type ElectricityBill = {
   date: string;
 };
 
-const isCurrentMonth = (dateString: string | Date) => {
-  const date = new Date(dateString);
-  const now = new Date();
-  return (
-    date.getMonth() === now.getMonth() &&
-    date.getFullYear() === now.getFullYear()
-  );
-};
-
 const monthNames = [
   "January",
   "February",
@@ -70,6 +85,8 @@ const monthNames = [
   "December",
 ];
 
+const COLORS = ["#22C55E", "#EF4444", "#3B82F6", "#FACC15"];
+
 export default function RevenuePage() {
   const [members, setMembers] = useState<Member[]>([]);
   const [coaches, setCoaches] = useState<Coach[]>([]);
@@ -77,6 +94,15 @@ export default function RevenuePage() {
   const [electricityBills, setElectricityBills] = useState<ElectricityBill[]>(
     []
   );
+  const [chartType, setChartType] = useState<"bar" | "pie">("bar");
+
+  const now = new Date();
+  const [selectedMonth, setSelectedMonth] = useState(now.getMonth());
+  const [selectedYear, setSelectedYear] = useState(now.getFullYear());
+
+  // ✅ New states for custom date range
+  const [customStart, setCustomStart] = useState("");
+  const [customEnd, setCustomEnd] = useState("");
 
   useEffect(() => {
     const fetchData = async () => {
@@ -87,6 +113,7 @@ export default function RevenuePage() {
           fetch("/api/miscellaneous"),
           fetch("/api/electricity-bill"),
         ]);
+
         const memberData = await memberRes.json();
         const coachData = await coachRes.json();
         const miscData = await miscRes.json();
@@ -97,434 +124,438 @@ export default function RevenuePage() {
         setMiscCosts(miscData.costs || []);
         setElectricityBills(elecData.bills || []);
       } catch (err) {
-        console.error("Error fetching revenue data:", err);
+        console.error("❌ Error fetching data:", err);
       }
     };
+
     fetchData();
   }, []);
 
-  const filteredMembers = members
-    .map((m) => ({
-      ...m,
-      payments: m.payments?.filter((p) => isCurrentMonth(p.date)),
-    }))
-    .filter((m) => m.payments && m.payments.length > 0);
+  const matchesSelectedMonth = (date: string | Date) => {
+    const d = new Date(date);
+    return d.getMonth() === selectedMonth && d.getFullYear() === selectedYear;
+  };
 
-  const filteredCoaches = coaches
-    .map((c) => ({
-      ...c,
-      salaryHistory: c.salaryHistory?.filter((s) => isCurrentMonth(s.paidOn)),
-    }))
-    .filter((c) => c.salaryHistory && c.salaryHistory.length > 0);
+  // Transformations
+  const memberPayments = members.flatMap((m) =>
+    (m.payments || []).flatMap((p) =>
+      (p.installments || [])
+        .filter((i) => matchesSelectedMonth(i.paymentDate))
+        .map((i) => ({
+          memberName: m.name,
+          plan: p.plan,
+          amount: i.amountPaid,
+          date: new Date(i.paymentDate).toLocaleDateString("en-GB"),
+          mode: i.modeOfPayment || "Cash",
+        }))
+    )
+  );
 
-  const filteredMisc = miscCosts.filter((m) => isCurrentMonth(m.date));
+  const coachPayments = coaches.flatMap((c) =>
+    (c.salaryHistory || [])
+      .filter((s) => matchesSelectedMonth(s.paidOn))
+      .map((s) => ({
+        coachName: c.name,
+        amount: s.amountPaid,
+        date: new Date(s.paidOn).toLocaleDateString("en-GB"),
+      }))
+  );
+
+  const filteredMisc = miscCosts.filter((m) => matchesSelectedMonth(m.date));
   const filteredElectricity = electricityBills.filter(
     (e) =>
-      monthNames.indexOf(e.month) === new Date().getMonth() &&
-      e.year === new Date().getFullYear()
+      monthNames.indexOf(e.month) === selectedMonth && e.year === selectedYear
   );
 
-  const totalMemberRevenue = filteredMembers.reduce(
-    (acc, m) => acc + m.payments!.reduce((sum, p) => sum + (p.price || 0), 0),
+  const totalMemberRevenue = memberPayments.reduce(
+    (sum, p) => sum + p.amount,
     0
   );
-
-  const totalCoachSalary = filteredCoaches.reduce(
-    (acc, c) =>
-      acc + c.salaryHistory!.reduce((sum, s) => sum + (s.amountPaid || 0), 0),
-    0
-  );
-
-  const totalMisc = filteredMisc.reduce((acc, m) => acc + m.amount, 0);
+  const totalCoachSalary = coachPayments.reduce((sum, s) => sum + s.amount, 0);
+  const totalMisc = filteredMisc.reduce((sum, m) => sum + m.amount, 0);
   const totalElectricity = filteredElectricity.reduce(
-    (acc, e) => acc + e.amount,
+    (sum, e) => sum + e.amount,
     0
   );
 
   const totalRevenue =
     totalMemberRevenue - totalCoachSalary - totalMisc - totalElectricity;
 
-  const exportPDF = () => {
+  const chartData = [
+    { name: "Membership", amount: totalMemberRevenue },
+    { name: "Coach Salaries", amount: totalCoachSalary },
+    { name: "Miscellaneous", amount: totalMisc },
+    { name: "Electricity", amount: totalElectricity },
+  ];
+
+  // ✅ Export PDF (supports custom date range)
+  const exportPDF = async (useCustom = false) => {
     const doc = new jsPDF("p", "pt", "a4");
+    const fmt = (a: number) => `Rs. ${a.toLocaleString("en-IN")}`;
+    const logoPath = "/Layer 0 Frame.png";
 
-    const formatAmount = (amount: number) =>
-      "Rs." + amount.toLocaleString("en-IN");
+    const logoData = await fetch(logoPath)
+      .then((res) => res.blob())
+      .then(
+        (blob) =>
+          new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.readAsDataURL(blob);
+          })
+      );
 
-    // --- Revenue Summary ---
-    doc.setFontSize(20);
-    doc.setFont("helvetica", "normal");
-    doc.text("Revenue Summary", 40, 40);
+    const monthName = monthNames[selectedMonth];
+    const generatedDate = new Date().toLocaleDateString("en-GB");
 
-    const cardStartY = 80;
-    const cardGap = 20;
-    const cardX = 40;
-
-    doc.setFontSize(14);
-    doc.text(
-      `• Electricity Bills:- ${formatAmount(totalElectricity)}`,
-      cardX,
-      cardStartY
-    );
-    doc.text(
-      `• Coach Salaries:- ${formatAmount(totalCoachSalary)}`,
-      cardX,
-      cardStartY + cardGap
-    );
-    doc.text(
-      `• Membership Revenue:- ${formatAmount(totalMemberRevenue)}`,
-      cardX,
-      cardStartY + cardGap * 2
-    );
-    doc.text(
-      `• Miscellaneous:- ${formatAmount(totalMisc)}`,
-      cardX,
-      cardStartY + cardGap * 3
-    );
-
+    doc.addImage(logoData, "PNG", 40, 25, 60, 60);
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(16);
-    doc.text(
-      `Total Revenue: ${formatAmount(totalRevenue)}`,
-      cardX,
-      cardStartY + cardGap * 5
-    );
+    doc.setFontSize(22);
+    doc.text("REVENUE REPORT", 120, 50);
 
-    let srNo = 1;
-    let startY = cardStartY + cardGap * 8.5; // Start tables below Revenue Summary
-
-    // --- ELECTRICITY BILLS ---
-    if (filteredElectricity.length > 0) {
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(14);
+    doc.setFontSize(12);
+    if (useCustom && customStart && customEnd) {
       doc.text(
-        `Electricity Bills - ${monthNames[new Date().getMonth()]}`,
-        40,
-        startY
+        `Custom Range: ${new Date(customStart).toLocaleDateString(
+          "en-GB"
+        )} - ${new Date(customEnd).toLocaleDateString("en-GB")}`,
+        120,
+        70
       );
-      startY += 20; // space after title
+    } else {
+      doc.text(`Month: ${monthName} ${selectedYear}`, 120, 70);
+    }
+    doc.text(`Generated on: ${generatedDate}`, 120, 85);
 
-      const rows = filteredElectricity.map((e, idx) => [
-        idx + 1,
-        e.month,
-        e.year,
-        formatAmount(e.amount),
+    // ---- TABLE ----
+    autoTable(doc, {
+      startY: 110,
+      head: [["Category", "Amount (Rs.)"]],
+      body: [
+        ["Membership Revenue", fmt(totalMemberRevenue)],
+        ["Coach Salaries", fmt(totalCoachSalary)],
+        ["Miscellaneous Expenses", fmt(totalMisc)],
+        ["Electricity Bills", fmt(totalElectricity)],
+        ["Total Revenue", fmt(totalRevenue)],
+      ],
+      // 🟨 Header Styling
+      headStyles: {
+        fillColor: [255, 204, 0], // bright yellow (gym theme)
+        textColor: [0, 0, 0],
+        fontStyle: "bold",
+        halign: "center",
+        fontSize: 12,
+        lineWidth: 0.2,
+        lineColor: [0, 0, 0],
+      },
+      // 🧾 Row Styling
+      styles: {
+        fontSize: 10,
+        halign: "center",
+        textColor: [0, 0, 0],
+        cellPadding: 8,
+        lineColor: [200, 200, 200],
+        lineWidth: 0.1,
+      },
+      // 🦓 Alternate Row Colors (Zebra stripes)
+      alternateRowStyles: {
+        fillColor: [245, 245, 245],
+      },
+      // 🏁 Highlight the Total Revenue row
+      didParseCell: (data) => {
+        if (
+          data.row.index === 4 && // last row
+          data.section === "body"
+        ) {
+          data.cell.styles.fontStyle = "bold";
+          data.cell.styles.fillColor = [255, 230, 153]; // light yellow highlight
+        }
+      },
+      margin: { left: 40, right: 40 },
+    });
+
+    let y = (doc as any).lastAutoTable.finalY + 40;
+
+    // ---- MEMBER PAYMENTS ----
+    if (memberPayments.length > 0) {
+      doc.setFont("helvetica", "bold");
+      doc.text("MEMBER PAYMENTS", 40, y);
+      y += 10;
+      const rows = memberPayments.map((p, i) => [
+        i + 1,
+        p.memberName,
+        p.plan,
+        p.date,
+        fmt(p.amount),
+        p.mode,
       ]);
-
       autoTable(doc, {
-        head: [["Sr.No", "Month", "Year", "Amount"]],
+        head: [["Sr.No", "Member Name", "Plan", "Date", "Amount", "Mode"]],
         body: rows,
-        startY: startY,
-        styles: { fontSize: 10 },
+        startY: y + 10,
+        styles: { fontSize: 9, textColor: [0, 0, 0] },
         margin: { left: 40, right: 40 },
       });
-
-      startY = (doc as any).lastAutoTable.finalY + 40; // Next table starts after this
+      y = (doc as any).lastAutoTable.finalY + 35;
     }
 
-    // --- COACH SALARIES (same page) ---
-    if (filteredCoaches.length > 0) {
+    // ---- COACH SALARIES ----
+    if (coachPayments.length > 0) {
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(14);
-      doc.text(
-        `Coach Salaries - ${monthNames[new Date().getMonth()]}`,
-        40,
-        startY
-      );
-      startY += 20;
-
-      const rows: any[] = [];
-      filteredCoaches.forEach((c) => {
-        c.salaryHistory!.forEach((s, idx) => {
-          rows.push([
-            idx + 1,
-            c.name,
-            new Date(s.paidOn).toLocaleDateString("en-GB"),
-            formatAmount(s.amountPaid),
-          ]);
-        });
-      });
-
+      doc.text("COACH SALARY PAYMENTS", 40, y);
+      y += 10;
+      const rows = coachPayments.map((s, i) => [
+        i + 1,
+        s.coachName,
+        s.date,
+        fmt(s.amount),
+      ]);
       autoTable(doc, {
-        head: [["Sr.No", "Name", "Date", "Amount"]],
+        head: [["Sr.No", "Coach Name", "Paid On", "Amount (Rs.)"]],
         body: rows,
-        startY: startY,
-        styles: { fontSize: 10 },
+        startY: y + 10,
+        styles: { fontSize: 9, textColor: [0, 0, 0] },
         margin: { left: 40, right: 40 },
       });
-
-      startY = (doc as any).lastAutoTable.finalY + 20;
+      y = (doc as any).lastAutoTable.finalY + 35;
     }
 
-    // --- MEMBER PAYMENTS (new page) ---
-    if (filteredMembers.length > 0) {
-      doc.addPage();
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(16);
-      doc.text(
-        `Member Payments - ${monthNames[new Date().getMonth()]}`,
-        40,
-        40
-      );
-
-      const memberRows: any[] = [];
-      filteredMembers.forEach((m) => {
-        m.payments!.forEach((p) => {
-          memberRows.push([
-            srNo++,
-            m.name,
-            p.plan,
-            new Date(p.date).toLocaleDateString("en-GB"),
-            formatAmount(p.price),
-            p.modeOfPayment || "Cash",
-          ]);
-        });
-      });
-
-      autoTable(doc, {
-        head: [["Sr.No", "Name", "Plan", "Date", "Amount", "Mode"]],
-        body: memberRows,
-        startY: 60,
-        styles: { fontSize: 10 },
-        margin: { left: 40, right: 40 },
-      });
-    }
-
-    // --- MISC COSTS (new page) ---
+    // ---- MISCELLANEOUS ----
     if (filteredMisc.length > 0) {
-      doc.addPage();
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(16);
-      doc.text(
-        `Miscellaneous Costs - ${monthNames[new Date().getMonth()]}`,
-        40,
-        40
-      );
-
-      const rows = filteredMisc.map((m, idx) => [
-        idx + 1,
+      doc.text("MISCELLANEOUS EXPENSES", 40, y);
+      y += 10;
+      const rows = filteredMisc.map((m, i) => [
+        i + 1,
         m.name,
         new Date(m.date).toLocaleDateString("en-GB"),
-        formatAmount(m.amount),
+        fmt(m.amount),
       ]);
-
       autoTable(doc, {
-        head: [["Sr.No", "Name", "Date", "Amount"]],
+        head: [["Sr.No", "Expense Name", "Date", "Amount (Rs.)"]],
         body: rows,
-        startY: 60,
-        styles: { fontSize: 10 },
+        startY: y + 10,
+        styles: { fontSize: 9, textColor: [0, 0, 0] },
         margin: { left: 40, right: 40 },
       });
+      y = (doc as any).lastAutoTable.finalY + 35;
     }
 
+    // ---- ELECTRICITY BILLS ----
+    if (filteredElectricity.length > 0) {
+      doc.setFont("helvetica", "bold");
+      doc.text("ELECTRICITY BILLS", 40, y);
+      y += 10;
+      const rows = filteredElectricity.map((e, i) => [
+        i + 1,
+        e.month,
+        e.year,
+        fmt(e.amount),
+      ]);
+      autoTable(doc, {
+        head: [["Sr.No", "Month", "Year", "Amount (Rs.)"]],
+        body: rows,
+        startY: y + 10,
+        styles: { fontSize: 9, textColor: [0, 0, 0] },
+        margin: { left: 40, right: 40 },
+      });
+      y = (doc as any).lastAutoTable.finalY + 25;
+    }
+
+    // FOOTER
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(10);
+
+    // SAVE PDF
     doc.save(
-      `Revenue_Report_${
-        monthNames[new Date().getMonth()]
-      }_${new Date().getFullYear()}.pdf`
+      useCustom && customStart && customEnd
+        ? `Gym_Revenue_Report_${customStart}_to_${customEnd}.pdf`
+        : `Gym_Revenue_Report_${monthName}_${selectedYear}.pdf`
     );
   };
-
-  let memberCounter = 1;
 
   return (
     <div className="p-6">
       {/* HEADER */}
-      <div className="flex items-center gap-3 mb-6">
-        <BarChart2 size={36} className="text-yellow-500" />
-        <h1 className="text-[42px] font-bold text-[#0A2463]">Revenue Report</h1>
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6 gap-4">
+        <div className="flex items-center gap-3">
+          <BarChart2 size={36} className="text-yellow-500" />
+          <h1 className="text-[42px] font-bold text-[#0A2463]">
+            Revenue Report
+          </h1>
+        </div>
+
+        {/* Month Selector */}
+        <div className="flex flex-wrap gap-3 items-center bg-white shadow-md border border-gray-200 px-5 py-3 rounded-2xl">
+          <select
+            value={selectedMonth}
+            onChange={(e) => setSelectedMonth(Number(e.target.value))}
+            className="p-2 px-3 border border-gray-300 rounded-lg bg-gray-50 hover:bg-yellow-50 focus:ring-2 focus:ring-yellow-400 text-gray-800 font-medium"
+          >
+            {monthNames.map((m, i) => (
+              <option key={i} value={i}>
+                {m}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={selectedYear}
+            onChange={(e) => setSelectedYear(Number(e.target.value))}
+            className="p-2 px-3 border border-gray-300 rounded-lg bg-gray-50 hover:bg-yellow-50 focus:ring-2 focus:ring-yellow-400 text-gray-800 font-medium"
+          >
+            {Array.from({ length: 5 }, (_, i) => now.getFullYear() - i).map(
+              (y) => (
+                <option key={y} value={y}>
+                  {y}
+                </option>
+              )
+            )}
+          </select>
+
+          <button
+            onClick={() => exportPDF(false)}
+            className="bg-yellow-500 hover:bg-yellow-600 text-white px-5 py-2 rounded-lg shadow font-semibold transition"
+          >
+            Export PDF
+          </button>
+
+          {/* ✅ Custom Range Inputs */}
+          <div className="flex items-center gap-2">
+            <input
+              type="date"
+              value={customStart}
+              onChange={(e) => setCustomStart(e.target.value)}
+              className="p-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-800"
+            />
+            <span className="font-semibold text-gray-600">to</span>
+            <input
+              type="date"
+              value={customEnd}
+              onChange={(e) => setCustomEnd(e.target.value)}
+              className="p-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-800"
+            />
+          </div>
+
+          <button
+            onClick={() => exportPDF(true)}
+            disabled={!customStart || !customEnd}
+            className={`px-5 py-2 rounded-lg shadow font-semibold transition ${
+              customStart && customEnd
+                ? "bg-[#0A2463] hover:bg-[#152b7a] text-white"
+                : "bg-gray-300 text-gray-600 cursor-not-allowed"
+            }`}
+          >
+            Export Custom PDF
+          </button>
+        </div>
       </div>
 
-      {/* CARDS */}
+      {/* SUMMARY CARDS */}
       <div className="flex flex-wrap gap-4 items-center mb-6">
-        <div className="bg-white p-5 rounded-2xl shadow flex items-center gap-4 transition-transform transform hover:scale-105">
-          <CreditCard size={40} className="text-green-500" />
-          <div>
-            <p className="text-gray-500 text-lg">Membership Revenue</p>
-            <p className="text-2xl font-bold">
-              ₹{totalMemberRevenue.toLocaleString("en-IN")}
-            </p>
-          </div>
-        </div>
-
-        <div className="bg-white p-5 rounded-2xl shadow flex items-center gap-4 transition-transform transform hover:scale-105">
-          <Users size={40} className="text-red-500" />
-          <div>
-            <p className="text-gray-500 text-lg">Coach Salaries</p>
-            <p className="text-2xl font-bold">
-              ₹{totalCoachSalary.toLocaleString("en-IN")}
-            </p>
-          </div>
-        </div>
-
-        <div className="bg-white p-5 rounded-2xl shadow flex items-center gap-4 transition-transform transform hover:scale-105">
-          <FileText size={40} className="text-blue-500" />
-          <div>
-            <p className="text-gray-500 text-lg">Miscellaneous</p>
-            <p className="text-2xl font-bold">
-              ₹{totalMisc.toLocaleString("en-IN")}
-            </p>
-          </div>
-        </div>
-
-        <div className="bg-white p-5 rounded-2xl shadow flex items-center gap-4 transition-transform transform hover:scale-105">
-          <Calendar size={40} className="text-yellow-500" />
-          <div>
-            <p className="text-gray-500 text-lg">Electricity Bills</p>
-            <p className="text-2xl font-bold">
-              ₹{totalElectricity.toLocaleString("en-IN")}
-            </p>
-          </div>
-        </div>
-
-        {/* Total Revenue Card */}
-        <div
-          onClick={exportPDF}
-          className="bg-gradient-to-r from-yellow-400 to-yellow-600 text-white p-5 rounded-2xl shadow-xl flex items-center justify-between ml-auto cursor-pointer transition-transform transform hover:scale-105"
-        >
-          <BarChart2 size={36} className="opacity-80" />
-          <div className="flex flex-col">
-            <p className="text-lg font-medium opacity-90">Total Revenue</p>
-            <p className="text-3xl font-extrabold mt-2">
-              ₹{totalRevenue.toLocaleString("en-IN")}
-            </p>
-          </div>
-        </div>
+        <SummaryCard title="Membership Revenue" value={totalMemberRevenue} icon="green" />
+        <SummaryCard title="Coach Salaries" value={totalCoachSalary} icon="red" />
+        <SummaryCard title="Miscellaneous" value={totalMisc} icon="blue" />
+        <SummaryCard title="Electricity Bills" value={totalElectricity} icon="yellow" />
       </div>
 
-      {/* MEMBER PAYMENTS TABLE */}
-      <section className="mb-10">
-        <h2 className="text-2xl font-bold mb-4">
-          Member Payments (Current Month)
-        </h2>
-        <table className="min-w-full divide-y divide-gray-200 rounded-lg overflow-hidden text-xl">
-          <thead className="bg-yellow-500 text-white">
-            <tr>
-              <th className="px-6 py-3 text-left">Sr.No.</th>
-              <th className="px-6 py-3 text-left">Name</th>
-              <th className="px-6 py-3 text-left">Plan</th>
-              <th className="px-6 py-3 text-left">Date</th>
-              <th className="px-6 py-3 text-left">Amount</th>
-              <th className="px-6 py-3 text-left">Mode</th>
-            </tr>
-          </thead>
-          <tbody className="bg-gray-50 divide-y divide-gray-200">
-            {filteredMembers.map((m) =>
-              m.payments!.map((p, idx) => {
-                const srNo = memberCounter++;
-                return (
-                  <tr key={`${m._id}-${p._id ?? idx}`}>
-                    <td className="px-6 py-4">{srNo}</td>
-                    <td className="px-6 py-4">{m.name}</td>
-                    <td className="px-6 py-4">{p.plan}</td>
-                    <td className="px-6 py-4">
-                      {new Date(p.date).toLocaleDateString("en-GB")}
-                    </td>
-                    <td className="px-6 py-4">
-                      ₹{p.price.toLocaleString("en-IN")}
-                    </td>
-                    <td className="px-6 py-4">{p.modeOfPayment || "Cash"}</td>
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
-      </section>
+      {/* CHART */}
+      <div className="bg-white p-6 rounded-2xl shadow mb-10">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-2xl font-bold text-[#0A2463]">
+            Summary Chart - {monthNames[selectedMonth]} {selectedYear}
+          </h2>
+          <div className="flex items-center gap-2 bg-gray-100 px-3 py-1 rounded-xl">
+            <button
+              onClick={() => setChartType("bar")}
+              className={`p-2 rounded-lg flex items-center gap-1 ${
+                chartType === "bar"
+                  ? "bg-yellow-500 text-white"
+                  : "text-gray-600 hover:bg-gray-200"
+              }`}
+            >
+              <BarIcon size={18} /> Bar
+            </button>
+            <button
+              onClick={() => setChartType("pie")}
+              className={`p-2 rounded-lg flex items-center gap-1 ${
+                chartType === "pie"
+                  ? "bg-yellow-500 text-white"
+                  : "text-gray-600 hover:bg-gray-200"
+              }`}
+            >
+              <PieIcon size={18} /> Pie
+            </button>
+          </div>
+        </div>
 
-      {/* COACH SALARIES */}
-      <section className="mb-10">
-        <h2 className="text-2xl font-bold mb-4">
-          Coach Salaries (Current Month)
-        </h2>
-        <table className="min-w-full divide-y divide-gray-200 rounded-lg overflow-hidden text-xl">
-          <thead className="bg-red-500 text-white">
-            <tr>
-              <th className="px-6 py-3">Sr.No.</th>
-              <th className="px-6 py-3">Name</th>
-              <th className="px-6 py-3">Date</th>
-              <th className="px-6 py-3">Amount</th>
-            </tr>
-          </thead>
-          <tbody className="bg-gray-50 divide-y divide-gray-200">
-            {filteredCoaches.map((c) =>
-              c.salaryHistory!.map((s, idx) => (
-                <tr
-                  key={`${c._id}-${s._id ?? idx}`}
-                  className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}
+        <div className="h-80">
+          {chartType === "bar" ? (
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip formatter={(v: number) => `₹${v.toLocaleString("en-IN")}`} />
+                <Bar dataKey="amount" fill="#facc15" radius={[8, 8, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={chartData}
+                  dataKey="amount"
+                  nameKey="name"
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={120}
+                  label
                 >
-                  <td className="px-6 py-4">{idx + 1}</td>
-                  <td className="px-6 py-4">{c.name}</td>
-                  <td className="px-6 py-4">
-                    {new Date(s.paidOn).toLocaleDateString("en-GB")}
-                  </td>
-                  <td className="px-6 py-4">₹{s.amountPaid}</td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </section>
+                  {chartData.map((_, i) => (
+                    <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip formatter={(v: number) => `₹${v.toLocaleString("en-IN")}`} />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
 
-      {/* MISC COSTS */}
-      <section className="mb-10">
-        <h2 className="text-2xl font-bold mb-4">
-          Miscellaneous Costs (Current Month)
-        </h2>
-        <table className="min-w-full divide-y divide-gray-200 rounded-lg overflow-hidden text-xl">
-          <thead className="bg-blue-500 text-white">
-            <tr>
-              <th className="px-6 py-3">Sr.No.</th>
-              <th className="px-6 py-3">Name</th>
-              <th className="px-6 py-3">Date</th>
-              <th className="px-6 py-3">Amount</th>
-            </tr>
-          </thead>
-          <tbody className="bg-gray-50 divide-y divide-gray-200">
-            {filteredMisc.map((m, idx) => (
-              <tr
-                key={m._id}
-                className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}
-              >
-                <td className="px-6 py-4">{idx + 1}</td>
-                <td className="px-6 py-4">{m.name}</td>
-                <td className="px-6 py-4">
-                  {new Date(m.date).toLocaleDateString("en-GB")}
-                </td>
-                <td className="px-6 py-4">₹{m.amount}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </section>
-
-      {/* ELECTRICITY BILLS */}
-      <section>
-        <h2 className="text-2xl font-bold mb-4">
-          Electricity Bills (Current Month)
-        </h2>
-        <table className="min-w-full divide-y divide-gray-200 rounded-lg overflow-hidden text-xl">
-          <thead className="bg-yellow-500 text-white">
-            <tr>
-              <th className="px-6 py-3">Sr.No.</th>
-              <th className="px-6 py-3">Month</th>
-              <th className="px-6 py-3">Year</th>
-              <th className="px-6 py-3">Amount</th>
-            </tr>
-          </thead>
-          <tbody className="bg-gray-50 divide-y divide-gray-200">
-            {filteredElectricity.map((e, idx) => (
-              <tr
-                key={e._id}
-                className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}
-              >
-                <td className="px-6 py-4">{idx + 1}</td>
-                <td className="px-6 py-4">{e.month}</td>
-                <td className="px-6 py-4">{e.year}</td>
-                <td className="px-6 py-4">₹{e.amount}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </section>
+// Summary Card Component
+function SummaryCard({
+  title,
+  value,
+  icon,
+}: {
+  title: string;
+  value: number;
+  icon: "green" | "red" | "blue" | "yellow";
+}) {
+  const colors: Record<string, string> = {
+    green: "text-green-500",
+    red: "text-red-500",
+    blue: "text-blue-500",
+    yellow: "text-yellow-500",
+  };
+  const icons = {
+    green: <CreditCard size={40} className={colors.green} />,
+    red: <Users size={40} className={colors.red} />,
+    blue: <FileText size={40} className={colors.blue} />,
+    yellow: <Calendar size={40} className={colors.yellow} />,
+  };
+  return (
+    <div className="bg-white p-5 rounded-2xl shadow flex items-center gap-4 transition-transform transform hover:scale-105">
+      {icons[icon]}
+      <div>
+        <p className="text-gray-500 text-lg">{title}</p>
+        <p className="text-2xl font-bold">₹{value.toLocaleString("en-IN")}</p>
+      </div>
     </div>
   );
 }

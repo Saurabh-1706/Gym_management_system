@@ -12,20 +12,20 @@ export default function RegistrationPage() {
   });
 
   const [errors, setErrors] = useState<{ email?: string; mobile?: string }>({});
-  const [status, setStatus] = useState("");
+  const [showModal, setShowModal] = useState(false); // ✅ modal visibility
+  const [modalMessage, setModalMessage] = useState(""); // ✅ text to show inside modal
+  const [modalType, setModalType] = useState<"success" | "error">("success"); // ✅ success or error
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const mobileRegex = /^[6-9]\d{9}$/;
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setForm({ ...form, [name]: value });
 
     if (name === "email") {
       setErrors((prev) => ({
         ...prev,
-        email: emailRegex.test(value) ? "" : "Invalid email format",
+        email: value && !emailRegex.test(value) ? "Invalid email format" : "",
       }));
     }
 
@@ -42,7 +42,7 @@ export default function RegistrationPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!emailRegex.test(form.email)) {
+    if (form.email && !emailRegex.test(form.email)) {
       setErrors((prev) => ({ ...prev, email: "Invalid email format" }));
       return;
     }
@@ -54,18 +54,35 @@ export default function RegistrationPage() {
       return;
     }
 
-    setStatus("Submitting...");
-
     try {
-      const res = await fetch("/api/registration", {
+      const parseToUTCDate = (dateStr: string) => {
+        const [year, month, day] = dateStr.split("-").map(Number);
+        return new Date(Date.UTC(year, month - 1, day, 0, 0, 0));
+      };
+
+      const joinDate = form.date ? parseToUTCDate(form.date) : new Date();
+      const dobDate = form.dob ? parseToUTCDate(form.dob) : new Date();
+
+      const payload = {
+        ...form,
+        date: joinDate.toISOString(),
+        dob: dobDate.toISOString(),
+      };
+
+      const res = await fetch("/api/members", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       });
 
       const result = await res.json();
+
       if (result.success) {
-        setStatus("✅ Member registered successfully!");
+        // ✅ Success
+        setModalType("success");
+        setModalMessage("✅ Member registered successfully!");
+        setShowModal(true);
+        setTimeout(() => setShowModal(false), 3000);
         setForm({
           name: "",
           mobile: "",
@@ -74,15 +91,26 @@ export default function RegistrationPage() {
           dob: "",
         });
       } else {
-        setStatus(`❌ ${result.error || "Registration failed."}`);
+        // ❌ Duplicate or validation error
+        setModalType("error");
+        setModalMessage(
+          result.message ||
+            "❌ Member with same mobile number and date of birth already exists."
+        );
+        setShowModal(true);
+        setTimeout(() => setShowModal(false), 4000);
       }
-    } catch {
-      setStatus("❌ Registration failed.");
+    } catch (err) {
+      console.error(err);
+      setModalType("error");
+      setModalMessage("❌ Registration failed. Please try again.");
+      setShowModal(true);
+      setTimeout(() => setShowModal(false), 4000);
     }
   };
 
   return (
-    <div className="min-h-screen w-full bg-[#E9ECEF] p-10">
+    <div className="min-h-screen w-full bg-[#E9ECEF] p-10 relative">
       <div className="mb-6 text-center">
         <h2 className="text-xl font-semibold text-[#212529] tracking-wider uppercase">
           Become a Member
@@ -136,7 +164,7 @@ export default function RegistrationPage() {
           {/* Join Date */}
           <div>
             <label className="block text-lg font-semibold mb-2 text-[#212529]">
-              Date of Join
+              Date of Registration
             </label>
             <input
               type="date"
@@ -161,7 +189,7 @@ export default function RegistrationPage() {
               onChange={handleChange}
               placeholder="example@email.com"
               className="w-full px-5 py-3 text-lg rounded-xl border border-[#ADB5BD] 
-                         focus:ring-2 focus:ring-[#0A2463] focus:outline-none text-[#212529]"
+             focus:ring-2 focus:ring-[#0A2463] focus:outline-none text-[#212529]"
             />
             {errors.email && (
               <p className="text-red-500 text-sm mt-1">{errors.email}</p>
@@ -215,13 +243,37 @@ export default function RegistrationPage() {
             </button>
           </div>
         </form>
-
-        {status && (
-          <p className="text-center mt-6 font-medium text-[#FFC107] animate-pulse">
-            {status}
-          </p>
-        )}
       </div>
+
+      {/* ✅ Popup Modal (both success & error) */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 animate-fadeIn">
+          <div
+            className={`rounded-3xl p-8 shadow-2xl text-center max-w-sm w-full animate-slideUp ${
+              modalType === "success" ? "bg-white" : "bg-red-50"
+            }`}
+          >
+            <h2
+              className={`text-3xl font-bold mb-3 ${
+                modalType === "success" ? "text-green-600" : "text-red-600"
+              }`}
+            >
+              {modalType === "success" ? "✅ Success!" : "⚠️ Error!"}
+            </h2>
+            <p className="text-lg text-gray-700 mb-6">{modalMessage}</p>
+            <button
+              onClick={() => setShowModal(false)}
+              className={`${
+                modalType === "success"
+                  ? "bg-green-600 hover:bg-green-700"
+                  : "bg-red-600 hover:bg-red-700"
+              } text-white px-6 py-2 rounded-xl font-semibold transition`}
+            >
+              OK
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -12,13 +12,19 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
+type Installment = {
+  amountPaid: number;
+  paymentDate: string;
+  dueDate?: string | null;
+  modeOfPayment?: string;
+};
+
 type Payment = {
   _id: string;
   plan: string;
-  price: number;
-  date: string;
-  modeOfPayment: string;
+  actualAmount?: number;
   paymentStatus: string;
+  installments: Installment[];
 };
 
 type Member = {
@@ -26,8 +32,10 @@ type Member = {
   name: string;
   mobile: string;
   email?: string;
-  plan?: string; // ✅ optional now
+  plan?: string;
   date?: string;
+  joinDate?: string;
+  status?: string;
   payments?: Payment[];
 };
 
@@ -91,28 +99,45 @@ export default function MembersPage() {
     fetchPlans();
   }, []);
 
-  // ✅ Get latest join/renewal date
-  const getJoinDate = (member: Member) => {
+  // ✅ Renewal date = first installment date of the latest plan
+  const getRenewalDate = (member: Member) => {
     if (member.payments && member.payments.length > 0) {
-      const sortedPayments = [...member.payments].sort(
-        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-      );
-      return new Date(sortedPayments[0].date);
+      // Find latest payment by its first installment date
+      const latestPayment = [...member.payments]
+        .filter((p) => p.installments && p.installments.length > 0)
+        .sort((a, b) => {
+          const aDate = new Date(a.installments[0].paymentDate).getTime();
+          const bDate = new Date(b.installments[0].paymentDate).getTime();
+          return bDate - aDate;
+        })[0];
+
+      if (latestPayment && latestPayment.installments[0]?.paymentDate) {
+        return new Date(latestPayment.installments[0].paymentDate);
+      }
     }
-    return member.date ? new Date(member.date) : new Date();
+
+    // Fallbacks
+    if (member.joinDate) {
+      const [y, m, d] = member.joinDate.split("T")[0].split("-").map(Number);
+      return new Date(y, (m || 1) - 1, d || 1);
+    }
+    if (member.date) {
+      const [y, m, d] = member.date.split("T")[0].split("-").map(Number);
+      return new Date(y, (m || 1) - 1, d || 1);
+    }
+
+    return new Date();
   };
 
-  // ✅ Handle missing plan safely
+  // ✅ Expiry date calculation (end one day before next cycle)
   const calculateExpiryDate = (member: Member) => {
-    const joinDate = getJoinDate(member);
-    const date = new Date(joinDate.getTime());
+    const renewDate = getRenewalDate(member);
+    const date = new Date(renewDate.getTime());
     const planName = member.plan || "";
 
-    if (!planName) {
-      // No plan yet, just return join date
-      return date;
-    }
+    if (!planName) return date;
 
+    // 1️⃣ Check if plan exists in DB list
     const planFromList = plans.find(
       (p) => p.name?.toLowerCase() === planName.toLowerCase()
     );
@@ -120,13 +145,15 @@ export default function MembersPage() {
     if (planFromList && typeof planFromList.validity === "number") {
       const type = planFromList.validityType || "months";
       if (type === "days") {
-        date.setDate(date.getDate() + planFromList.validity);
+        date.setDate(date.getDate() + planFromList.validity - 1); // ✅ end one day before
       } else {
         date.setMonth(date.getMonth() + planFromList.validity);
+        date.setDate(date.getDate() - 1); // ✅ end one day before same date
       }
       return date;
     }
 
+    // 2️⃣ Handle Custom pattern (e.g. "Custom(10 days)" or "1 month")
     const match = planName.match(/(\d+)\s*(day|days|month|months|year|years)/i);
     if (match) {
       const value = parseInt(match[1], 10);
@@ -134,55 +161,53 @@ export default function MembersPage() {
       switch (unit) {
         case "day":
         case "days":
-          date.setDate(date.getDate() + value);
+          date.setDate(date.getDate() + value - 1); // ✅ subtract 1 day
           break;
         case "month":
         case "months":
           date.setMonth(date.getMonth() + value);
+          date.setDate(date.getDate() - 1); // ✅ subtract 1 day
           break;
         case "year":
         case "years":
           date.setFullYear(date.getFullYear() + value);
+          date.setDate(date.getDate() - 1); // ✅ subtract 1 day
           break;
       }
       return date;
     }
 
+    // 3️⃣ Handle default predefined text plans
     switch (planName.toLowerCase()) {
       case "monthly":
       case "1 month":
       case "1 months":
         date.setMonth(date.getMonth() + 1);
+        date.setDate(date.getDate() - 1);
         break;
       case "quarterly":
       case "3 months":
         date.setMonth(date.getMonth() + 3);
+        date.setDate(date.getDate() - 1);
         break;
       case "half yearly":
       case "6 months":
         date.setMonth(date.getMonth() + 6);
+        date.setDate(date.getDate() - 1);
         break;
       case "yearly":
       case "12 months":
         date.setFullYear(date.getFullYear() + 1);
+        date.setDate(date.getDate() - 1);
         break;
       default:
         date.setMonth(date.getMonth() + 1);
+        date.setDate(date.getDate() - 1);
     }
 
     return date;
   };
 
-  // ✅ Determine status
-  const getStatus = (member: Member) => {
-    if (!member.plan) return "Inactive";
-    const expiry = calculateExpiryDate(member);
-    const grace = new Date(expiry);
-    grace.setDate(grace.getDate() + 7);
-    return grace >= new Date() ? "Active" : "Inactive";
-  };
-
-  // ✅ Plan display
   const getPlanDisplay = (member: Member) => member.plan || "No Plan";
 
   const getPaymentStatus = (member: Member) => {
@@ -225,13 +250,12 @@ export default function MembersPage() {
           calculateExpiryDate(a).getTime() - calculateExpiryDate(b).getTime()
         );
       else if (sortBy === "newest")
-        return getJoinDate(b).getTime() - getJoinDate(a).getTime();
+        return getRenewalDate(b).getTime() - getRenewalDate(a).getTime();
       return 0;
     });
 
   return (
     <div className="p-6 relative bg-[#E9ECEF]">
-      {/* Header */}
       <div className="flex justify-between items-center mb-8">
         <h2 className="text-[42px] font-bold text-[#0A2463] flex items-center gap-3">
           <Users size={42} className="text-[#FFC107]" />
@@ -239,7 +263,6 @@ export default function MembersPage() {
         </h2>
 
         <div className="flex items-center gap-4">
-          {/* Search bar */}
           <div className="relative">
             <span className="absolute inset-y-0 left-3 flex items-center text-gray-600">
               🔍
@@ -275,7 +298,7 @@ export default function MembersPage() {
             </div>
           </div>
 
-          {/* Sort By */}
+          {/* Sort */}
           <div className="relative w-52">
             <select
               value={sortBy}
@@ -286,14 +309,14 @@ export default function MembersPage() {
             >
               <option value="name">Sort by Name</option>
               <option value="expiry">Sort by Expiring Soon</option>
-              <option value="newest">Sort by Newest Joined</option>
+              <option value="newest">Sort by Newest Renewal</option>
             </select>
             <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
               ▼
             </div>
           </div>
 
-          {/* View Switcher */}
+          {/* View */}
           <div className="flex items-center gap-2 bg-white border border-gray-400 rounded-2xl px-2 py-1 shadow-sm">
             <button
               onClick={() => setViewMode("card")}
@@ -319,14 +342,14 @@ export default function MembersPage() {
         </div>
       </div>
 
-      {/* Total count */}
+      {/* Total */}
       <div className="flex items-center mb-6">
         <span className="ml-auto text-2xl font-semibold text-[#0A2463]">
           Total Members: {filteredMembers.length}
         </span>
       </div>
 
-      {/* Card / Table */}
+      {/* View Mode */}
       {viewMode === "card" ? (
         <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
           {filteredMembers.map((member, index) => {
@@ -335,7 +358,7 @@ export default function MembersPage() {
             const diffDays = Math.ceil(
               (expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
             );
-            const status = getStatus(member);
+            const status = member.status || "Inactive";
 
             return (
               <div
@@ -347,17 +370,12 @@ export default function MembersPage() {
                   #{index + 1}
                 </span>
 
-                {/* Status dot */}
-                {/* Status dot + Payment badge */}
                 <div className="absolute top-3 right-3 flex items-center gap-2">
-                  {/* Status dot */}
                   <span
                     className={`w-4 h-4 rounded-full ${
                       status === "Active" ? "bg-green-500" : "bg-red-600"
                     }`}
                   ></span>
-
-                  {/* Payment badge */}
                   <span
                     className={`px-2 py-1 rounded-full text-xs font-semibold ${
                       getPaymentStatus(member) === "Paid"
@@ -377,7 +395,7 @@ export default function MembersPage() {
                 <div className="space-y-2 text-[#212529] px-4 text-[16px]">
                   <p className="flex items-center gap-2 text-lg">
                     <Calendar size={18} className="text-[#0A2463]" />
-                    Joined: {getJoinDate(member).toLocaleDateString("en-GB")}
+                    Joined: {getRenewalDate(member).toLocaleDateString("en-GB")}
                   </p>
                   <p className="flex items-center gap-2">
                     <CreditCard size={18} className="text-green-600" />
@@ -392,8 +410,7 @@ export default function MembersPage() {
                   </p>
                 </div>
 
-                {/* Expiry badge */}
-                {diffDays < 8 && (
+                {member.plan?.toLowerCase() !== "no plan" && diffDays < 8 && (
                   <div
                     className={`absolute bottom-3 right-3 px-3 py-1 rounded-full text-sm font-semibold shadow-lg ${
                       diffDays < 0
@@ -427,7 +444,7 @@ export default function MembersPage() {
             </thead>
             <tbody>
               {filteredMembers.map((member, index) => {
-                const status = getStatus(member);
+                const status = member.status || "Inactive";
                 const paymentStatus = getPaymentStatus(member);
                 return (
                   <tr
@@ -440,7 +457,7 @@ export default function MembersPage() {
                     <td className="p-3">{member.mobile}</td>
                     <td className="p-3">{getPlanDisplay(member)}</td>
                     <td className="p-3">
-                      {getJoinDate(member).toLocaleDateString("en-GB")}
+                      {getRenewalDate(member).toLocaleDateString("en-GB")}
                     </td>
                     <td className="p-3">
                       {calculateExpiryDate(member).toLocaleDateString("en-GB")}
@@ -458,7 +475,6 @@ export default function MembersPage() {
                         </span>
                       </div>
                     </td>
-
                     <td className="p-3 flex items-center gap-2">
                       <span
                         className={`w-3 h-3 rounded-full ${
@@ -475,7 +491,6 @@ export default function MembersPage() {
         </div>
       )}
 
-      {/* Delete Modal */}
       {showDeleteModal && selectedMember && (
         <div className="fixed inset-0 z-60 flex items-center justify-center backdrop-blur-sm">
           <div className="bg-white rounded-2xl p-6 shadow-2xl w-full max-w-md relative">

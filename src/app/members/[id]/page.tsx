@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
   UserCircle,
@@ -16,13 +16,20 @@ import {
   Camera,
 } from "lucide-react";
 import ImageCropper from "@/components/ImageCropper";
+import Loader from "@/components/Loader";
+
+type Installment = {
+  amountPaid: number;
+  paymentDate: string;
+  dueDate?: string | null;
+  modeOfPayment?: string;
+};
 
 type Payment = {
   _id?: string;
   plan: string;
-  price: number;
-  date: string;
-  modeOfPayment?: string;
+  actualAmount: number;
+  installments: Installment[];
   paymentStatus: "Paid" | "Unpaid";
 };
 
@@ -33,16 +40,18 @@ type Member = {
   email?: string;
   dob: string;
   date: string;
+  joinDate?: string; // ✅ added this line
   plan: string;
   payments?: Payment[];
   profilePicture?: string;
   status?: "Active" | "Inactive";
-  paymentStatus?: "Paid" | "Unpaid"; // ✅ add this
+  paymentStatus?: "Paid" | "Unpaid";
 };
 
 type Plan = {
   _id?: string;
   name: string;
+  amount: number;
   validity: number;
   validityType: "months" | "days";
 };
@@ -59,10 +68,18 @@ function getInitials(name: string): string {
 // Get latest join/payment date
 function getLatestJoinDate(member: Member): Date {
   if (member.payments && member.payments.length > 0) {
-    const latest = [...member.payments].sort(
-      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-    )[0];
-    return new Date(latest.date);
+    const latestPayment = [...member.payments].sort((a, b) => {
+      const aDate =
+        a.installments?.[a.installments.length - 1]?.paymentDate || 0;
+      const bDate =
+        b.installments?.[b.installments.length - 1]?.paymentDate || 0;
+      return new Date(bDate).getTime() - new Date(aDate).getTime();
+    })[0];
+
+    return new Date(
+      latestPayment?.installments?.[latestPayment.installments.length - 1]
+        ?.paymentDate || member.date
+    );
   }
   return new Date(member.date);
 }
@@ -70,22 +87,17 @@ function getLatestJoinDate(member: Member): Date {
 // Get latest plan
 function getLatestPlan(member: Member): string {
   if (member.payments && member.payments.length > 0) {
-    const latestPayment = [...member.payments].sort(
-      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-    )[0];
+    const latestPayment = [...member.payments].sort((a, b) => {
+      const aDate =
+        a.installments?.[a.installments.length - 1]?.paymentDate || 0;
+      const bDate =
+        b.installments?.[b.installments.length - 1]?.paymentDate || 0;
+      return new Date(bDate).getTime() - new Date(aDate).getTime();
+    })[0];
+
     return latestPayment.plan;
   }
   return member.plan;
-}
-
-function isPlanPaid(member: Member, currentPlan: string): boolean {
-  if (!member.payments || member.payments.length === 0) return false;
-
-  const payment = member.payments
-    .filter((p) => p.plan.toLowerCase() === currentPlan.toLowerCase())
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
-
-  return payment?.paymentStatus === "Paid";
 }
 
 export default function MemberProfilePage() {
@@ -100,7 +112,6 @@ export default function MemberProfilePage() {
   const [showRenewModal, setShowRenewModal] = useState(false);
 
   const [renewPlan, setRenewPlan] = useState("");
-  const [renewAmount, setRenewAmount] = useState<number | "">("");
   const [renewMode, setRenewMode] = useState("");
   const [renewDate, setRenewDate] = useState("");
 
@@ -119,6 +130,48 @@ export default function MemberProfilePage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [showCropper, setShowCropper] = useState(false);
   const [showLightbox, setShowLightbox] = useState(false);
+
+  // New installment-related states
+  const [paymentOption, setPaymentOption] = useState("One Time"); // default
+  const [actualAmount, setActualAmount] = useState<number | "">("");
+  const [amountPaid, setAmountPaid] = useState<number | "">("");
+  const [remainingAmount, setRemainingAmount] = useState<number | "">("");
+  const [dueDate, setDueDate] = useState("");
+  const [joinDateInput, setJoinDateInput] = useState("");
+
+  // 💰 Payment modal states
+  const [showPayModal, setShowPayModal] = useState(false);
+  const [selectedPayment, setSelectedPayment] = useState<{
+    paymentId: string;
+    remaining: number;
+    plan: string;
+  } | null>(null);
+  const [payMode, setPayMode] = useState("");
+  const [payAmount, setPayAmount] = useState<number | "">("");
+  // Renewal extra states
+  const [useDefaultPrice, setUseDefaultPrice] = useState(true);
+  const [customPrice, setCustomPrice] = useState<number | "">("");
+  const [installmentFee, setInstallmentFee] = useState<number | "">("");
+
+  // Feedback modals
+  const [showFeedbackModal, setShowFeedbackModal] = useState<{
+    type: "success" | "error";
+    message: string;
+  } | null>(null);
+
+  useEffect(() => {
+    if (paymentOption === "Installment" && actualAmount && amountPaid) {
+      const remain = Number(actualAmount) - Number(amountPaid);
+      setRemainingAmount(remain >= 0 ? remain : 0);
+    }
+  }, [actualAmount, amountPaid, paymentOption]);
+
+  useEffect(() => {
+    if (showFeedbackModal) {
+      const timer = setTimeout(() => setShowFeedbackModal(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [showFeedbackModal]);
 
   const handleProfilePictureChange = (
     e: React.ChangeEvent<HTMLInputElement>
@@ -157,18 +210,26 @@ export default function MemberProfilePage() {
     const latestPayment =
       member.payments && member.payments.length > 0
         ? [...member.payments].sort(
-            (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+            (a, b) =>
+              new Date(
+                b.installments?.[b.installments.length - 1]?.paymentDate || 0
+              ).getTime() -
+              new Date(
+                a.installments?.[a.installments.length - 1]?.paymentDate || 0
+              ).getTime()
           )[0]
         : null;
 
     const planStr = latestPayment?.plan || member.plan;
     const startDate = latestPayment
-      ? new Date(latestPayment.date)
+      ? new Date(latestPayment.installments?.[0]?.paymentDate || member.date)
       : new Date(member.date);
+
     const expiryDate = new Date(startDate);
 
-    if (!planStr) return expiryDate; // ✅ safely return if null or undefined
+    if (!planStr) return expiryDate;
 
+    // ✅ Handle Custom Plans
     const customMatch = planStr.match(
       /Custom\((\d+)\s*(day|days|month|months|year|years)\)/i
     );
@@ -184,33 +245,40 @@ export default function MemberProfilePage() {
         case "month":
         case "months":
           expiryDate.setMonth(expiryDate.getMonth() + value);
+          expiryDate.setDate(expiryDate.getDate() - 1); // ✅ subtract 1 day
           break;
         case "year":
         case "years":
           expiryDate.setFullYear(expiryDate.getFullYear() + value);
+          expiryDate.setDate(expiryDate.getDate() - 1); // ✅ subtract 1 day
           break;
       }
       return expiryDate;
     }
 
+    // ✅ Handle Predefined Plans from DB
     const dbPlan = allPlans.find(
       (p) => p.name.toLowerCase() === planStr.toLowerCase()
     );
+
     if (dbPlan && dbPlan.validity > 0) {
       switch (dbPlan.validityType) {
         case "days":
-          expiryDate.setDate(expiryDate.getDate() + dbPlan.validity);
+          expiryDate.setDate(expiryDate.getDate() + dbPlan.validity - 1);
           break;
         case "months":
           expiryDate.setMonth(expiryDate.getMonth() + dbPlan.validity);
+          expiryDate.setDate(expiryDate.getDate() - 1); // ✅ end 1 day before same date
           break;
         default:
           expiryDate.setMonth(expiryDate.getMonth() + 1);
+          expiryDate.setDate(expiryDate.getDate() - 1); // ✅ fallback fix
       }
       return expiryDate;
     }
 
     expiryDate.setMonth(expiryDate.getMonth() + 1);
+    expiryDate.setDate(expiryDate.getDate() - 1); // ✅ final fallback
     return expiryDate;
   };
 
@@ -224,8 +292,13 @@ export default function MemberProfilePage() {
         const data = await res.json();
 
         const payments = (data.member.payments || []).sort(
-          (a: Payment, b: Payment) =>
-            new Date(a.date).getTime() - new Date(b.date).getTime()
+          (a: Payment, b: Payment) => {
+            const aDate =
+              a.installments?.[a.installments.length - 1]?.paymentDate || 0;
+            const bDate =
+              b.installments?.[b.installments.length - 1]?.paymentDate || 0;
+            return new Date(aDate).getTime() - new Date(bDate).getTime();
+          }
         );
 
         const memberObj = { ...data.member, payments };
@@ -258,8 +331,8 @@ export default function MemberProfilePage() {
 
   if (loading)
     return (
-      <div className="flex items-center justify-center min-h-screen text-[#FFC107] text-xl">
-        Loading profile...
+      <div className="flex items-center justify-center min-h-screen bg-[#E9ECEF]">
+        <Loader text="Loading member profile..." />
       </div>
     );
 
@@ -270,70 +343,179 @@ export default function MemberProfilePage() {
       </div>
     );
 
-  const joinDate = getLatestJoinDate(member);
+  const joinDate = new Date(member.joinDate || member.date);
   const currentPlan = getLatestPlan(member);
 
   const handleRenew = async () => {
-    let finalPlan = renewPlan;
+    try {
+      let finalPlan = renewPlan;
 
-    if (renewPlan === "Custom") {
-      if (!customValidity || !customUnit) {
-        alert("Enter validity for custom plan");
+      if (renewPlan === "Custom") {
+        if (!customValidity || !customUnit) {
+          setShowFeedbackModal({
+            type: "error",
+            message: "Enter validity for custom plan.",
+          });
+          return;
+        }
+        finalPlan = `Custom(${customValidity} ${customUnit})`;
+      }
+
+      if (!finalPlan || !renewMode) {
+        setShowFeedbackModal({
+          type: "error",
+          message: "Please fill all required fields.",
+        });
         return;
       }
-      finalPlan = `Custom(${customValidity} ${customUnit})`;
-    }
 
-    if (!finalPlan || !renewAmount || !renewMode) {
-      alert("Fill all required fields");
-      return;
-    }
+      // 🔹 Determine base price
+      const selectedDbPlan = allPlans.find((p) => p.name === finalPlan);
+      const defaultPrice = selectedDbPlan?.amount || 0;
+      const planPrice = useDefaultPrice
+        ? defaultPrice
+        : customPrice
+        ? Number(customPrice)
+        : defaultPrice;
 
-    try {
-      const res = await fetch(`/api/members/${member._id}`, {
+      const body: any = {
+        plan: finalPlan,
+        date: renewDate ? new Date(renewDate) : new Date(),
+        modeOfPayment: renewMode,
+        paymentStatus: renewPaymentStatus,
+        joinDate: joinDateInput ? new Date(joinDateInput) : new Date(),
+        updateJoinDate: true,
+      };
+
+      if (paymentOption === "One Time") {
+        body.actualAmount = planPrice;
+        body.amountPaid = planPrice;
+      } else {
+        // 🧩 Compute actual amount correctly
+        const selectedDbPlan = allPlans.find((p) => p.name === finalPlan);
+        const planBaseAmount = selectedDbPlan?.amount || 0;
+        const finalActualAmount = useDefaultPrice
+          ? planBaseAmount
+          : Number(actualAmount);
+
+        if (!finalActualAmount || finalActualAmount <= 0) {
+          setShowFeedbackModal({
+            type: "error",
+            message: "Enter actual amount for installment.",
+          });
+          return;
+        }
+
+        // Include installment fee
+        const totalAmount = finalActualAmount + (Number(installmentFee) || 0);
+
+        body.actualAmount = totalAmount;
+        body.amountPaid = Number(amountPaid);
+        body.dueDate = dueDate ? new Date(dueDate) : null;
+        body.installmentFee = Number(installmentFee) || 0;
+      }
+
+      const res = await fetch(`/api/members/${member?._id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          plan: finalPlan,
-          price: Number(renewAmount),
-          date: renewDate ? new Date(renewDate) : new Date(),
-          modeOfPayment: renewMode,
-          paymentStatus: renewPaymentStatus, // ✅ use selected value
-        }),
+        body: JSON.stringify(body),
       });
 
-      if (res.ok) {
-        const updated = await res.json();
-        const sortedPayments = [...(updated.member.payments || [])].sort(
-          (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-        );
-        setMember({ ...updated.member, payments: sortedPayments });
-        setShowRenewModal(false);
+      if (!res.ok) throw new Error("Renewal failed");
 
-        setRenewPlan("");
-        setRenewAmount("");
-        setRenewMode("");
-        setRenewPaymentStatus("Unpaid");
-        setCustomValidity("");
-        setCustomUnit("days");
-        setRenewDate("");
-      } else {
-        alert("Renewal failed");
-      }
+      const updated = await res.json();
+      const sortedPayments = [...(updated.member.payments || [])].sort(
+        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+      );
+
+      setMember({ ...updated.member, payments: sortedPayments });
+      setShowRenewModal(false);
+      setShowFeedbackModal({
+        type: "success",
+        message: "Membership renewed successfully!",
+      });
+
+      // reset all form fields
+      setRenewPlan("");
+      setRenewMode("");
+      setRenewPaymentStatus("Unpaid");
+      setCustomValidity("");
+      setCustomUnit("days");
+      setRenewDate("");
+      setPaymentOption("One Time");
+      setActualAmount("");
+      setAmountPaid("");
+      setRemainingAmount("");
+      setDueDate("");
+      setJoinDateInput("");
+      setInstallmentFee("");
     } catch (err) {
       console.error(err);
-      alert("Renewal failed");
+      setShowFeedbackModal({
+        type: "error",
+        message: "Renewal failed! Try again.",
+      });
     }
   };
 
   const latestPayment =
     member.payments && member.payments.length > 0
       ? [...member.payments].sort(
-          (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+          (a, b) =>
+            new Date(
+              b.installments?.[b.installments.length - 1]?.paymentDate || 0
+            ).getTime() -
+            new Date(
+              a.installments?.[a.installments.length - 1]?.paymentDate || 0
+            ).getTime()
         )[0]
       : null;
 
   const currentPaymentStatus = latestPayment?.paymentStatus || "Unpaid";
+
+  const handlePayRemaining = async (
+    paymentId: string,
+    remaining: number,
+    plan: string
+  ) => {
+    const payNow = prompt(
+      `Enter amount to pay (Remaining: ₹${remaining})`,
+      remaining.toString()
+    );
+    if (!payNow) return;
+
+    const amount = Number(payNow);
+    if (isNaN(amount) || amount <= 0) {
+      alert("Enter valid amount");
+      return;
+    }
+
+    const mode = prompt("Enter payment mode (Cash/UPI)", "Cash") || "Cash";
+
+    try {
+      const res = await fetch(`/api/members/${member?._id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          paymentId,
+          additionalInstallment: {
+            amountPaid: amount,
+            paymentDate: new Date(),
+            modeOfPayment: mode,
+          },
+        }),
+      });
+
+      if (!res.ok) throw new Error("Payment update failed");
+
+      const updated = await res.json();
+      setMember(updated.member);
+      alert("Payment recorded successfully ✅");
+    } catch (err) {
+      console.error(err);
+      alert("Payment update failed ❌");
+    }
+  };
 
   return (
     <div className="min-h-screen w-full bg-gradient-to-b from-[#E9ECEF] via-[#F8F9FA] to-white p-10 space-y-10">
@@ -452,10 +634,28 @@ export default function MemberProfilePage() {
                   <strong>Email:</strong> {member.email}
                 </p>
               )}
+              {/* Original Join Date */}
               <p className="flex items-center gap-3">
                 <Calendar size={20} className="text-blue-600" />
-                <strong>Joined:</strong> {joinDate.toLocaleDateString("en-GB")}
+                <strong>Registration Date:</strong>{" "}
+                {member.joinDate
+                  ? new Date(member.joinDate).toLocaleDateString("en-GB")
+                  : "-"}
               </p>
+
+              {/* Last Renewal Date */}
+              <p className="flex items-center gap-3">
+                <Calendar size={20} className="text-indigo-600" />
+                <strong>Renewal Date:</strong>{" "}
+                {member.payments && member.payments.length > 0
+                  ? new Date(
+                      member.payments[
+                        member.payments.length - 1
+                      ].installments[0]?.paymentDate
+                    ).toLocaleDateString("en-GB")
+                  : "-"}
+              </p>
+
               <p className="flex items-center gap-3">
                 <CreditCard size={20} className="text-green-600" />
                 <strong>Current Plan:</strong> {currentPlan}
@@ -472,8 +672,12 @@ export default function MemberProfilePage() {
 
               <p className="flex items-center gap-3 text-[#ff0707] font-semibold">
                 <ClockAlert size={20} className="text-red-600" />
-                Membership Ends On:
-                {calculateExpiryDate(member).toLocaleDateString("en-GB")}
+                Membership Ends On:{" "}
+                {member.plan === "No Plan"
+                  ? "-"
+                  : calculateExpiryDate(member)
+                  ? calculateExpiryDate(member).toLocaleDateString("en-GB")
+                  : "-"}
               </p>
             </div>
           </div>
@@ -501,6 +705,7 @@ export default function MemberProfilePage() {
           <h3 className="text-2xl font-bold text-[#0A2463] flex items-center gap-2 mb-6">
             <History size={24} className="text-[#FFC107]" /> Payment History
           </h3>
+
           {member.payments && member.payments.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="min-w-full bg-white border border-gray-200 rounded-xl shadow-md">
@@ -510,88 +715,86 @@ export default function MemberProfilePage() {
                     <th className="text-center px-6 py-3">Amount (₹)</th>
                     <th className="text-center px-6 py-3">Mode of Payment</th>
                     <th className="text-center px-6 py-3">Date</th>
+                    <th className="text-center px-6 py-3">Due Date</th>
+                    <th className="text-center px-6 py-3">Status</th>
                   </tr>
                 </thead>
                 <tbody>
                   {member.payments
-                    ?.sort(
-                      (a, b) =>
-                        new Date(b.date).getTime() - new Date(a.date).getTime()
-                    )
-                    .map((p, idx) => (
-                      <tr
-                        key={idx}
-                        className={`${
-                          idx % 2 === 0 ? "bg-gray-50" : "bg-white"
-                        } hover:bg-gray-100`}
-                      >
-                        <td className="px-6 py-4 font-medium text-[#0A2463] text-center">
-                          {p.plan}
-                        </td>
-                        <td className="px-6 py-4 font-semibold text-green-600 text-center">
-                          ₹{p.price}
-                        </td>
-                        <td className="px-6 py-4 text-[#212529] text-center">
-                          {p.modeOfPayment || "—"}
-                        </td>
-                        <td className="px-6 py-4 text-gray-600 text-center">
-                          {new Date(p.date).toLocaleDateString("en-GB")}
-                        </td>
-                        <td className="px-6 py-4 text-center">
-                          {p.paymentStatus === "Paid" ? (
-                            <span className="px-3 py-1 text-sm font-semibold rounded-full bg-green-100 text-green-700 border border-green-300">
-                              Paid
-                            </span>
-                          ) : (
-                            <button
-                              onClick={async () => {
-                                try {
-                                  const res = await fetch(
-                                    `/api/members/${member._id}`,
-                                    {
-                                      method: "PUT",
-                                      headers: {
-                                        "Content-Type": "application/json",
-                                      },
-                                      body: JSON.stringify({
-                                        paymentId: p._id,
-                                        paymentStatus: "Paid",
-                                      }),
-                                    }
-                                  );
+                    ?.slice()
+                    .reverse()
+                    .map((payment, pIdx) => {
+                      // Calculate total paid & remaining
+                      const totalPaid = payment.installments.reduce(
+                        (sum, inst) => sum + inst.amountPaid,
+                        0
+                      );
+                      const remaining = payment.actualAmount - totalPaid;
+                      const isPaid = remaining <= 0;
 
-                                  if (!res.ok)
-                                    throw new Error("Failed to update payment");
+                      // Determine overall status
+                      const statusLabel = isPaid
+                        ? "Paid"
+                        : `Pending ₹${remaining.toFixed(2)}`;
 
-                                  const updated = await res.json();
+                      return payment.installments.map((inst, iIdx) => (
+                        <tr
+                          key={`${pIdx}-${iIdx}`}
+                          className={`${
+                            (pIdx + iIdx) % 2 === 0 ? "bg-gray-50" : "bg-white"
+                          } hover:bg-gray-100`}
+                        >
+                          <td className="px-6 py-4 font-medium text-[#0A2463] text-center">
+                            {payment.plan}
+                          </td>
+                          <td className="px-6 py-4 font-semibold text-green-600 text-center">
+                            ₹{inst.amountPaid}
+                          </td>
+                          <td className="px-6 py-4 text-[#212529] text-center">
+                            {inst.modeOfPayment || "—"}
+                          </td>
+                          <td className="px-6 py-4 text-gray-600 text-center">
+                            {inst.paymentDate
+                              ? new Date(inst.paymentDate).toLocaleDateString(
+                                  "en-GB"
+                                )
+                              : "—"}
+                          </td>
+                          <td className="px-6 py-4 text-gray-600 text-center">
+                            {isPaid
+                              ? "—" // ✅ clear due date if fully paid
+                              : inst.dueDate
+                              ? new Date(inst.dueDate).toLocaleDateString(
+                                  "en-GB"
+                                )
+                              : "—"}
+                          </td>
 
-                                  // Sort payments by date descending
-                                  const sortedPayments = [
-                                    ...(updated.member.payments || []),
-                                  ].sort(
-                                    (a, b) =>
-                                      new Date(b.date).getTime() -
-                                      new Date(a.date).getTime()
-                                  );
-
-                                  // Update member state immediately
-                                  setMember({
-                                    ...updated.member,
-                                    payments: sortedPayments,
+                          <td className="px-6 py-4 text-center">
+                            {isPaid ? (
+                              <span className="px-3 py-1 text-sm font-semibold rounded-full bg-green-100 text-green-700 border border-green-300">
+                                Paid
+                              </span>
+                            ) : (
+                              <button
+                                onClick={() => {
+                                  setSelectedPayment({
+                                    paymentId: payment._id!,
+                                    remaining,
+                                    plan: payment.plan,
                                   });
-                                } catch (err) {
-                                  console.error(err);
-                                  alert("Failed to mark as Paid");
-                                }
-                              }}
-                              className="px-3 py-1 text-sm font-semibold rounded-full bg-blue-100 text-blue-700 border border-blue-300 hover:bg-blue-200"
-                            >
-                              Mark as Paid
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
+                                  setShowPayModal(true);
+                                  setPayAmount(remaining);
+                                }}
+                                className="px-3 py-1 text-sm font-semibold rounded-full bg-red-100 text-red-700 border border-red-300 hover:bg-red-200 transition"
+                              >
+                                Pending ₹{remaining.toFixed(2)}
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      ));
+                    })}
                 </tbody>
               </table>
             </div>
@@ -707,16 +910,17 @@ export default function MemberProfilePage() {
         </div>
       )}
 
-      {/* ✅ Renew Modal Payment Status */}
+      {/* ✅ Renew Modal */}
       {showRenewModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/40">
-          <div className="bg-white p-10 rounded-3xl max-w-md w-full shadow-2xl border border-gray-200">
+          <div className="bg-white p-10 rounded-3xl max-w-3xl w-full shadow-2xl border border-gray-200">
             <h3 className="text-3xl font-bold text-[#0A2463] mb-6 flex items-center gap-3">
               <RefreshCcw size={28} className="text-[#FFC107]" />
-              Renew Plan
+              Avail Membership
             </h3>
-            <div className="flex flex-col gap-6">
-              {/* Select Plan */}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Plan Selection */}
               <div className="flex flex-col">
                 <label className="text-[#0A2463] text-lg font-semibold mb-2">
                   Select Plan <span className="text-red-500">*</span>
@@ -725,105 +929,367 @@ export default function MemberProfilePage() {
                   required
                   value={renewPlan}
                   onChange={(e) => setRenewPlan(e.target.value)}
-                  className="w-full px-4 py-3 rounded-lg border border-gray-300 bg-gray-50 text-[#0A2463] focus:ring-2 focus:ring-[#FFC107] focus:outline-none"
+                  className="w-full px-4 py-3 rounded-lg border border-gray-300 bg-gray-50 text-[#0A2463] focus:ring-2 focus:ring-[#FFC107]"
                 >
                   <option value="" disabled hidden>
                     Select Plan
                   </option>
-
-                  {/* Dynamically show plans from DB */}
-                  {allPlans.map((p) => (
-                    <option key={p._id} value={p.name}>
-                      {p.name}{" "}
-                      {p.validity
-                        ? `- ${p.validity} ${p.validityType || "months"}`
-                        : ""}
-                    </option>
-                  ))}
-
-                  {/* Keep Custom Plan option */}
+                  {[...allPlans]
+                    .sort((a, b) => {
+                      const typeOrder =
+                        a.validityType === b.validityType
+                          ? 0
+                          : a.validityType === "days"
+                          ? -1
+                          : 1;
+                      return typeOrder === 0
+                        ? a.validity - b.validity
+                        : typeOrder;
+                    })
+                    .map((p) => (
+                      <option key={p._id} value={p.name}>
+                        {p.name}{" "}
+                        {p.validity ? `- ${p.validity} ${p.validityType}` : ""}
+                      </option>
+                    ))}
                   <option value="Custom">Custom Plan</option>
+                </select>
+              </div>
+
+              {/* Payment Option */}
+              <div className="flex flex-col">
+                <label className="text-[#0A2463] text-lg font-semibold mb-2">
+                  Payment Option <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={paymentOption}
+                  onChange={(e) => setPaymentOption(e.target.value)}
+                  className="w-full px-4 py-3 rounded-lg border border-gray-300 bg-gray-50 text-[#0A2463] focus:ring-2 focus:ring-[#FFC107]"
+                >
+                  <option value="One Time">One Time</option>
+                  <option value="Installment">Installment</option>
                 </select>
               </div>
 
               {/* Custom Plan Fields */}
               {renewPlan === "Custom" && (
-                <div className="flex gap-3">
-                  <input
-                    type="number"
-                    min={1}
-                    placeholder="Validity"
-                    value={customValidity}
-                    onChange={(e) => setCustomValidity(Number(e.target.value))}
-                    className="flex-1 px-4 py-3 rounded-lg border border-gray-300 bg-gray-50 text-[#0A2463] focus:ring-2 focus:ring-[#FFC107] focus:outline-none"
-                  />
-                  <select
-                    value={customUnit}
-                    onChange={(e) => setCustomUnit(e.target.value)}
-                    className="px-4 py-3 rounded-lg border border-gray-300 bg-gray-50 text-[#0A2463] focus:ring-2 focus:ring-[#FFC107] focus:outline-none"
-                  >
-                    <option value="days">Days</option>
-                    <option value="months">Months</option>
-                  </select>
-                </div>
+                <>
+                  <div className="flex flex-col">
+                    <label className="text-[#0A2463] text-lg font-semibold mb-2">
+                      Custom Validity
+                    </label>
+                    <input
+                      type="number"
+                      min={1}
+                      placeholder="Validity"
+                      value={customValidity}
+                      onChange={(e) =>
+                        setCustomValidity(Number(e.target.value))
+                      }
+                      className="w-full px-4 py-3 rounded-lg border border-gray-300 bg-gray-50 text-[#0A2463]"
+                    />
+                  </div>
+                  <div className="flex flex-col">
+                    <label className="text-[#0A2463] text-lg font-semibold mb-2">
+                      Validity Type
+                    </label>
+                    <select
+                      value={customUnit}
+                      onChange={(e) => setCustomUnit(e.target.value)}
+                      className="w-full px-4 py-3 rounded-lg border border-gray-300 bg-gray-50 text-[#0A2463]"
+                    >
+                      <option value="days">Days</option>
+                      <option value="months">Months</option>
+                    </select>
+                  </div>
+                </>
               )}
 
-              {/* Enter Amount */}
-              <div className="flex flex-col">
-                <label className="text-[#0A2463] text-lg font-semibold mb-2">
-                  Amount (₹) <span className="text-red-500">*</span>
+              {/* 🟢 One-Time Payment Section */}
+              {paymentOption === "One Time" && (
+                <>
+                  {/* Amount Paid */}
+                  <div className="flex flex-col md:col-span-2">
+                    <label className="text-[#0A2463] text-lg font-semibold mb-2">
+                      Amount Paid (₹)
+                    </label>
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="checkbox"
+                        checked={useDefaultPrice}
+                        onChange={(e) => setUseDefaultPrice(e.target.checked)}
+                      />
+                      <span className="text-gray-700">
+                        Use default plan price (
+                        {renewPlan &&
+                        allPlans.find((p) => p.name === renewPlan)?.amount
+                          ? `₹${
+                              allPlans.find((p) => p.name === renewPlan)?.amount
+                            }`
+                          : "—"}
+                        )
+                      </span>
+                    </div>
+                    {useDefaultPrice ? (
+                      <input
+                        type="number"
+                        value={
+                          allPlans.find((p) => p.name === renewPlan)?.amount ||
+                          ""
+                        }
+                        disabled
+                        className="w-full px-4 py-3 rounded-lg border border-gray-300 bg-gray-100 text-gray-700"
+                      />
+                    ) : (
+                      <input
+                        type="number"
+                        placeholder="Enter custom price"
+                        value={customPrice}
+                        onChange={(e) => setCustomPrice(Number(e.target.value))}
+                        className="w-full px-4 py-3 rounded-lg border border-gray-300 bg-gray-50 text-[#0A2463]"
+                      />
+                    )}
+                  </div>
+
+                  {/* 🟩 Date of Join + Payment Mode in same row */}
+                  <div className="md:col-span-2 grid grid-cols-2 gap-6">
+                    <div className="flex flex-col">
+                      <label className="text-[#0A2463] text-lg font-semibold mb-2">
+                        Date of Join <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="date"
+                        required
+                        value={
+                          joinDateInput ||
+                          new Date().toISOString().split("T")[0]
+                        }
+                        onChange={(e) => setJoinDateInput(e.target.value)}
+                        className="w-full px-4 py-3 rounded-lg border border-gray-300 bg-gray-50 text-[#0A2463]"
+                      />
+                    </div>
+
+                    <div className="flex flex-col">
+                      <label className="text-[#0A2463] text-lg font-semibold mb-2">
+                        Payment Mode <span className="text-red-500">*</span>
+                      </label>
+                      <select
+                        required
+                        value={renewMode}
+                        onChange={(e) => setRenewMode(e.target.value)}
+                        className="w-full px-4 py-3 rounded-lg border border-gray-300 bg-gray-50 text-[#0A2463]"
+                      >
+                        <option value="" disabled hidden>
+                          Select Payment Mode
+                        </option>
+                        <option value="Cash">Cash</option>
+                        <option value="UPI">UPI</option>
+                      </select>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* 🟣 Installment Fields */}
+              {paymentOption === "Installment" && (
+                <>
+                  {/* Actual Amount (editable toggle) */}
+                  <div className="flex flex-col md:col-span-2 space-y-3">
+                    <label className="text-[#0A2463] text-lg font-semibold mb-1">
+                      Actual Amount (₹)
+                    </label>
+                    <div className="flex items-center gap-3 mb-2">
+                      <input
+                        type="checkbox"
+                        checked={useDefaultPrice}
+                        onChange={(e) => setUseDefaultPrice(e.target.checked)}
+                      />
+                      <span className="text-gray-700">
+                        Use default plan price (
+                        {renewPlan &&
+                        allPlans.find((p) => p.name === renewPlan)?.amount
+                          ? `₹${
+                              allPlans.find((p) => p.name === renewPlan)?.amount
+                            }`
+                          : "—"}
+                        )
+                      </span>
+                    </div>
+
+                    {useDefaultPrice ? (
+                      <input
+                        type="number"
+                        value={
+                          allPlans.find((p) => p.name === renewPlan)?.amount ||
+                          ""
+                        }
+                        disabled
+                        className="w-full px-4 py-3 rounded-lg border border-gray-300 bg-gray-100 text-gray-700"
+                      />
+                    ) : (
+                      <input
+                        type="number"
+                        placeholder="Enter custom actual amount"
+                        value={actualAmount}
+                        onChange={(e) =>
+                          setActualAmount(Number(e.target.value))
+                        }
+                        className="w-full px-4 py-3 rounded-lg border border-gray-300 bg-gray-50 text-[#0A2463]"
+                      />
+                    )}
+                  </div>
+
+                  {/* Installment Fee */}
+                  <div className="flex flex-col">
+                    <label className="text-[#0A2463] text-lg font-semibold mb-2">
+                      Installment Fee (₹)
+                    </label>
+                    <input
+                      type="number"
+                      value={installmentFee}
+                      onChange={(e) =>
+                        setInstallmentFee(Number(e.target.value))
+                      }
+                      placeholder="Enter extra fee"
+                      className="w-full px-4 py-3 rounded-lg border border-gray-300 bg-gray-50 text-[#0A2463]"
+                    />
+                  </div>
+
+                  {/* Amount Paid */}
+                  <div className="flex flex-col">
+                    <label className="text-[#0A2463] text-lg font-semibold mb-2">
+                      Amount Paid (₹)
+                    </label>
+                    <input
+                      type="number"
+                      required
+                      value={amountPaid}
+                      onChange={(e) => setAmountPaid(Number(e.target.value))}
+                      className="w-full px-4 py-3 rounded-lg border border-gray-300 bg-gray-50"
+                    />
+                  </div>
+
+                  {/* ✅ Fixed Remaining Amount Logic */}
+                  <div className="flex flex-col">
+                    <label className="text-[#0A2463] text-lg font-semibold mb-2">
+                      Remaining Amount (₹)
+                    </label>
+                    <input
+                      type="number"
+                      disabled
+                      value={Math.max(
+                        (Number(
+                          useDefaultPrice
+                            ? allPlans.find((p) => p.name === renewPlan)?.amount
+                            : actualAmount
+                        ) || 0) +
+                          (Number(installmentFee) || 0) -
+                          (Number(amountPaid) || 0),
+                        0
+                      )}
+                      className="w-full px-4 py-3 rounded-lg border border-gray-300 bg-gray-100 text-gray-700"
+                    />
+                  </div>
+
+                  {/* Due Date */}
+                  <div className="flex flex-col">
+                    <label className="text-[#0A2463] text-lg font-semibold mb-2">
+                      Due Date
+                    </label>
+                    <input
+                      type="date"
+                      value={dueDate}
+                      onChange={(e) => setDueDate(e.target.value)}
+                      className="w-full px-4 py-3 rounded-lg border border-gray-300 bg-gray-50"
+                    />
+                  </div>
+
+                  {/* 🟩 Payment Mode + Date of Join in same row */}
+                  <div className="md:col-span-2 grid grid-cols-2 gap-6">
+                    <div className="flex flex-col">
+                      <label className="text-[#0A2463] text-lg font-semibold mb-2">
+                        Date of Join <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="date"
+                        required
+                        value={
+                          joinDateInput ||
+                          new Date().toISOString().split("T")[0]
+                        }
+                        onChange={(e) => setJoinDateInput(e.target.value)}
+                        className="w-full px-4 py-3 rounded-lg border border-gray-300 bg-gray-50 text-[#0A2463]"
+                      />
+                    </div>
+                    <div className="flex flex-col">
+                      <label className="text-[#0A2463] text-lg font-semibold mb-2">
+                        Payment Mode <span className="text-red-500">*</span>
+                      </label>
+                      <select
+                        required
+                        value={renewMode}
+                        onChange={(e) => setRenewMode(e.target.value)}
+                        className="w-full px-4 py-3 rounded-lg border border-gray-300 bg-gray-50 text-[#0A2463]"
+                      >
+                        <option value="" disabled hidden>
+                          Select Payment Mode
+                        </option>
+                        <option value="Cash">Cash</option>
+                        <option value="UPI">UPI</option>
+                      </select>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Buttons */}
+            <div className="flex justify-end gap-4 mt-8">
+              <button
+                onClick={handleRenew}
+                className="bg-green-600 text-white px-6 py-3 rounded-xl hover:bg-green-700 transition font-semibold shadow"
+              >
+                Confirm Renewal
+              </button>
+              <button
+                onClick={() => setShowRenewModal(false)}
+                className="bg-gray-500 text-white px-6 py-3 rounded-xl hover:bg-gray-600 transition font-semibold shadow"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 💰 Pay Remaining Modal */}
+      {showPayModal && selectedPayment && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/40">
+          <div className="bg-white p-8 rounded-3xl max-w-md w-full shadow-2xl border border-gray-200">
+            <h3 className="text-2xl font-bold text-[#0A2463] mb-6 text-center">
+              Pay Remaining Amount
+            </h3>
+
+            <div className="space-y-5">
+              <div>
+                <label className="text-[#0A2463] text-lg font-semibold mb-2 block">
+                  Remaining Amount
                 </label>
                 <input
                   type="number"
-                  required
-                  placeholder="Enter Amount"
-                  value={renewAmount}
-                  onChange={(e) => setRenewAmount(Number(e.target.value))}
+                  value={payAmount}
+                  onChange={(e) => setPayAmount(Number(e.target.value))}
                   className="w-full px-4 py-3 rounded-lg border border-gray-300 bg-gray-50 text-[#0A2463] focus:ring-2 focus:ring-[#FFC107] focus:outline-none"
                 />
               </div>
 
-              {/* Date of Renewal */}
-              <div className="flex flex-col">
-                <label className="text-[#0A2463] text-lg font-semibold mb-2">
-                  Renewal Date <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="date"
-                  required
-                  value={renewDate || ""}
-                  onChange={(e) => setRenewDate(e.target.value)}
-                  className="w-full px-4 py-3 rounded-lg border border-gray-300 bg-gray-50 text-[#0A2463] focus:ring-2 focus:ring-[#FFC107] focus:outline-none"
-                />
-              </div>
-
-              {/* Payment Status Select */}
-              <div className="flex flex-col">
-                <label className="text-[#0A2463] text-lg font-semibold mb-2">
-                  Payment Status <span className="text-red-500">*</span>
+              <div>
+                <label className="text-[#0A2463] text-lg font-semibold mb-2 block">
+                  Mode of Payment
                 </label>
                 <select
-                  required
-                  value={renewPaymentStatus}
-                  onChange={(e) =>
-                    setRenewPaymentStatus(e.target.value as "Paid" | "Unpaid")
-                  }
-                  className="w-full px-4 py-3 rounded-lg border border-gray-300 bg-gray-50 text-[#0A2463] focus:ring-2 focus:ring-[#FFC107] focus:outline-none"
-                >
-                  <option value="Paid">Paid</option>
-                  <option value="Unpaid">Unpaid</option>
-                </select>
-              </div>
-
-              {/* Mode of Payment */}
-              <div className="flex flex-col">
-                <label className="text-[#0A2463] text-lg font-semibold mb-2">
-                  Payment Mode <span className="text-red-500">*</span>
-                </label>
-                <select
-                  required
-                  value={renewMode}
-                  onChange={(e) => setRenewMode(e.target.value)}
+                  value={payMode}
+                  onChange={(e) => setPayMode(e.target.value)}
                   className="w-full px-4 py-3 rounded-lg border border-gray-300 bg-gray-50 text-[#0A2463] focus:ring-2 focus:ring-[#FFC107] focus:outline-none"
                 >
                   <option value="" disabled hidden>
@@ -833,22 +1299,67 @@ export default function MemberProfilePage() {
                   <option value="UPI">UPI</option>
                 </select>
               </div>
+            </div>
 
-              {/* Buttons */}
-              <div className="flex justify-end gap-4 mt-6">
-                <button
-                  onClick={handleRenew}
-                  className="bg-green-600 text-white px-6 py-3 rounded-xl hover:bg-green-700 transition font-semibold shadow"
-                >
-                  Confirm Renewal
-                </button>
-                <button
-                  onClick={() => setShowRenewModal(false)}
-                  className="bg-gray-500 text-white px-6 py-3 rounded-xl hover:bg-gray-600 transition font-semibold shadow"
-                >
-                  Cancel
-                </button>
-              </div>
+            <div className="flex justify-end gap-4 mt-8">
+              <button
+                onClick={async () => {
+                  if (!payAmount || !payMode) {
+                    alert("Please fill all fields");
+                    return;
+                  }
+
+                  try {
+                    const res = await fetch(`/api/members/${member?._id}`, {
+                      method: "PUT",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        paymentId: selectedPayment.paymentId,
+                        additionalInstallment: {
+                          amountPaid: Number(payAmount),
+                          paymentDate: new Date(),
+                          modeOfPayment: payMode,
+                        },
+                        markAsPaid: true, // ✅ backend will check if full paid
+                      }),
+                    });
+
+                    if (!res.ok) throw new Error("Payment failed");
+
+                    const updated = await res.json();
+                    setMember(updated.member);
+                    setShowPayModal(false);
+                    setPayMode("");
+                    setPayAmount("");
+
+                    // ✅ Success popup
+                    setShowFeedbackModal({
+                      type: "success",
+                      message: "Payment recorded successfully! 💰",
+                    });
+                  } catch (err) {
+                    console.error(err);
+                    // ❌ Error popup
+                    setShowFeedbackModal({
+                      type: "error",
+                      message: "Payment failed! Please try again.",
+                    });
+                  }
+                }}
+                className="bg-green-600 text-white px-6 py-3 rounded-xl hover:bg-green-700 transition font-semibold shadow"
+              >
+                Confirm Payment
+              </button>
+              <button
+                onClick={() => {
+                  setShowPayModal(false);
+                  setPayMode("");
+                  setPayAmount("");
+                }}
+                className="bg-gray-500 text-white px-6 py-3 rounded-xl hover:bg-gray-600 transition font-semibold shadow"
+              >
+                Cancel
+              </button>
             </div>
           </div>
         </div>
@@ -894,6 +1405,24 @@ export default function MemberProfilePage() {
                 Cancel
               </button>
             </div>
+          </div>
+        </div>
+      )}
+      {/* ✅ Feedback Modal */}
+      {showFeedbackModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div
+            className={`p-8 rounded-3xl shadow-2xl text-center max-w-sm w-full transition-all
+      ${
+        showFeedbackModal.type === "success"
+          ? "bg-green-50 text-green-700 border border-green-300"
+          : "bg-red-50 text-red-700 border border-red-300"
+      }`}
+          >
+            <h3 className="text-2xl font-bold mb-2">
+              {showFeedbackModal.type === "success" ? "✅ Success" : "❌ Error"}
+            </h3>
+            <p className="text-lg">{showFeedbackModal.message}</p>
           </div>
         </div>
       )}

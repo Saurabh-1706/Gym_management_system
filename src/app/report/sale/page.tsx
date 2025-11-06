@@ -4,12 +4,19 @@ import { useEffect, useState } from "react";
 import { BarChart2, CreditCard } from "lucide-react";
 import Link from "next/link";
 
+type Installment = {
+  amountPaid: number;
+  paymentDate: string;
+  dueDate?: string | null;
+  modeOfPayment?: string;
+};
+
 type Payment = {
   _id: string;
   plan: string;
-  price: number;
-  date: string;
-  modeOfPayment?: string;
+  actualAmount: number;
+  paymentStatus: "Paid" | "Unpaid";
+  installments: Installment[];
 };
 
 type Member = {
@@ -19,11 +26,18 @@ type Member = {
   payments?: Payment[];
 };
 
-type PaymentWithMember = Payment & {
+// ✅ FIXED: Full shape of flattened payment
+type PaymentWithMember = {
+  _id: string;
+  plan: string;
+  price: number;
+  date: string;
+  modeOfPayment: string;
   memberName: string;
   memberId: string;
-  memberMobile: string; // ✅ add mobile number
+  memberMobile: string;
 };
+
 
 export default function ReportPage() {
   const [payments, setPayments] = useState<PaymentWithMember[]>([]);
@@ -39,12 +53,18 @@ export default function ReportPage() {
       if (Array.isArray(data.members)) {
         const allPayments: PaymentWithMember[] = data.members.flatMap(
           (m: Member) =>
-            (m.payments || []).map((p) => ({
-              ...p,
-              memberName: m.name,
-              memberId: m._id,
-              memberMobile: m.mobile, // ✅ include mobile
-            }))
+            (m.payments || []).flatMap((p: Payment) =>
+              (p.installments || []).map((inst: Installment) => ({
+                _id: p._id,
+                plan: p.plan,
+                price: inst.amountPaid,
+                date: inst.paymentDate,
+                modeOfPayment: inst.modeOfPayment || "Cash",
+                memberName: m.name,
+                memberId: m._id,
+                memberMobile: m.mobile,
+              }))
+            )
         );
 
         allPayments.sort(
@@ -166,7 +186,7 @@ export default function ReportPage() {
             )}
             {filteredPayments.map((p, index) => (
               <tr
-                key={p._id}
+                key={`${p._id}-${index}`}
                 className={`transition-transform transform hover:scale-[1.01] hover:shadow-md ${
                   index % 2 === 0 ? "bg-white" : "bg-gray-50"
                 }`}

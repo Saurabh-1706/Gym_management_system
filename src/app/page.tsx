@@ -1,21 +1,43 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { User, CreditCard, Calendar, Sliders } from "lucide-react";
+import {
+  User,
+  CreditCard,
+  Calendar,
+  Sliders,
+  AlertTriangle,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
+import Loader from "@/components/Loader";
+
+type Installment = {
+  amountPaid: number;
+  paymentDate: string;
+  dueDate?: string;
+  modeOfPayment?: string;
+};
 
 type Payment = {
-  price: number;
+  price?: number;
   date: string;
+  plan?: string;
+  paymentStatus?: string;
+  installments?: Installment[];
+  actualAmount?: number;
 };
 
 type Member = {
   _id: string;
   name: string;
-  date: string;
-  plan: string;
   mobile: string;
+  email?: string;
+  dob?: string;
+  joinDate?: string; // ✅ added
+  date?: string;
+  plan: string;
+  status?: string;
   payments?: Payment[];
 };
 
@@ -49,9 +71,12 @@ type ElectricityBill = {
 export default function DashboardPage() {
   const [members, setMembers] = useState<Member[]>([]);
   const [allMembers, setAllMembers] = useState<Member[]>([]);
-  const [totalRevenue, setTotalRevenue] = useState(0); // ✅ updated calculation
+  const [totalRevenue, setTotalRevenue] = useState(0);
+  const [overdueCount, setOverdueCount] = useState(0);
   const router = useRouter();
   const { data: session, status } = useSession();
+  const [overdueMembers, setOverdueMembers] = useState<any[]>([]);
+  const [showOverdue, setShowOverdue] = useState(false);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -60,10 +85,23 @@ export default function DashboardPage() {
   }, [status, router]);
 
   const getLatestJoinDate = (member: Member) => {
-    if (member.payments && member.payments.length > 0) {
-      return new Date(member.payments[member.payments.length - 1].date);
+    try {
+      if (member.payments && member.payments.length > 0) {
+        const paymentDate =
+          member.payments[member.payments.length - 1].date || "";
+        const parsed = new Date(paymentDate);
+        return isNaN(parsed.getTime())
+          ? new Date(member.joinDate || member.date || new Date().toISOString())
+          : parsed;
+      }
+
+      const parsedJoin = new Date(
+        member.joinDate || member.date || new Date().toISOString()
+      );
+      return isNaN(parsedJoin.getTime()) ? new Date() : parsedJoin;
+    } catch {
+      return new Date();
     }
-    return new Date(member.date);
   };
 
   const calculateExpiryDateObj = (joinDate: string, plan: string) => {
@@ -123,7 +161,19 @@ export default function DashboardPage() {
 
   const today = new Date();
 
-  // Fetch members + total revenue calculation
+  const hasOverdueInstallment = (member: Member) => {
+    if (!member.payments) return false;
+    const now = new Date();
+    for (const payment of member.payments) {
+      if (payment.paymentStatus !== "Paid" && payment.installments?.length) {
+        for (const inst of payment.installments) {
+          if (inst.dueDate && new Date(inst.dueDate) < now) return true;
+        }
+      }
+    }
+    return false;
+  };
+
   useEffect(() => {
     const fetchMembers = async () => {
       try {
@@ -135,6 +185,29 @@ export default function DashboardPage() {
           );
           setMembers(sortedMembers);
           setAllMembers(sortedMembers);
+
+          const now = new Date();
+          const overdueList = sortedMembers
+            .map((m: Member) => {
+              if (!m.payments) return null;
+              for (const payment of m.payments) {
+                if (
+                  payment.paymentStatus !== "Paid" &&
+                  payment.installments?.length
+                ) {
+                  for (const inst of payment.installments) {
+                    if (inst.dueDate && new Date(inst.dueDate) < now) {
+                      return { ...m, overdueDate: inst.dueDate };
+                    }
+                  }
+                }
+              }
+              return null;
+            })
+            .filter(Boolean);
+
+          setOverdueMembers(overdueList);
+          setOverdueCount(overdueList.length);
         }
       } catch (error) {
         console.error("Failed to fetch members:", error);
@@ -143,7 +216,6 @@ export default function DashboardPage() {
 
     const fetchRevenueData = async () => {
       try {
-        // Fetch all relevant data
         const [memberRes, coachRes, miscRes, elecRes] = await Promise.all([
           fetch("/api/members"),
           fetch("/api/coach"),
@@ -165,7 +237,6 @@ export default function DashboardPage() {
           );
         };
 
-        // Member revenue
         const filteredMembers = (memberData.members || [])
           .map((m: Member) => ({
             ...m,
@@ -183,7 +254,6 @@ export default function DashboardPage() {
           0
         );
 
-        // Coach salaries
         const filteredCoaches = (coachData.coaches || [])
           .map((c: Coach) => ({
             ...c,
@@ -203,11 +273,10 @@ export default function DashboardPage() {
           0
         );
 
-        // Miscellaneous
         const totalMisc = (miscData.costs || [])
           .filter((m: MiscCost) => isCurrentMonth(m.date))
           .reduce((acc: number, m: MiscCost) => acc + m.amount, 0);
-        // Electricity
+
         const monthNames = [
           "January",
           "February",
@@ -231,7 +300,7 @@ export default function DashboardPage() {
           (acc: number, e: ElectricityBill) => acc + e.amount,
           0
         );
-        // Total Revenue
+
         setTotalRevenue(
           totalMemberRevenue - totalCoachSalary - totalMisc - totalElectricity
         );
@@ -247,7 +316,7 @@ export default function DashboardPage() {
   const totalMembers = allMembers.length;
 
   if (status === "loading") {
-    return <p className="text-center mt-20 text-gray-700">Loading...</p>;
+    return <Loader text="Loading Dashboard Data..." />;
   }
 
   if (!session) return null;
@@ -259,6 +328,94 @@ export default function DashboardPage() {
         <Sliders size={36} className="text-[#FFC107]" />
         <h1 className="text-4xl font-bold text-[#212529]">Admin Panel</h1>
       </div>
+
+      {/* ✅ Overdue Notification */}
+      {overdueCount > 0 && (
+        <div
+          onClick={() => setShowOverdue((prev) => !prev)}
+          className={`cursor-pointer transition-all duration-300 ${
+            showOverdue ? "bg-red-200" : "bg-red-100"
+          } border border-red-400 text-red-800 rounded-2xl px-6 py-5 mb-10 shadow-md hover:bg-red-200`}
+        >
+          <div className="flex items-center gap-3">
+            <AlertTriangle size={28} className="text-red-600" />
+            <span className="text-xl font-bold">
+              ⚠️ {overdueCount} member
+              {overdueCount > 1 ? "s have" : " has"} overdue installment
+              {overdueCount > 1 ? "s" : ""}!
+            </span>
+          </div>
+
+          {showOverdue && overdueMembers.length > 0 && (
+            <div className="mt-5 overflow-x-auto bg-white rounded-2xl shadow-lg p-6 transition-all duration-300">
+              <h3 className="text-2xl font-bold text-[#212529] mb-4">
+                Overdue Installments
+              </h3>
+              <table className="min-w-full divide-y divide-gray-300 rounded-2xl overflow-hidden">
+                <thead className="bg-[#0A2463] text-white">
+                  <tr>
+                    <th className="px-6 py-4 text-left">Name</th>
+                    <th className="px-6 py-4 text-left">Mobile</th>
+                    <th className="px-6 py-4 text-left">Plan</th>
+                    <th className="px-6 py-4 text-left">Due Date</th>
+                    <th className="px-6 py-4 text-right">Pending Amount (₹)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {overdueMembers.map((m, idx) => {
+                    let pendingAmount = 0;
+                    if (m.payments?.length) {
+                      const unpaid = m.payments.filter(
+                        (p: any) => p.paymentStatus !== "Paid"
+                      );
+                      unpaid.forEach((p: any) => {
+                        const totalPaid = (p.installments || []).reduce(
+                          (sum: number, inst: any) =>
+                            sum + (inst.amountPaid || 0),
+                          0
+                        );
+                        if (p.price || p.actualAmount)
+                          pendingAmount +=
+                            (p.price || p.actualAmount) - totalPaid;
+                      });
+                    }
+                    return (
+                      <tr
+                        key={m._id}
+                        className={`${
+                          idx % 2 === 0 ? "bg-white" : "bg-[#DEE2E6]"
+                        } hover:bg-red-100/50 cursor-pointer`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          router.push(`/members/${m._id}`);
+                        }}
+                      >
+                        <td className="px-6 py-4 font-semibold">{m.name}</td>
+                        <td className="px-6 py-4">{m.mobile}</td>
+                        <td className="px-6 py-4">
+                          <span className="px-3 py-1 rounded-full bg-[#FFC107]/20 font-semibold">
+                            {m.plan || "N/A"}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4">
+                          {m.overdueDate
+                            ? new Date(m.overdueDate || "").toLocaleDateString(
+                                "en-GB"
+                              )
+                            : "—"}
+                        </td>
+                        <td className="px-6 py-4 text-right font-semibold text-red-600">
+                          ₹{pendingAmount.toLocaleString("en-IN")}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10 mt-10">
@@ -285,7 +442,43 @@ export default function DashboardPage() {
             <p className="text-2xl font-bold text-[#212529]">
               {
                 allMembers.filter((m: Member) => {
-                  const expiry = calculateExpiryDateObj(m.date, m.plan);
+                  if (!m.payments || m.payments.length === 0) return false;
+
+                  // 🔹 Find latest renewal date (last installment or createdAt)
+                  const latestPayment = [...m.payments].sort((a, b) => {
+                    const aDate =
+                      a.installments?.[a.installments.length - 1]
+                        ?.paymentDate ||
+                      a.date ||
+                      "";
+                    const bDate =
+                      b.installments?.[b.installments.length - 1]
+                        ?.paymentDate ||
+                      b.date ||
+                      "";
+                    return (
+                      new Date(bDate).getTime() - new Date(aDate).getTime()
+                    );
+                  })[0];
+
+                  if (!latestPayment) return false;
+
+                  const renewalDate =
+                    latestPayment.installments?.length &&
+                    latestPayment.installments?.length > 0
+                      ? latestPayment.installments[
+                          latestPayment.installments.length - 1
+                        ]?.paymentDate
+                      : latestPayment.date;
+
+                  if (!renewalDate) return false;
+
+                  const planToCheck = latestPayment.plan || m.plan;
+                  const expiry = calculateExpiryDateObj(
+                    renewalDate,
+                    planToCheck
+                  );
+
                   return (
                     expiry >= today &&
                     expiry <=
@@ -308,11 +501,43 @@ export default function DashboardPage() {
             <p className="text-2xl font-bold text-[#212529]">
               {
                 allMembers.filter((m: Member) => {
-                  const startDate = getLatestJoinDate(m);
+                  if (!m.payments || m.payments.length === 0) return false;
+
+                  // 🔹 Find latest renewal date
+                  const latestPayment = [...m.payments].sort((a, b) => {
+                    const aDate =
+                      a.installments?.[a.installments.length - 1]
+                        ?.paymentDate ||
+                      a.date ||
+                      "";
+                    const bDate =
+                      b.installments?.[b.installments.length - 1]
+                        ?.paymentDate ||
+                      b.date ||
+                      "";
+                    return (
+                      new Date(bDate).getTime() - new Date(aDate).getTime()
+                    );
+                  })[0];
+
+                  if (!latestPayment) return false;
+
+                  const renewalDate =
+                    latestPayment.installments?.length &&
+                    latestPayment.installments?.length > 0
+                      ? latestPayment.installments[
+                          latestPayment.installments.length - 1
+                        ]?.paymentDate
+                      : latestPayment.date;
+
+                  if (!renewalDate) return false;
+
+                  const planToCheck = latestPayment.plan || m.plan;
                   const expiry = calculateExpiryDateObj(
-                    startDate.toISOString(),
-                    m.plan
+                    renewalDate,
+                    planToCheck
                   );
+
                   return expiry < today;
                 }).length
               }
@@ -320,16 +545,60 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Total Revenue */}
+        {/* Membership */}
         <div
           className="bg-white p-6 rounded-2xl shadow flex items-center gap-4 cursor-pointer hover:shadow-lg transition"
           onClick={() => router.push("/revenue")}
         >
           <CreditCard size={40} className="text-green-600" />
           <div>
-            <p className="text-lg text-[#212529]">Total Revenue</p>
+            <p className="text-lg text-[#212529]">Membership</p>
             <p className="text-2xl font-bold text-[#212529]">
-              ₹{totalRevenue.toLocaleString("en-IN")}
+              ₹
+              {allMembers
+                .reduce((acc, m) => {
+                  if (!m.payments) return acc;
+
+                  const currentMonth = new Date().getMonth();
+                  const currentYear = new Date().getFullYear();
+
+                  // ✅ Sum all payments made in the current month
+                  const monthPayments = m.payments.reduce((sum, p) => {
+                    const paymentDate = new Date(p.date);
+                    const isThisMonth =
+                      paymentDate.getMonth() === currentMonth &&
+                      paymentDate.getFullYear() === currentYear;
+
+                    let monthlyInstallmentsTotal = 0;
+
+                    // ✅ Include installments paid this month
+                    if (p.installments && p.installments.length > 0) {
+                      monthlyInstallmentsTotal = p.installments.reduce(
+                        (instSum, inst) => {
+                          const instDate = new Date(inst.paymentDate);
+                          const isInstThisMonth =
+                            instDate.getMonth() === currentMonth &&
+                            instDate.getFullYear() === currentYear;
+                          return (
+                            instSum +
+                            (isInstThisMonth ? inst.amountPaid || 0 : 0)
+                          );
+                        },
+                        0
+                      );
+                    }
+
+                    // ✅ Include one-time payment if it’s in the same month
+                    if (isThisMonth) {
+                      return sum + (p.price || 0) + monthlyInstallmentsTotal;
+                    }
+
+                    return sum + monthlyInstallmentsTotal;
+                  }, 0);
+
+                  return acc + monthPayments;
+                }, 0)
+                .toLocaleString("en-IN")}
             </p>
           </div>
         </div>
@@ -364,7 +633,8 @@ export default function DashboardPage() {
             {members
               .sort(
                 (a, b) =>
-                  new Date(b.date).getTime() - new Date(a.date).getTime()
+                  new Date(b.date || "").getTime() -
+                  new Date(a.date || "").getTime()
               )
               .slice(0, 7)
               .map((member: Member, idx: number) => (
@@ -384,10 +654,17 @@ export default function DashboardPage() {
                   </td>
                   <td className="px-6 py-4 text-[#212529]">{member.mobile}</td>
                   <td className="px-6 py-4 text-[#212529]">
-                    {new Date(member.date).toLocaleDateString("en-GB")}
+                    {new Date(
+                      member.joinDate || member.date || new Date().toISOString()
+                    ).toLocaleDateString("en-GB")}
                   </td>
                   <td className="px-6 py-4 text-[#212529] font-semibold">
-                    {calculateExpiryDate(member.date, member.plan)}
+                    {calculateExpiryDate(
+                      member.joinDate ||
+                        member.date ||
+                        new Date().toISOString(),
+                      member.plan || "1 month"
+                    )}
                   </td>
                 </tr>
               ))}
