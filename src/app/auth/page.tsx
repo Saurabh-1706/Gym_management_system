@@ -35,8 +35,8 @@ export default function LoginPage() {
           className="max-w-xs md:max-w-md object-contain animate-fadeIn"
         />
         <div className="absolute bottom-10 text-white text-center px-4">
-          <h2 className="text-2xl font-semibold">Mojad Fitness</h2>
-          <p className="text-sm opacity-80 mt-1">
+          <h2 className="text-3xl font-semibold">Mojad Fitness</h2>
+          <p className="text-base opacity-80 mt-1">
             Empowering your fitness journey every day
           </p>
         </div>
@@ -46,12 +46,12 @@ export default function LoginPage() {
       <div className="flex w-full md:w-1/2 items-center justify-center bg-gray-50">
         <form
           onSubmit={handleSubmit}
-          className="p-10 bg-white rounded-2xl shadow-2xl w-full max-w-md space-y-6"
+          className="p-10 bg-white rounded-2xl shadow-2xl w-140 max-w-2xl h-105 space-y-6"
         >
-          <h1 className="text-3xl font-bold text-[#0A2463] text-center mb-4">
+          <h1 className="text-5xl font-bold text-[#0A2463] text-center mb-4">
             Welcome Back
           </h1>
-          <p className="text-center text-gray-500 mb-6">
+          <p className="text-center text-gray-500 text-xl mb-6">
             Enter your credentials to access your dashboard
           </p>
 
@@ -60,7 +60,7 @@ export default function LoginPage() {
             placeholder="Email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="border border-gray-300 p-3 rounded-xl w-full focus:outline-none focus:ring-2 focus:ring-[#0A2463] transition"
+            className="border border-gray-300 p-3 rounded-xl w-full text-lg focus:outline-none focus:ring-2 focus:ring-[#0A2463] transition"
             required
           />
 
@@ -69,7 +69,7 @@ export default function LoginPage() {
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="border border-gray-300 p-3 rounded-xl w-full focus:outline-none focus:ring-2 focus:ring-[#0A2463] transition"
+            className="border border-gray-300 p-3 rounded-xl w-full text-lg focus:outline-none focus:ring-2 focus:ring-[#0A2463] transition"
             required
           />
 

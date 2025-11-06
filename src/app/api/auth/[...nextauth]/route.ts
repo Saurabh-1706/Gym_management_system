@@ -1,14 +1,14 @@
 // src/app/api/auth/[...nextauth]/route.ts
-import NextAuth, { AuthOptions } from "next-auth";
+import NextAuth, { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { connectToDatabase } from "@/lib/mongodb.ts";
+import { connectToDatabase } from "@/lib/mongodb";
 import User, { IUser } from "@/models/User";
 import bcrypt from "bcrypt";
 
 // Ensure the database is connected
 await connectToDatabase();
 
-export const authOptions: AuthOptions = {
+const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
       name: "Credentials",
@@ -19,7 +19,6 @@ export const authOptions: AuthOptions = {
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
 
-        // Explicitly type the user
         const user = (await User.findOne({ email: credentials.email }).exec()) as IUser | null;
         if (!user) return null;
 
@@ -35,9 +34,7 @@ export const authOptions: AuthOptions = {
     }),
   ],
 
-  session: {
-    strategy: "jwt",
-  },
+  session: { strategy: "jwt" },
 
   callbacks: {
     async jwt({ token, user }) {
@@ -58,9 +55,7 @@ export const authOptions: AuthOptions = {
     },
   },
 
-  pages: {
-    signIn: "/login",
-  },
+  pages: { signIn: "/login" },
 };
 
 const handler = NextAuth(authOptions);
