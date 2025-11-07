@@ -20,6 +20,9 @@ export default function PlanPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [validityType, setValidityType] = useState<"months" | "days">("months");
 
+  // ✅ New popup modal state
+  const [popupMessage, setPopupMessage] = useState<string | null>(null);
+
   // Fetch all plans
   const fetchPlans = async () => {
     try {
@@ -45,7 +48,12 @@ export default function PlanPage() {
   };
 
   // Sort plans by validity
-  const sortedPlans = [...plans].sort((a, b) => a.validity - b.validity);
+  // ✅ Sort plans by actual total duration in days
+  const sortedPlans = [...plans].sort((a, b) => {
+    const aDays = a.validity * (a.validityType === "days" ? 1 : 30);
+    const bDays = b.validity * (b.validityType === "days" ? 1 : 30);
+    return aDays - bDays;
+  });
 
   // Add or Update plan
   const handleSubmit = async (e: React.FormEvent) => {
@@ -82,11 +90,20 @@ export default function PlanPage() {
         setValidityType("months");
         setSelectedId(null);
         setShowModal(false);
+
+        // ✅ Show confirmation popup
+        setPopupMessage(
+          selectedId
+            ? "Plan updated successfully!"
+            : "New plan added successfully!"
+        );
       } else {
         console.error(data.error || "Failed to save plan");
+        setPopupMessage("❌ Failed to save plan. Please try again.");
       }
     } catch (error) {
       console.error("Error saving plan:", error);
+      setPopupMessage("❌ An unexpected error occurred while saving the plan.");
     }
   };
 
@@ -158,15 +175,30 @@ export default function PlanPage() {
       {showDeleteModal && (
         <div className="fixed inset-0 backdrop-brightness-100 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="bg-white p-8 rounded-2xl shadow-2xl w-96 text-center transform scale-125">
-            <h2 className="text-lg font-bold mb-4 text-[#15145a]">Are you sure?</h2>
-            <p className="text-sm text-gray-700 mb-6">Do you really want to delete this plan?</p>
+            <h2 className="text-lg font-bold mb-4 text-[#15145a]">
+              Are you sure?
+            </h2>
+            <p className="text-sm text-gray-700 mb-6">
+              Do you really want to delete this plan?
+            </p>
             <div className="flex justify-center gap-4">
               <button
                 onClick={async () => {
                   if (selectedId) {
-                    const res = await fetch(`/api/plans/${selectedId}`, { method: "DELETE" });
-                    const data = await res.json();
-                    if (data.success) fetchPlans();
+                    try {
+                      const res = await fetch(`/api/plans/${selectedId}`, {
+                        method: "DELETE",
+                      });
+                      const data = await res.json();
+                      if (data.success) {
+                        fetchPlans();
+                        setPopupMessage("✅ Plan deleted successfully!");
+                      } else {
+                        setPopupMessage("❌ Failed to delete plan.");
+                      }
+                    } catch {
+                      setPopupMessage("❌ Server error while deleting plan.");
+                    }
                     setShowDeleteModal(false);
                     setSelectedId(null);
                   }
@@ -205,42 +237,48 @@ export default function PlanPage() {
               &times;
             </button>
 
-            <h2 className="text-3xl font-bold mb-6">{selectedId ? "Edit Plan" : "Add New Plan"}</h2>
+            <h2 className="text-3xl font-bold mb-6">
+              {selectedId ? "Edit Plan" : "Add New Plan"}
+            </h2>
             <form onSubmit={handleSubmit}>
               <div className="space-y-6">
                 <div>
-                  <label className="block mb-2 font-bold text-lg">Plan Name</label>
+                  <label className="block mb-2 font-bold text-lg">
+                    Plan Name
+                  </label>
                   <input
                     name="name"
                     type="text"
                     value={form.name}
                     onChange={handleChange}
-                    className={`w-full px-4 py-3 rounded text-black bg-gray-100 text-lg ${
-                      errors.name ? "border border-red-500" : ""
-                    }`}
+                    className="w-full px-4 py-3 rounded text-black bg-gray-100 text-lg"
                     placeholder="Enter plan name"
                   />
                 </div>
 
                 <div className="flex gap-4 items-end">
                   <div className="flex-1">
-                    <label className="block mb-2 font-bold text-lg">Validity</label>
+                    <label className="block mb-2 font-bold text-lg">
+                      Validity
+                    </label>
                     <input
                       name="validity"
                       type="number"
                       value={form.validity}
                       onChange={handleChange}
-                      className={`w-full px-4 py-3 rounded text-black bg-gray-100 text-lg ${
-                        errors.validity ? "border border-red-500" : ""
-                      }`}
+                      className="w-full px-4 py-3 rounded text-black bg-gray-100 text-lg"
                       placeholder={`Enter ${validityType}`}
                     />
                   </div>
                   <div>
-                    <label className="block mb-2 font-bold text-lg">&nbsp;</label>
+                    <label className="block mb-2 font-bold text-lg">
+                      &nbsp;
+                    </label>
                     <select
                       value={validityType}
-                      onChange={(e) => setValidityType(e.target.value as "months" | "days")}
+                      onChange={(e) =>
+                        setValidityType(e.target.value as "months" | "days")
+                      }
                       className="px-4 py-3 rounded text-black bg-gray-100 text-lg"
                     >
                       <option value="months">Months</option>
@@ -256,9 +294,7 @@ export default function PlanPage() {
                     type="number"
                     value={form.amount}
                     onChange={handleChange}
-                    className={`w-full px-4 py-3 rounded text-black bg-gray-100 text-lg ${
-                      errors.amount ? "border border-red-500" : ""
-                    }`}
+                    className="w-full px-4 py-3 rounded text-black bg-gray-100 text-lg"
                     placeholder="Enter amount"
                   />
                 </div>
@@ -285,6 +321,23 @@ export default function PlanPage() {
                 </div>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ✅ Popup Modal (Success/Error Messages) */}
+      {popupMessage && (
+        <div className="fixed inset-0 flex items-center justify-center z-[999] bg-black/40">
+          <div className="bg-white px-8 py-6 rounded-2xl shadow-xl text-center">
+            <p className="text-xl font-semibold text-[#15145a]">
+              {popupMessage}
+            </p>
+            <button
+              onClick={() => setPopupMessage(null)}
+              className="mt-4 bg-yellow-400 text-[#15145a] px-6 py-2 rounded-lg font-bold hover:bg-yellow-500 transition"
+            >
+              OK
+            </button>
           </div>
         </div>
       )}

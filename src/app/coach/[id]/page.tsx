@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import {
   CreditCard,
   UserCircle,
@@ -11,6 +11,7 @@ import {
   Camera,
 } from "lucide-react";
 import ImageCropper from "@/components/ImageCropper";
+import Loader from "@/components/Loader"; // ✅ Added Loader
 
 type Salary = { amountPaid: number; paidOn: string; modeOfPayment?: string };
 
@@ -26,30 +27,34 @@ type Coach = {
 
 export default function CoachProfile() {
   const params = useParams();
+  const router = useRouter();
   const [coach, setCoach] = useState<Coach | null>(null);
 
-  // Salary modal state
+  // ✅ New loading states
+  const [loading, setLoading] = useState(true);
+  const [processing, setProcessing] = useState(false);
+
+  // Popup & other states
+  const [popupMessage, setPopupMessage] = useState<string | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showPayModal, setShowPayModal] = useState(false);
   const [payAmount, setPayAmount] = useState<number | "">("");
   const [payDate, setPayDate] = useState("");
   const [payMode, setPayMode] = useState("Cash");
-
-  // Profile picture states
-  const [newProfilePicture, setNewProfilePicture] = useState<string | null>(
-    null
-  );
+  const [newProfilePicture, setNewProfilePicture] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [showCropper, setShowCropper] = useState(false);
   const [showLightbox, setShowLightbox] = useState(false);
-
-  // Edit modal states
   const [showEditModal, setShowEditModal] = useState(false);
   const [editName, setEditName] = useState("");
   const [editMobile, setEditMobile] = useState("");
   const [editEmail, setEditEmail] = useState("");
   const [editStatus, setEditStatus] = useState<"Active" | "Inactive">("Active");
+
+  const showSuccess = (msg: string) => setPopupMessage(`✅ ${msg}`);
+  const showError = (msg: string) => setPopupMessage(`❌ ${msg}`);
 
   const openEditModal = () => {
     if (!coach) return;
@@ -60,26 +65,86 @@ export default function CoachProfile() {
     setShowEditModal(true);
   };
 
+  // ✅ Fetch coach data with loader
+  useEffect(() => {
+    const fetchCoach = async () => {
+      try {
+        setLoading(true);
+        const res = await fetch(`/api/coach/${params.id}`);
+        const data = await res.json();
+        if (data.success) setCoach(data.coach);
+        else showError("Failed to load coach details");
+      } catch {
+        showError("Error loading coach details");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchCoach();
+  }, [params.id]);
+
+  const getInitials = (name: string) =>
+    name
+      .split(" ")
+      .map((n) => n[0]?.toUpperCase())
+      .join("")
+      .slice(0, 2);
+
+  const handleProfilePictureChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+      setShowCropper(true);
+    }
+  };
+
+  const handleCropComplete = async (croppedBase64: string) => {
+    if (!coach) return;
+    setShowCropper(false);
+    setUploading(true);
+    setProcessing(true);
+
+    try {
+      const res = await fetch(`/api/coach/${coach._id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ profilePicture: croppedBase64 }),
+      });
+
+      if (res.ok) {
+        const updated = await res.json();
+        setCoach(updated.coach);
+        showSuccess("Profile picture updated successfully!");
+      } else showError("Failed to update profile picture");
+    } catch {
+      showError("Error uploading profile picture");
+    } finally {
+      setUploading(false);
+      setProcessing(false);
+    }
+  };
+
   const handleSaveEdit = async () => {
-    // Simple validations
+    if (!coach) return;
+    setProcessing(true);
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const mobileRegex = /^\d{10}$/;
 
     if (!editName.trim()) {
-      alert("Name cannot be empty");
-      return;
+      showError("Name cannot be empty");
+      return setProcessing(false);
     }
     if (!mobileRegex.test(editMobile)) {
-      alert("Mobile number must be 10 digits");
-      return;
+      showError("Mobile must be 10 digits");
+      return setProcessing(false);
     }
     if (editEmail && !emailRegex.test(editEmail)) {
-      alert("Invalid email address");
-      return;
+      showError("Invalid email address");
+      return setProcessing(false);
     }
 
     try {
-      const res = await fetch(`/api/coach/${coach!._id}`, {
+      const res = await fetch(`/api/coach/${coach._id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -94,76 +159,22 @@ export default function CoachProfile() {
         const updated = await res.json();
         setCoach(updated.coach);
         setShowEditModal(false);
+        showSuccess("Coach details updated successfully!");
       } else {
-        alert("Failed to update coach details");
+        showError("Failed to update coach details");
       }
-    } catch (err) {
-      console.error(err);
-      alert("Failed to update coach details");
-    }
-  };
-
-  useEffect(() => {
-    fetch(`/api/coach/${params.id}`)
-      .then((res) => res.json())
-      .then((data) => data.success && setCoach(data.coach));
-  }, [params.id]);
-
-  const getInitials = (name: string) =>
-    name
-      .split(" ")
-      .map((n) => n[0]?.toUpperCase())
-      .join("")
-      .slice(0, 2);
-
-  const handleProfilePictureChange = (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setSelectedFile(file);
-      setShowCropper(true);
-    }
-  };
-
-  const handleCropComplete = async (croppedBase64: string) => {
-    if (!coach) return;
-    setShowCropper(false);
-    setNewProfilePicture(croppedBase64);
-    setUploading(true);
-
-    try {
-      const res = await fetch(`/api/coach/${coach._id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ profilePicture: croppedBase64 }),
-      });
-
-      if (res.ok) {
-        const updated = await res.json();
-        setCoach(updated.coach);
-        setUploadSuccess(true);
-        setTimeout(() => setUploadSuccess(false), 3000);
-      }
+    } catch {
+      showError("Error updating coach details");
     } finally {
-      setUploading(false);
+      setProcessing(false);
     }
   };
-
-  if (!coach)
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
-        <p className="text-gray-500 text-xl animate-pulse">
-          Loading coach profile...
-        </p>
-      </div>
-    );
 
   const handlePaySalary = async () => {
-    if (!payAmount || !payDate || !payMode) {
-      alert("Please fill all fields");
-      return;
-    }
+    if (!coach) return;
+    if (!payAmount || !payDate) return showError("Please fill all salary fields");
+    setProcessing(true);
+
     try {
       const res = await fetch(`/api/coach/payout`, {
         method: "POST",
@@ -180,16 +191,53 @@ export default function CoachProfile() {
         const updated = await res.json();
         setCoach(updated.coach);
         setShowPayModal(false);
-        setPayAmount("");
-        setPayDate("");
-        setPayMode("Cash");
-      } else alert("Failed to pay salary");
-    } catch (err) {
-      console.error(err);
-      alert("Failed to pay salary");
+        showSuccess("Salary paid successfully!");
+      } else showError("Failed to pay salary");
+    } catch {
+      showError("Error processing salary payment");
+    } finally {
+      setProcessing(false);
     }
   };
 
+  const handleDeleteCoach = async () => {
+    if (!coach) return;
+    setProcessing(true);
+    try {
+      const res = await fetch(`/api/coach/${coach._id}`, { method: "DELETE" });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        showSuccess("Coach deleted successfully!");
+        setShowDeleteConfirm(false);
+        setTimeout(() => router.push("/coach"), 2000);
+      } else showError("Failed to delete coach");
+    } catch {
+      showError("Error deleting coach");
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  // ✅ Loader for fetching data
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#E9ECEF]">
+        <Loader text="Loading coach profile..." />
+      </div>
+    );
+  }
+
+  // ✅ Loader overlay during updates
+  if (processing) {
+    return (
+      <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[1000]">
+        <Loader text="Processing..." />
+      </div>
+    );
+  }
+
+  if (!coach) return null;
+  
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#E9ECEF] via-[#F8F9FA] to-white p-10 space-y-10">
       {/* Header */}
@@ -213,7 +261,7 @@ export default function CoachProfile() {
           </button>
 
           <button
-            onClick={() => alert("Delete functionality here")}
+            onClick={() => setShowDeleteConfirm(true)}
             className="flex items-center gap-2 px-5 py-2 bg-red-600 text-white rounded-lg shadow hover:bg-red-700 transition"
           >
             <Trash2 size={22} /> Delete
@@ -532,6 +580,51 @@ export default function CoachProfile() {
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ✅ Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl p-8 shadow-xl max-w-md text-center">
+            <h2 className="text-2xl font-bold text-[#0A2463] mb-4">
+              Confirm Deletion
+            </h2>
+            <p className="text-gray-700 text-lg mb-6">
+              Are you sure you want to delete <strong>{coach?.name}</strong>?
+            </p>
+            <div className="flex justify-center gap-6">
+              <button
+                onClick={handleDeleteCoach}
+                className="bg-red-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-red-700 transition"
+              >
+                Yes, Delete
+              </button>
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="bg-gray-400 text-white px-6 py-3 rounded-xl font-semibold hover:bg-gray-500 transition"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ✅ Popup Modal */}
+      {popupMessage && (
+        <div className="fixed inset-0 flex items-center justify-center z-[999] bg-black/40">
+          <div className="bg-white px-8 py-6 rounded-2xl shadow-xl text-center">
+            <p className="text-xl font-semibold text-[#15145a] whitespace-pre-line">
+              {popupMessage}
+            </p>
+            <button
+              onClick={() => setPopupMessage(null)}
+              className="mt-4 bg-yellow-400 text-[#15145a] px-6 py-2 rounded-lg font-bold hover:bg-yellow-500 transition"
+            >
+              OK
+            </button>
           </div>
         </div>
       )}

@@ -20,32 +20,42 @@ export default function ElectricityBillReportPage() {
   const [year, setYear] = useState(new Date().getFullYear());
   const [amount, setAmount] = useState("");
 
+  // ✅ Feedback modal state
+  const [feedback, setFeedback] = useState<{
+    type: "success" | "error";
+    message: string;
+  } | null>(null);
+
   const months = [
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December",
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December",
   ];
+
+  // Auto-close feedback modal
+  useEffect(() => {
+    if (feedback) {
+      const timer = setTimeout(() => setFeedback(null), 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [feedback]);
 
   // Fetch bills
   const fetchBills = async () => {
-    const res = await fetch("/api/electricity-bill");
-    const data = await res.json();
-    if (data.success) {
-      // Sort by year descending, then month descending
-      const sorted = data.bills.sort((a: Bill, b: Bill) => {
-        if (b.year !== a.year) return b.year - a.year;
-        return months.indexOf(b.month) - months.indexOf(a.month);
-      });
-      setBills(sorted);
+    try {
+      const res = await fetch("/api/electricity-bill");
+      const data = await res.json();
+      if (data.success) {
+        const sorted = data.bills.sort((a: Bill, b: Bill) => {
+          if (b.year !== a.year) return b.year - a.year;
+          return months.indexOf(b.month) - months.indexOf(a.month);
+        });
+        setBills(sorted);
+      } else {
+        setFeedback({ type: "error", message: "Failed to load bills ❌" });
+      }
+    } catch (err) {
+      console.error(err);
+      setFeedback({ type: "error", message: "Error fetching bills ❌" });
     }
   };
 
@@ -71,13 +81,21 @@ export default function ElectricityBillReportPage() {
 
   // Add or update bill
   const handleSubmit = async () => {
-    if (!month || !amount) return alert("Please fill all fields");
+    if (!month || !amount) {
+      setFeedback({ type: "error", message: "Please fill all fields ❌" });
+      return;
+    }
 
     // Duplicate check for new bills
     if (!formId) {
       const duplicate = bills.find((b) => b.month === month && b.year === year);
-      if (duplicate)
-        return alert("A bill for this month and year already exists!");
+      if (duplicate) {
+        setFeedback({
+          type: "error",
+          message: "A bill for this month and year already exists! ⚠️",
+        });
+        return;
+      }
     }
 
     const method = formId ? "PUT" : "POST";
@@ -91,6 +109,7 @@ export default function ElectricityBillReportPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ month, year, amount: Number(amount) }),
       });
+
       const data = await res.json();
       if (data.success) {
         setFormId(null);
@@ -98,12 +117,22 @@ export default function ElectricityBillReportPage() {
         setAmount("");
         setModalOpen(false);
         fetchBills();
+
+        setFeedback({
+          type: "success",
+          message: formId
+            ? "Bill updated successfully ✅"
+            : "Bill added successfully ✅",
+        });
       } else {
-        alert(data.message || "Failed to save bill");
+        setFeedback({
+          type: "error",
+          message: data.message || "Failed to save bill ❌",
+        });
       }
     } catch (err) {
       console.error(err);
-      alert("Failed to save bill");
+      setFeedback({ type: "error", message: "Failed to save bill ❌" });
     }
   };
 
@@ -239,6 +268,24 @@ export default function ElectricityBillReportPage() {
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ✅ Feedback Modal */}
+      {feedback && (
+        <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/40">
+          <div
+            className={`p-6 rounded-2xl shadow-2xl text-center max-w-sm w-full transition-all ${
+              feedback.type === "success"
+                ? "bg-green-50 text-green-700 border border-green-300"
+                : "bg-red-50 text-red-700 border border-red-300"
+            }`}
+          >
+            <h3 className="text-2xl font-bold mb-2">
+              {feedback.type === "success" ? "✅ Success" : "❌ Error"}
+            </h3>
+            <p className="text-lg">{feedback.message}</p>
           </div>
         </div>
       )}

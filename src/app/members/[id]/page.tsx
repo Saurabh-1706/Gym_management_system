@@ -168,7 +168,7 @@ export default function MemberProfilePage() {
 
   useEffect(() => {
     if (showFeedbackModal) {
-      const timer = setTimeout(() => setShowFeedbackModal(null), 3000);
+      const timer = setTimeout(() => setShowFeedbackModal(null), 2000);
       return () => clearTimeout(timer);
     }
   }, [showFeedbackModal]);
@@ -816,7 +816,10 @@ export default function MemberProfilePage() {
             onSubmit={async (e) => {
               e.preventDefault();
               if (!memberData.name || !memberData.mobile || !memberData.email) {
-                alert("All fields are required");
+                setShowFeedbackModal({
+                  type: "error",
+                  message: "All fields are required.",
+                });
                 return;
               }
               try {
@@ -829,12 +832,22 @@ export default function MemberProfilePage() {
                   const updated = await res.json();
                   setMember(updated.member);
                   setEditing(false);
+                  setShowFeedbackModal({
+                    type: "success",
+                    message: "Member details updated successfully! ✅",
+                  });
                 } else {
-                  alert("Update failed");
+                  setShowFeedbackModal({
+                    type: "error",
+                    message: "Update failed! Please try again.",
+                  });
                 }
               } catch (err) {
                 console.error(err);
-                alert("Update failed");
+                setShowFeedbackModal({
+                  type: "error",
+                  message: "Error updating member details.",
+                });
               }
             }}
             className="grid grid-cols-1 md:grid-cols-2 gap-5"
@@ -1365,7 +1378,7 @@ export default function MemberProfilePage() {
         </div>
       )}
 
-      {/* Delete Modal */}
+      {/* 🗑️ Delete Modal */}
       {showDeleteModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/40">
           <div className="bg-white p-10 rounded-3xl max-w-md w-full shadow-2xl border border-gray-200">
@@ -1385,13 +1398,25 @@ export default function MemberProfilePage() {
                       method: "DELETE",
                     });
                     if (res.ok) {
-                      router.push("/members");
+                      setShowFeedbackModal({
+                        type: "success",
+                        message: "Member deleted successfully! 🗑️",
+                      });
+                      setTimeout(() => router.push("/members"), 2000);
                     } else {
-                      alert("Failed to delete member");
+                      setShowFeedbackModal({
+                        type: "error",
+                        message: "Failed to delete member. Try again.",
+                      });
                     }
                   } catch (err) {
                     console.error(err);
-                    alert("Failed to delete member");
+                    setShowFeedbackModal({
+                      type: "error",
+                      message: "Error deleting member.",
+                    });
+                  } finally {
+                    setShowDeleteModal(false);
                   }
                 }}
                 className="bg-red-600 text-white px-6 py-3 rounded-xl hover:bg-red-700 transition font-semibold shadow"
@@ -1408,16 +1433,17 @@ export default function MemberProfilePage() {
           </div>
         </div>
       )}
+
       {/* ✅ Feedback Modal */}
       {showFeedbackModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
           <div
             className={`p-8 rounded-3xl shadow-2xl text-center max-w-sm w-full transition-all
-      ${
-        showFeedbackModal.type === "success"
-          ? "bg-green-50 text-green-700 border border-green-300"
-          : "bg-red-50 text-red-700 border border-red-300"
-      }`}
+        ${
+          showFeedbackModal.type === "success"
+            ? "bg-green-50 text-green-700 border border-green-300"
+            : "bg-red-50 text-red-700 border border-red-300"
+        }`}
           >
             <h3 className="text-2xl font-bold mb-2">
               {showFeedbackModal.type === "success" ? "✅ Success" : "❌ Error"}

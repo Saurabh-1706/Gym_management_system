@@ -39,6 +39,9 @@ export default function CoachPage() {
     joinDate: "",
   });
 
+  // ✅ New popup modal state
+  const [popupMessage, setPopupMessage] = useState<string | null>(null);
+
   // ✅ Fetch coaches
   useEffect(() => {
     fetch("/api/coach")
@@ -61,7 +64,7 @@ export default function CoachPage() {
     return new Date(latest.paidOn).toLocaleDateString("en-GB");
   };
 
-  // ✅ Filter by search only (no sorting)
+  // ✅ Filter by search only
   const filteredCoaches = coaches.filter((c) =>
     c.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -74,22 +77,22 @@ export default function CoachPage() {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
     if (!newCoach.name.trim()) {
-      alert("Name cannot be empty");
+      setPopupMessage("⚠️ Name cannot be empty");
       return;
     }
 
     if (!mobileRegex.test(newCoach.mobile)) {
-      alert("Mobile number must be exactly 10 digits");
+      setPopupMessage("⚠️ Mobile number must be exactly 10 digits");
       return;
     }
 
     if (newCoach.email && !emailRegex.test(newCoach.email)) {
-      alert("Invalid email address");
+      setPopupMessage("⚠️ Invalid email address");
       return;
     }
 
     if (!newCoach.joinDate) {
-      alert("Please select a join date");
+      setPopupMessage("⚠️ Please select a join date");
       return;
     }
 
@@ -104,14 +107,17 @@ export default function CoachPage() {
         setCoaches((prev) => [...prev, data.coach]);
         setNewCoach({ name: "", mobile: "", email: "", joinDate: "" });
         setShowAddModal(false);
+        setPopupMessage("✅ Coach added successfully!");
       } else {
-        alert("Error: " + data.error);
+        setPopupMessage("❌ Error: " + (data.error || "Failed to add coach"));
       }
     } catch (err) {
       console.error(err);
-      alert("Failed to add coach");
+      setPopupMessage("❌ Failed to add coach. Please try again.");
     }
   };
+
+  
 
   return (
     <div className="p-6 relative bg-[#E9ECEF]">
@@ -368,6 +374,23 @@ export default function CoachPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ✅ Popup Modal (Success/Error) */}
+      {popupMessage && (
+        <div className="fixed inset-0 flex items-center justify-center z-[999] bg-black/40">
+          <div className="bg-white px-8 py-6 rounded-2xl shadow-xl text-center">
+            <p className="text-xl font-semibold text-[#15145a] whitespace-pre-line">
+              {popupMessage}
+            </p>
+            <button
+              onClick={() => setPopupMessage(null)}
+              className="mt-4 bg-yellow-400 text-[#15145a] px-6 py-2 rounded-lg font-bold hover:bg-yellow-500 transition"
+            >
+              OK
+            </button>
           </div>
         </div>
       )}

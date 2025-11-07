@@ -285,12 +285,19 @@ export default function MembersPage() {
             >
               <option value="All">All Plans</option>
               {plans
-                .sort((a, b) => a.validity - b.validity)
+                .sort((a, b) => {
+                  const aDays =
+                    a.validity * (a.validityType === "days" ? 1 : 30);
+                  const bDays =
+                    b.validity * (b.validityType === "days" ? 1 : 30);
+                  return aDays - bDays;
+                })
                 .map((plan) => (
                   <option key={plan._id} value={plan.name}>
                     {plan.name}
                   </option>
                 ))}
+
               <option value="Custom">Custom</option>
             </select>
             <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">

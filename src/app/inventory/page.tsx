@@ -19,6 +19,13 @@ export default function InventoryPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
+
+  // ✅ Popup state
+  const [showFeedbackModal, setShowFeedbackModal] = useState<{
+    type: "success" | "error";
+    message: string;
+  } | null>(null);
 
   const [form, setForm] = useState<InventoryItem>({
     name: "",
@@ -29,6 +36,14 @@ export default function InventoryPage() {
     status: "Active",
   });
 
+  // Auto close popup
+  useEffect(() => {
+    if (showFeedbackModal) {
+      const timer = setTimeout(() => setShowFeedbackModal(null), 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [showFeedbackModal]);
+
   // Fetch inventory
   useEffect(() => {
     const fetchInventory = async () => {
@@ -38,6 +53,10 @@ export default function InventoryPage() {
         setInventory(data.items || []);
       } catch (err) {
         console.error(err);
+        setShowFeedbackModal({
+          type: "error",
+          message: "Failed to load inventory.",
+        });
       } finally {
         setLoading(false);
       }
@@ -74,8 +93,16 @@ export default function InventoryPage() {
         setInventory((prev) =>
           prev.map((i) => (i._id === savedItem.item._id ? savedItem.item : i))
         );
+        setShowFeedbackModal({
+          type: "success",
+          message: "Equipment updated successfully! ✅",
+        });
       } else {
         setInventory((prev) => [savedItem.item, ...prev]);
+        setShowFeedbackModal({
+          type: "success",
+          message: "New equipment added successfully! ✅",
+        });
       }
 
       setForm({
@@ -90,17 +117,41 @@ export default function InventoryPage() {
       setShowForm(false);
     } catch (err) {
       console.error(err);
-      alert("Failed to save item");
+      setShowFeedbackModal({
+        type: "error",
+        message: "Failed to save equipment. ❌",
+      });
     }
   };
 
+  // Delete handler with confirmation modal
   const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this item?")) return;
+    setShowDeleteConfirm(id);
+  };
+
+  const confirmDelete = async (id: string) => {
     try {
       const res = await fetch(`/api/inventory/${id}`, { method: "DELETE" });
-      if (res.ok) setInventory((prev) => prev.filter((i) => i._id !== id));
+      if (res.ok) {
+        setInventory((prev) => prev.filter((i) => i._id !== id));
+        setShowFeedbackModal({
+          type: "success",
+          message: "Equipment deleted successfully! 🗑️",
+        });
+      } else {
+        setShowFeedbackModal({
+          type: "error",
+          message: "Failed to delete equipment. ❌",
+        });
+      }
     } catch (err) {
       console.error(err);
+      setShowFeedbackModal({
+        type: "error",
+        message: "Error deleting equipment. ❌",
+      });
+    } finally {
+      setShowDeleteConfirm(null);
     }
   };
 
@@ -168,7 +219,7 @@ export default function InventoryPage() {
                 </td>
               </tr>
             )}
-            {inventory.map((item, index) => (
+            {filteredInventory.map((item, index) => (
               <tr
                 key={item._id}
                 className={`transition-transform transform hover:scale-[1.01] hover:shadow-md ${
@@ -214,7 +265,6 @@ export default function InventoryPage() {
         </table>
       </div>
 
-
       {/* Modal Form */}
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
@@ -235,46 +285,26 @@ export default function InventoryPage() {
             </div>
 
             <form className="space-y-5" onSubmit={handleSubmit}>
-              <div>
-                <label className="block text-gray-700 font-medium mb-2">
-                  Name
-                </label>
-                <input
-                  type="text"
-                  value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition"
-                />
-              </div>
-              <div>
-                <label className="block text-gray-700 font-medium mb-2">
-                  Category
-                </label>
-                <input
-                  type="text"
-                  value={form.category}
-                  onChange={(e) =>
-                    setForm({ ...form, category: e.target.value })
-                  }
-                  required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition"
-                />
-              </div>
-              <div>
-                <label className="block text-gray-700 font-medium mb-2">
-                  Manufacturer
-                </label>
-                <input
-                  type="text"
-                  value={form.manufacturer}
-                  onChange={(e) =>
-                    setForm({ ...form, manufacturer: e.target.value })
-                  }
-                  required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition"
-                />
-              </div>
+              {[
+                ["Name", "name"],
+                ["Category", "category"],
+                ["Manufacturer", "manufacturer"],
+              ].map(([label, key]) => (
+                <div key={key}>
+                  <label className="block text-gray-700 font-medium mb-2">
+                    {label}
+                  </label>
+                  <input
+                    type="text"
+                    value={form[key as keyof InventoryItem] as string}
+                    onChange={(e) =>
+                      setForm({ ...form, [key]: e.target.value })
+                    }
+                    required
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition"
+                  />
+                </div>
+              ))}
               <div>
                 <label className="block text-gray-700 font-medium mb-2">
                   Quantity
@@ -339,6 +369,53 @@ export default function InventoryPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* 🗑️ Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-white p-10 rounded-3xl max-w-md w-full shadow-2xl border border-gray-200 text-center">
+            <h3 className="text-2xl font-bold text-red-600 mb-4">
+              Confirm Deletion
+            </h3>
+            <p className="text-gray-700 mb-6">
+              Are you sure you want to delete this equipment?
+            </p>
+            <div className="flex justify-center gap-4">
+              <button
+                onClick={() => confirmDelete(showDeleteConfirm)}
+                className="bg-red-600 text-white px-6 py-3 rounded-xl hover:bg-red-700 transition font-semibold shadow"
+              >
+                Yes, Delete
+              </button>
+              <button
+                onClick={() => setShowDeleteConfirm(null)}
+                className="bg-gray-500 text-white px-6 py-3 rounded-xl hover:bg-gray-600 transition font-semibold shadow"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ✅ Feedback Popup */}
+      {showFeedbackModal && (
+        <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/40">
+          <div
+            className={`p-6 rounded-2xl shadow-2xl text-center max-w-sm w-full transition-all
+          ${
+            showFeedbackModal.type === "success"
+              ? "bg-green-50 text-green-700 border border-green-300"
+              : "bg-red-50 text-red-700 border border-red-300"
+          }`}
+          >
+            <h3 className="text-2xl font-bold mb-2">
+              {showFeedbackModal.type === "success" ? "✅ Success" : "❌ Error"}
+            </h3>
+            <p className="text-lg">{showFeedbackModal.message}</p>
           </div>
         </div>
       )}

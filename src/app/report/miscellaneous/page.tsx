@@ -20,11 +20,44 @@ export default function MiscellaneousPage() {
   const [date, setDate] = useState("");
   const [amount, setAmount] = useState("");
 
+  // Delete confirmation state
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [deleteName, setDeleteName] = useState<string>("");
+
+  // ✅ Feedback modal state
+  const [feedback, setFeedback] = useState<{
+    type: "success" | "error";
+    message: string;
+  } | null>(null);
+
+  // Auto-close feedback modal
+  useEffect(() => {
+    if (feedback) {
+      const timer = setTimeout(() => setFeedback(null), 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [feedback]);
+
   // Fetch costs
   const fetchCosts = async () => {
-    const res = await fetch("/api/miscellaneous");
-    const data = await res.json();
-    if (data.success) setCosts(data.costs);
+    try {
+      const res = await fetch("/api/miscellaneous");
+      const data = await res.json();
+      if (data.success) {
+        setCosts(data.costs);
+      } else {
+        setFeedback({
+          type: "error",
+          message: "Failed to load costs ❌",
+        });
+      }
+    } catch (err) {
+      console.error(err);
+      setFeedback({
+        type: "error",
+        message: "Error fetching costs ❌",
+      });
+    }
   };
 
   useEffect(() => {
@@ -49,33 +82,81 @@ export default function MiscellaneousPage() {
 
   // Submit form
   const handleSubmit = async () => {
-    if (!name || !date || !amount) return alert("Please fill all fields");
+    if (!name || !date || !amount) {
+      setFeedback({ type: "error", message: "Please fill all fields ❌" });
+      return;
+    }
 
     const method = formId ? "PUT" : "POST";
     const url = formId ? `/api/miscellaneous/${formId}` : "/api/miscellaneous";
 
-    const res = await fetch(url, {
-      method,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, date, amount: Number(amount) }),
-    });
-    const data = await res.json();
-    if (data.success) {
-      setModalOpen(false);
-      fetchCosts();
-    } else {
-      alert(data.message || "Failed to save cost");
+    try {
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, date, amount: Number(amount) }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setModalOpen(false);
+        fetchCosts();
+        setFeedback({
+          type: "success",
+          message: formId
+            ? "Cost updated successfully ✅"
+            : "Cost added successfully ✅",
+        });
+      } else {
+        setFeedback({
+          type: "error",
+          message: data.message || "Failed to save cost ❌",
+        });
+      }
+    } catch (err) {
+      console.error(err);
+      setFeedback({
+        type: "error",
+        message: "Error saving cost ❌",
+      });
     }
   };
 
-  // Group costs by month-year and sort months descending
-  const grouped: Record<string, Cost[]> = {};
+  // Delete cost (after confirmation)
+  const confirmDelete = async () => {
+    if (!deleteId) return;
+    try {
+      const res = await fetch(`/api/miscellaneous/${deleteId}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (data.success) {
+        fetchCosts();
+        setFeedback({
+          type: "success",
+          message: "Cost deleted successfully 🗑️",
+        });
+      } else {
+        setFeedback({
+          type: "error",
+          message: "Failed to delete cost ❌",
+        });
+      }
+    } catch (err) {
+      console.error(err);
+      setFeedback({
+        type: "error",
+        message: "Error deleting cost ❌",
+      });
+    } finally {
+      setDeleteId(null);
+    }
+  };
 
-  // First, sort costs by date descending
+  // Group costs by month-year
+  const grouped: Record<string, Cost[]> = {};
   const sortedCosts = [...costs].sort(
     (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
   );
-
   sortedCosts.forEach((c) => {
     const key = new Date(c.date).toLocaleString("en-GB", {
       month: "long",
@@ -160,14 +241,9 @@ export default function MiscellaneousPage() {
                       <Edit size={16} /> Edit
                     </button>
                     <button
-                      onClick={async () => {
-                        if (!confirm("Delete this cost?")) return;
-                        const res = await fetch(`/api/miscellaneous/${c._id}`, {
-                          method: "DELETE",
-                        });
-                        const data = await res.json();
-                        if (data.success) fetchCosts();
-                        else alert("Failed to delete");
+                      onClick={() => {
+                        setDeleteId(c._id);
+                        setDeleteName(c.name);
                       }}
                       className="px-4 py-2 bg-red-500 text-white rounded-lg shadow hover:bg-red-600 transition flex items-center gap-1"
                     >
@@ -186,11 +262,11 @@ export default function MiscellaneousPage() {
         )}
       </div>
 
-      {/* Modal */}
+      {/* Add/Edit Modal */}
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/40">
-          <div className="bg-white p-15 rounded-3xl max-w-md w-full shadow-2xl border border-gray-200">
-            <h3 className="text-4xl font-bold text-[#0A2463] mb-6 flex items-center gap-3">
+          <div className="bg-white p-10 rounded-3xl max-w-md w-full shadow-2xl border border-gray-200">
+            <h3 className="text-3xl font-bold text-[#0A2463] mb-6 flex items-center gap-3">
               <PlusCircle className="text-[#FFC107]" />{" "}
               {formId ? "Edit Cost" : "Add New Cost"}
             </h3>
@@ -230,6 +306,53 @@ export default function MiscellaneousPage() {
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* 🗑️ Delete Confirmation Modal */}
+      {deleteId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/40">
+          <div className="bg-white p-10 rounded-3xl max-w-md w-full shadow-2xl border border-gray-200 text-center">
+            <h3 className="text-3xl font-bold text-red-600 mb-4">
+              Confirm Deletion
+            </h3>
+            <p className="text-gray-700 text-lg mb-6">
+              Are you sure you want to delete{" "}
+              <span className="font-semibold text-[#0A2463]">{deleteName}</span>?
+            </p>
+            <div className="flex justify-center gap-4">
+              <button
+                onClick={confirmDelete}
+                className="bg-red-600 text-white px-6 py-3 rounded-xl hover:bg-red-700 transition font-semibold shadow"
+              >
+                Yes, Delete
+              </button>
+              <button
+                onClick={() => setDeleteId(null)}
+                className="bg-gray-500 text-white px-6 py-3 rounded-xl hover:bg-gray-600 transition font-semibold shadow"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ✅ Feedback Modal */}
+      {feedback && (
+        <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/40">
+          <div
+            className={`p-6 rounded-2xl shadow-2xl text-center max-w-sm w-full transition-all ${
+              feedback.type === "success"
+                ? "bg-green-50 text-green-700 border border-green-300"
+                : "bg-red-50 text-red-700 border border-red-300"
+            }`}
+          >
+            <h3 className="text-2xl font-bold mb-2">
+              {feedback.type === "success" ? "✅ Success" : "❌ Error"}
+            </h3>
+            <p className="text-lg">{feedback.message}</p>
           </div>
         </div>
       )}

@@ -155,3 +155,35 @@ html, body {
 .animate-fadeIn {
   animation: fadeIn 0.8s ease-in-out;
 }
+
+@keyframes barbellMove {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(10px); }
+}
+
+@keyframes glowBarbell {
+  0%, 100% { opacity: 0.2; }
+  50% { opacity: 0.6; }
+}
+
+@keyframes weightMove {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+@keyframes bounceDumbbell {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-10px) rotate(10deg); }
+}
+
+@keyframes pulseBarbell {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+/* Tailwind custom utilities */
+.animate-barbellMove { animation: barbellMove 1.5s infinite ease-in-out; }
+.animate-weightMove { animation: weightMove 1s infinite ease-in-out; }
+.animate-bounceDumbbell { animation: bounceDumbbell 1.5s infinite ease-in-out; }
+.animate-glowBarbell { animation: glowBarbell 1.2s infinite ease-in-out; }
+.animate-pulseBarbell { animation: pulseBarbell 1.5s infinite ease-in-out; }
