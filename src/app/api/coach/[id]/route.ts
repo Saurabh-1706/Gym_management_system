@@ -3,11 +3,7 @@ import { connectToDatabase } from "@/lib/mongodb";
 import CoachModel from "@/models/Coach";
 import mongoose from "mongoose";
 
-export async function GET(
-  req: Request,
-  context: any
-) {
-  const { id } = await context.params;
+export async function GET(req: Request, context: any) {
   try {
     await connectToDatabase();
 
@@ -27,28 +23,22 @@ export async function GET(
   }
 }
 
-export async function PUT(
-  req: Request,
-  context: { params: { id: string } }
-) {
+export async function PUT(req: Request, context: any) {
   try {
     await connectToDatabase();
 
     const { id } = context.params;
     const { name, mobile, email, status } = await req.json();
 
-    // Build update object only with fields that are provided
     const updateData: any = {};
     if (name !== undefined) updateData.name = name;
     if (mobile !== undefined) updateData.mobile = mobile;
     if (email !== undefined) updateData.email = email;
     if (status !== undefined) updateData.status = status;
 
-    const updatedCoach = await CoachModel.findByIdAndUpdate(
-      id,
-      updateData,
-      { new: true } // Return the updated document
-    );
+    const updatedCoach = await CoachModel.findByIdAndUpdate(id, updateData, {
+      new: true,
+    });
 
     if (!updatedCoach) {
       return NextResponse.json({ success: false, error: "Coach not found" });
