@@ -10,20 +10,16 @@ function calculateExpiryDate(member: any): Date {
   let plan: string;
 
   if (member.payments?.length > 0) {
-    // ✅ Sort payments by first installment date
-  const latestPayment = [...member.payments].sort((a, b) => {
-    const aStart = a.installments?.[0]?.paymentDate || 0;
-    const bStart = b.installments?.[0]?.paymentDate || 0;
-    return new Date(bStart).getTime() - new Date(aStart).getTime();
-  })[0];
+    const latestPayment = [...member.payments].sort((a, b) => {
+      const aStart = a.installments?.[0]?.paymentDate || 0;
+      const bStart = b.installments?.[0]?.paymentDate || 0;
+      return new Date(bStart).getTime() - new Date(aStart).getTime();
+    })[0];
 
-  // ✅ Always use the FIRST installment's date as plan start date
-  baseDate = new Date(
-    latestPayment.installments?.[0]?.paymentDate || member.date
-  );
-  plan = latestPayment.plan;
-
-
+    baseDate = new Date(
+      latestPayment.installments?.[0]?.paymentDate || member.date
+    );
+    plan = latestPayment.plan;
   } else {
     baseDate = new Date(member.date);
     plan = member.plan;
@@ -77,28 +73,30 @@ function calculateExpiryDate(member: any): Date {
 }
 
 // ------------------
-// Determine member status (Active / Inactive)
+// Determine member status
 // ------------------
 function determineStatus(member: any): "Active" | "Inactive" {
   const expiryDate = calculateExpiryDate(member);
   const graceDate = new Date(expiryDate);
   graceDate.setDate(graceDate.getDate() + 7);
-
   return new Date() <= graceDate ? "Active" : "Inactive";
 }
 
 // ------------------
 // GET: fetch single member
 // ------------------
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: Request, context: any) {
   try {
     await connectToDatabase();
-    const member = await Member.findById(params.id);
+
+    const { id } = context.params;
+    const member = await Member.findById(id);
     if (!member)
       return NextResponse.json({ success: false, message: "Member not found" }, { status: 404 });
 
     member.status = determineStatus(member);
-    await member.save(); // keep DB updated
+    await member.save();
+
     return NextResponse.json({ success: true, member });
   } catch (error) {
     console.error("❌ Error fetching member:", error);
@@ -109,11 +107,13 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 // ------------------
 // PUT: update / renew / pay remaining
 // ------------------
-export async function PUT(req: Request, { params }: { params: { id: string } }) {
+export async function PUT(req: Request, context: any) {
   try {
     await connectToDatabase();
+
+    const { id } = context.params;
     const body = await req.json();
-    const member = await Member.findById(params.id);
+    const member = await Member.findById(id);
     if (!member)
       return NextResponse.json({ success: false, message: "Member not found" }, { status: 404 });
 
@@ -126,7 +126,6 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
         installments: [
           {
             amountPaid: Number(body.amountPaid),
-            // ✅ Use joinDate as paymentDate if provided
             paymentDate: new Date(body.joinDate || body.date || Date.now()),
             dueDate:
               Number(body.amountPaid) >= Number(body.actualAmount)
@@ -142,10 +141,10 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
       member.payments.push(newPayment);
       member.plan = body.plan;
       member.date = new Date(body.date || Date.now());
-      member.status = "Active"; // Reactivate on renewal
+      member.status = "Active";
     }
 
-    // ✅ Update join date only when requested (from frontend)
+    // ✅ Update join date if requested
     if (body.updateJoinDate && body.joinDate) {
       member.joinDate = new Date(body.joinDate);
     }
@@ -161,18 +160,14 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
           dueDate: null,
         });
 
-        // ✅ Sort installments so first payment always stays first
-      payment.installments.sort(
-        (a: any, b: any) => new Date(a.paymentDate).getTime() - new Date(b.paymentDate).getTime()
-      );
+        payment.installments.sort(
+          (a: any, b: any) => new Date(a.paymentDate).getTime() - new Date(b.paymentDate).getTime()
+        );
 
-      // ✅ Make sure the plan start date (first payment) never changes
-      const firstPaymentDate = payment.installments[0]?.paymentDate;
-      if (firstPaymentDate) {
-        // Only use this date for expiry calculation
-        payment.planStartDate = new Date(firstPaymentDate);
-      }
-
+        const firstPaymentDate = payment.installments[0]?.paymentDate;
+        if (firstPaymentDate) {
+          payment.planStartDate = new Date(firstPaymentDate);
+        }
 
         const totalPaid = payment.installments.reduce(
           (sum: number, inst: any) => sum + inst.amountPaid,
@@ -212,10 +207,12 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
 // ------------------
 // DELETE: delete member
 // ------------------
-export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(req: Request, context: any) {
   try {
     await connectToDatabase();
-    const deleted = await Member.findByIdAndDelete(params.id);
+
+    const { id } = context.params;
+    const deleted = await Member.findByIdAndDelete(id);
     if (!deleted)
       return NextResponse.json({ success: false, message: "Member not found" }, { status: 404 });
 
