@@ -1,12 +1,8 @@
-// src/app/api/auth/[...nextauth]/route.ts
 import NextAuth, { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { connectToDatabase } from "@/lib/mongodb";
 import User, { IUser } from "@/models/User";
 import bcrypt from "bcrypt";
-
-// Ensure the database is connected
-await connectToDatabase();
 
 const authOptions: NextAuthOptions = {
   providers: [
@@ -17,6 +13,9 @@ const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
+        // ✅ Connect to DB here (runtime only)
+        await connectToDatabase();
+
         if (!credentials?.email || !credentials?.password) return null;
 
         const user = (await User.findOne({ email: credentials.email }).exec()) as IUser | null;
@@ -56,6 +55,7 @@ const authOptions: NextAuthOptions = {
   },
 
   pages: { signIn: "/login" },
+  secret: process.env.NEXTAUTH_SECRET,
 };
 
 const handler = NextAuth(authOptions);
