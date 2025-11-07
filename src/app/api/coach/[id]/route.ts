@@ -1,16 +1,18 @@
-import { NextResponse, type RouteContext } from "next/server";
+import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import CoachModel from "@/models/Coach";
 import mongoose from "mongoose";
 
-// ✅ Use RouteContext instead of custom type
-export async function GET(req: Request, context: RouteContext) {
+export async function GET(
+  req: Request,
+  context: { params: { id: string } }
+) {
   try {
     await connectToDatabase();
 
-    const id = context.params?.id;
+    const { id } = context.params;
 
-    if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+    if (!mongoose.Types.ObjectId.isValid(id)) {
       return NextResponse.json({ success: false, error: "Invalid coach ID" });
     }
 
@@ -24,26 +26,28 @@ export async function GET(req: Request, context: RouteContext) {
   }
 }
 
-export async function PUT(req: Request, context: RouteContext) {
+export async function PUT(
+  req: Request,
+  context: { params: { id: string } }
+) {
   try {
     await connectToDatabase();
 
-    const id = context.params?.id;
-    if (!id || !mongoose.Types.ObjectId.isValid(id)) {
-      return NextResponse.json({ success: false, error: "Invalid coach ID" });
-    }
-
+    const { id } = context.params;
     const { name, mobile, email, status } = await req.json();
 
+    // Build update object only with fields that are provided
     const updateData: any = {};
     if (name !== undefined) updateData.name = name;
     if (mobile !== undefined) updateData.mobile = mobile;
     if (email !== undefined) updateData.email = email;
     if (status !== undefined) updateData.status = status;
 
-    const updatedCoach = await CoachModel.findByIdAndUpdate(id, updateData, {
-      new: true,
-    });
+    const updatedCoach = await CoachModel.findByIdAndUpdate(
+      id,
+      updateData,
+      { new: true } // Return the updated document
+    );
 
     if (!updatedCoach) {
       return NextResponse.json({ success: false, error: "Coach not found" });
