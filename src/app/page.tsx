@@ -340,7 +340,7 @@ export default function DashboardPage() {
           <div className="flex items-center gap-3">
             <AlertTriangle size={28} className="text-red-600" />
             <span className="text-xl font-bold">
-              ⚠️ {overdueCount} member
+              {overdueCount} member
               {overdueCount > 1 ? "s have" : " has"} overdue installment
               {overdueCount > 1 ? "s" : ""}!
             </span>
