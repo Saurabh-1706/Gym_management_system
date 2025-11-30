@@ -27,8 +27,18 @@ export default function ElectricityBillReportPage() {
   } | null>(null);
 
   const months = [
-    "January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December",
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
   ];
 
   // Auto-close feedback modal
@@ -137,100 +147,104 @@ export default function ElectricityBillReportPage() {
   };
 
   return (
-    <div className="p-6 bg-[#F5F7FA] min-h-screen">
+    <div className="px-3 sm:px-5 lg:px-8 py-4 sm:py-6 bg-[#F5F7FA] min-h-screen">
       {/* Header */}
-      <div className="flex items-center justify-between mb-10">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8 sm:mb-10">
         <div className="flex items-center gap-3">
-          <Receipt size={40} className="text-[#0A2463]" />
-          <h1 className="text-4xl font-bold text-[#0A2463]">
+          <Receipt size={32} className="text-[#0A2463]" />
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#0A2463]">
             Electricity Bill Report
           </h1>
         </div>
         <button
           onClick={() => openModal()}
-          className="flex items-center gap-2 bg-[#FFC107] text-[#212529] px-6 py-3 rounded-xl shadow hover:bg-[#e0a800] hover:scale-105 transition font-semibold"
+          className="flex items-center justify-center gap-2 bg-[#FFC107] text-[#212529] px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl shadow hover:bg-[#e0a800] hover:scale-105 transition font-semibold text-sm sm:text-base"
         >
-          <PlusCircle /> Add New
+          <PlusCircle size={18} /> Add New
         </button>
       </div>
 
       {/* Bills Table */}
-      <div className="bg-white rounded-2xl shadow p-6">
-        <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+      <div className="bg-white rounded-2xl shadow p-4 sm:p-6 overflow-x-auto">
+        <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
           <Calendar className="text-[#FFC107]" /> Bills History
         </h2>
-        <table className="min-w-full divide-y divide-gray-300 rounded-2xl overflow-hidden">
-          <thead className="bg-yellow-500 text-white">
-            <tr>
-              <th className="px-6 py-4 text-center text-lg font-semibold uppercase">
-                Month
-              </th>
-              <th className="px-6 py-4 text-center text-lg font-semibold uppercase">
-                Year
-              </th>
-              <th className="px-6 py-4 text-center text-lg font-semibold uppercase">
-                Amount
-              </th>
-              <th className="px-6 py-4 text-center text-lg font-semibold uppercase">
-                Date Entered
-              </th>
-              <th className="px-6 py-4 text-center text-lg font-semibold uppercase">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {bills.map((bill, idx) => (
-              <tr
-                key={bill._id}
-                className={`${
-                  idx % 2 === 0 ? "bg-white" : "bg-[#F8F9FA]"
-                } hover:bg-[#FFC107]/20`}
-              >
-                <td className="px-6 py-4 text-xl text-center font-semibold">
-                  {bill.month}
-                </td>
-                <td className="px-6 py-4 text-xl text-center font-semibold">
-                  {bill.year}
-                </td>
-                <td className="px-6 py-4 text-xl text-center font-semibold">
-                  ₹ {bill.amount}
-                </td>
-                <td className="px-6 py-4 text-xl text-center font-semibold">
-                  {new Date(bill.date).toLocaleDateString("en-GB")}
-                </td>
-                <td className="px-6 py-4 text-center flex justify-center gap-2">
-                  <button
-                    onClick={() => openModal(bill)}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg shadow-md hover:bg-blue-700 hover:scale-105 transition flex items-center gap-1 font-semibold"
-                  >
-                    <Edit size={16} /> Edit
-                  </button>
-                </td>
+        <div className="table-scroll rounded-2xl border border-slate-100">
+          <table className="w-full text-xs sm:text-sm lg:text-base">
+            <thead className="bg-yellow-500 text-white">
+              <tr className="text-xs sm:text-sm lg:text-lg">
+                <th className="px-3 sm:px-4 lg:px-6 py-2 sm:py-3 text-center font-semibold uppercase">
+                  Month
+                </th>
+                <th className="px-3 sm:px-4 lg:px-6 py-2 sm:py-3 text-center font-semibold uppercase">
+                  Year
+                </th>
+                <th className="px-3 sm:px-4 lg:px-6 py-2 sm:py-3 text-center font-semibold uppercase">
+                  Amount
+                </th>
+                <th className="px-3 sm:px-4 lg:px-6 py-2 sm:py-3 text-center font-semibold uppercase">
+                  Date Entered
+                </th>
+                <th className="px-3 sm:px-4 lg:px-6 py-2 sm:py-3 text-center font-semibold uppercase">
+                  Actions
+                </th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-        {bills.length === 0 && (
-          <p className="text-gray-500 mt-4 text-center">
-            No bills recorded yet.
-          </p>
-        )}
+            </thead>
+            <tbody className="text-xs sm:text-sm lg:text-lg">
+              {bills.map((bill, idx) => (
+                <tr
+                  key={bill._id}
+                  className={`${
+                    idx % 2 === 0 ? "bg-white" : "bg-[#F8F9FA]"
+                  } hover:bg-[#FFC107]/20 transition-colors`}
+                >
+                  <td className="px-3 sm:px-4 lg:px-6 py-2 sm:py-4 text-center font-semibold">
+                    {bill.month}
+                  </td>
+                  <td className="px-3 sm:px-4 lg:px-6 py-2 sm:py-4 text-center font-semibold">
+                    {bill.year}
+                  </td>
+                  <td className="px-3 sm:px-4 lg:px-6 py-2 sm:py-4 text-center font-semibold">
+                    ₹ {bill.amount}
+                  </td>
+                  <td className="px-3 sm:px-4 lg:px-6 py-2 sm:py-4 text-center font-semibold">
+                    {new Date(bill.date).toLocaleDateString("en-GB")}
+                  </td>
+                  <td className="px-3 sm:px-4 lg:px-6 py-2 sm:py-4">
+                    <div className="flex justify-center">
+                      <button
+                        onClick={() => openModal(bill)}
+                        className="px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-600 text-white rounded-lg shadow-md hover:bg-blue-700 hover:scale-105 transition flex items-center gap-1 text-xs sm:text-sm font-semibold"
+                      >
+                        <Edit size={16} /> Edit
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {bills.length === 0 && (
+            <p className="text-gray-500 mt-4 text-center text-sm sm:text-base">
+              No bills recorded yet.
+            </p>
+          )}
+        </div>
       </div>
 
       {/* Modal */}
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/40">
-          <div className="bg-white p-12 rounded-3xl max-w-lg w-full shadow-2xl border border-gray-200">
-            <h3 className="text-3xl font-bold text-[#0A2463] mb-6 flex items-center gap-3">
-              <PlusCircle className="text-[#FFC107]" />{" "}
+          <div className="bg-white px-4 sm:px-8 py-5 sm:py-8 rounded-3xl max-w-lg w-[95%] sm:w-full shadow-2xl border border-gray-200">
+            <h3 className="text-2xl sm:text-3xl font-bold text-[#0A2463] mb-4 sm:mb-6 flex items-center gap-3">
+              <PlusCircle className="text-[#FFC107]" />
               {formId ? "Edit Bill" : "Add New Bill"}
             </h3>
-            <div className="flex flex-col gap-6">
+            <div className="flex flex-col gap-4 sm:gap-6">
               <select
                 value={month}
                 onChange={(e) => setMonth(e.target.value)}
-                className="border rounded-xl px-4 py-3 text-lg shadow w-full"
+                className="border rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-lg shadow w-full bg-gray-50"
               >
                 <option value="">Select Month</option>
                 {months.map((m) => (
@@ -243,26 +257,26 @@ export default function ElectricityBillReportPage() {
                 type="number"
                 value={year}
                 onChange={(e) => setYear(Number(e.target.value))}
-                className="border rounded-xl px-4 py-3 text-lg shadow w-full"
+                className="border rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-lg shadow w-full bg-gray-50"
                 placeholder="Year"
               />
               <input
                 type="number"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                className="border rounded-xl px-4 py-3 text-lg shadow w-full"
+                className="border rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-lg shadow w-full bg-gray-50"
                 placeholder="Amount (₹)"
               />
-              <div className="flex justify-end gap-4 mt-2">
+              <div className="flex justify-end gap-3 sm:gap-4 mt-2">
                 <button
                   onClick={handleSubmit}
-                  className="bg-green-600 text-white px-6 py-3 rounded-xl hover:bg-green-700 transition font-semibold shadow"
+                  className="bg-green-600 text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl hover:bg-green-700 transition font-semibold shadow text-sm sm:text-base"
                 >
                   {formId ? "Save Changes" : "Add Bill"}
                 </button>
                 <button
                   onClick={() => setModalOpen(false)}
-                  className="bg-gray-500 text-white px-6 py-3 rounded-xl hover:bg-gray-600 transition font-semibold shadow"
+                  className="bg-gray-500 text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl hover:bg-gray-600 transition font-semibold shadow text-sm sm:text-base"
                 >
                   Cancel
                 </button>
@@ -276,16 +290,16 @@ export default function ElectricityBillReportPage() {
       {feedback && (
         <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/40">
           <div
-            className={`p-6 rounded-2xl shadow-2xl text-center max-w-sm w-full transition-all ${
+            className={`p-5 sm:p-6 rounded-2xl shadow-2xl text-center max-w-sm w-[90%] sm:w-full transition-all ${
               feedback.type === "success"
                 ? "bg-green-50 text-green-700 border border-green-300"
                 : "bg-red-50 text-red-700 border border-red-300"
             }`}
           >
-            <h3 className="text-2xl font-bold mb-2">
+            <h3 className="text-xl sm:text-2xl font-bold mb-2">
               {feedback.type === "success" ? "✅ Success" : "❌ Error"}
             </h3>
-            <p className="text-lg">{feedback.message}</p>
+            <p className="text-sm sm:text-lg">{feedback.message}</p>
           </div>
         </div>
       )}

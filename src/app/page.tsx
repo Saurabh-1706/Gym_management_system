@@ -12,6 +12,7 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import Loader from "@/components/Loader";
 
+// ---- types stay the same ----
 type Installment = {
   amountPaid: number;
   paymentDate: string;
@@ -34,7 +35,7 @@ type Member = {
   mobile: string;
   email?: string;
   dob?: string;
-  joinDate?: string; // ✅ added
+  joinDate?: string;
   date?: string;
   plan: string;
   status?: string;
@@ -68,15 +69,24 @@ type ElectricityBill = {
   date: string;
 };
 
+type Plan = {
+  _id: string;
+  name: string;
+  validity: number;
+  validityType: string; // "days" | "months"
+};
+
 export default function DashboardPage() {
   const [members, setMembers] = useState<Member[]>([]);
   const [allMembers, setAllMembers] = useState<Member[]>([]);
+  const [allPlans, setAllPlans] = useState<Plan[]>([]);
   const [totalRevenue, setTotalRevenue] = useState(0);
   const [overdueCount, setOverdueCount] = useState(0);
-  const router = useRouter();
-  const { data: session, status } = useSession();
   const [overdueMembers, setOverdueMembers] = useState<any[]>([]);
   const [showOverdue, setShowOverdue] = useState(false);
+
+  const router = useRouter();
+  const { data: session, status } = useSession();
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -84,133 +94,153 @@ export default function DashboardPage() {
     }
   }, [status, router]);
 
-  const getLatestJoinDate = (member: Member) => {
-    try {
-      if (member.payments && member.payments.length > 0) {
-        const paymentDate =
-          member.payments[member.payments.length - 1].date || "";
-        const parsed = new Date(paymentDate);
-        return isNaN(parsed.getTime())
-          ? new Date(member.joinDate || member.date || new Date().toISOString())
-          : parsed;
-      }
+  const today = new Date();
+  const startOfToday = new Date(
+    today.getFullYear(),
+    today.getMonth(),
+    today.getDate(),
+    0,
+    0,
+    0,
+    0
+  );
+  const endOf7Days = new Date(
+    startOfToday.getTime() + 7 * 24 * 60 * 60 * 1000 - 1
+  );
 
-      const parsedJoin = new Date(
-        member.joinDate || member.date || new Date().toISOString()
-      );
-      return isNaN(parsedJoin.getTime()) ? new Date() : parsedJoin;
-    } catch {
-      return new Date();
-    }
-  };
+  // ------- expiry logic (unchanged) -------
+  const calculateExpiryDate = (member: Member) => {
+    if (!member.date && !member.joinDate) return null;
 
-  const calculateExpiryDateObj = (joinDate: string, plan: string) => {
-    const date = new Date(joinDate);
-    const match = plan.match(/(\d+)\s*(day|days|month|months|year|years)/i);
+    const latestPayment =
+      member.payments && member.payments.length > 0
+        ? [...member.payments].sort(
+            (a, b) =>
+              new Date(
+                b.installments?.[b.installments.length - 1]?.paymentDate || 0
+              ).getTime() -
+              new Date(
+                a.installments?.[a.installments.length - 1]?.paymentDate || 0
+              ).getTime()
+          )[0]
+        : null;
 
-    if (match) {
-      const value = parseInt(match[1], 10);
-      const unit = match[2].toLowerCase();
+    const planStr = latestPayment?.plan || member.plan;
+    const startDate = latestPayment
+      ? new Date(
+          latestPayment.installments?.[0]?.paymentDate ||
+            member.date ||
+            member.joinDate!
+        )
+      : new Date(member.date || member.joinDate!);
+
+    if (Number.isNaN(startDate.getTime())) return null;
+
+    const expiryDate = new Date(startDate);
+
+    if (!planStr) return expiryDate;
+
+    const customMatch = planStr.match(
+      /Custom\((\d+)\s*(day|days|month|months|year|years)\)/i
+    );
+
+    if (customMatch) {
+      const value = parseInt(customMatch[1], 10);
+      const unit = customMatch[2].toLowerCase();
       switch (unit) {
         case "day":
         case "days":
-          date.setDate(date.getDate() + value);
+          expiryDate.setDate(expiryDate.getDate() + value - 1);
           break;
         case "month":
         case "months":
-          date.setMonth(date.getMonth() + value);
+          expiryDate.setMonth(expiryDate.getMonth() + value);
+          expiryDate.setDate(expiryDate.getDate() - 1);
           break;
         case "year":
         case "years":
-          date.setFullYear(date.getFullYear() + value);
+          expiryDate.setFullYear(expiryDate.getFullYear() + value);
+          expiryDate.setDate(expiryDate.getDate() - 1);
           break;
       }
-      return date;
+      return expiryDate;
     }
 
-    switch (plan.toLowerCase()) {
-      case "monthly":
-      case "1 month":
-      case "1 months":
-        date.setMonth(date.getMonth() + 1);
-        break;
-      case "quarterly":
-      case "3 months":
-      case "3 month":
-        date.setMonth(date.getMonth() + 3);
-        break;
-      case "half yearly":
-      case "6 months":
-      case "6 month":
-        date.setMonth(date.getMonth() + 6);
-        break;
-      case "yearly":
-      case "1 year":
-      case "12 months":
-        date.setFullYear(date.getFullYear() + 1);
-        break;
-      default:
-        date.setMonth(date.getMonth() + 1);
-    }
+    const dbPlan = allPlans.find(
+      (p) => p.name.toLowerCase() === planStr.toLowerCase()
+    );
 
-    return date;
-  };
-
-  const calculateExpiryDate = (joinDate: string, plan: string) =>
-    calculateExpiryDateObj(joinDate, plan).toLocaleDateString("en-GB");
-
-  const today = new Date();
-
-  const hasOverdueInstallment = (member: Member) => {
-    if (!member.payments) return false;
-    const now = new Date();
-    for (const payment of member.payments) {
-      if (payment.paymentStatus !== "Paid" && payment.installments?.length) {
-        for (const inst of payment.installments) {
-          if (inst.dueDate && new Date(inst.dueDate) < now) return true;
-        }
+    if (dbPlan && dbPlan.validity > 0) {
+      switch (dbPlan.validityType) {
+        case "days":
+          expiryDate.setDate(expiryDate.getDate() + dbPlan.validity - 1);
+          break;
+        case "months":
+          expiryDate.setMonth(expiryDate.getMonth() + dbPlan.validity);
+          expiryDate.setDate(expiryDate.getDate() - 1);
+          break;
+        default:
+          expiryDate.setMonth(expiryDate.getMonth() + 1);
+          expiryDate.setDate(expiryDate.getDate() - 1);
       }
+      return expiryDate;
     }
-    return false;
+
+    expiryDate.setMonth(expiryDate.getMonth() + 1);
+    expiryDate.setDate(expiryDate.getDate() - 1);
+    return expiryDate;
   };
 
+  // ------- data fetch (unchanged) -------
   useEffect(() => {
-    const fetchMembers = async () => {
+    const fetchMembersAndPlans = async () => {
       try {
-        const res = await fetch("/api/members");
-        const data = await res.json();
-        if (Array.isArray(data.members)) {
-          const sortedMembers = data.members.sort((a: Member, b: Member) =>
-            a.name.localeCompare(b.name)
-          );
-          setMembers(sortedMembers);
-          setAllMembers(sortedMembers);
+        const [membersRes, plansRes] = await Promise.all([
+          fetch("/api/members"),
+          fetch("/api/plans"),
+        ]);
 
-          const now = new Date();
-          const overdueList = sortedMembers
-            .map((m: Member) => {
-              if (!m.payments) return null;
-              for (const payment of m.payments) {
-                if (
-                  payment.paymentStatus !== "Paid" &&
-                  payment.installments?.length
-                ) {
-                  for (const inst of payment.installments) {
-                    if (inst.dueDate && new Date(inst.dueDate) < now) {
-                      return { ...m, overdueDate: inst.dueDate };
-                    }
+        const membersData = await membersRes.json();
+        const plansData = await plansRes.json();
+
+        const sortedMembers: Member[] = Array.isArray(membersData.members)
+          ? membersData.members.sort((a: Member, b: Member) =>
+              a.name.localeCompare(b.name)
+            )
+          : [];
+
+        setMembers(sortedMembers);
+        setAllMembers(sortedMembers);
+
+        const plansArray: Plan[] = Array.isArray(plansData.plans)
+          ? plansData.plans
+          : [];
+        setAllPlans(plansArray);
+
+        const now = new Date();
+        const overdueList = sortedMembers
+          .map((m: Member) => {
+            if (!m.payments) return null;
+            for (const payment of m.payments) {
+              if (
+                payment.paymentStatus !== "Paid" &&
+                payment.installments?.length
+              ) {
+                for (const inst of payment.installments) {
+                  if (inst.dueDate && new Date(inst.dueDate) < now) {
+                    return { ...m, overdueDate: inst.dueDate };
                   }
                 }
               }
-              return null;
-            })
-            .filter(Boolean);
+            }
+            return null;
+          })
+          .filter(Boolean) as any[];
 
-          setOverdueMembers(overdueList);
-          setOverdueCount(overdueList.length);
-        }
+        setOverdueMembers(overdueList);
+        setOverdueCount(overdueList.length);
       } catch (error) {
-        console.error("Failed to fetch members:", error);
+        console.error("Failed to fetch members/plans:", error);
       }
     };
 
@@ -309,7 +339,7 @@ export default function DashboardPage() {
       }
     };
 
-    fetchMembers();
+    fetchMembersAndPlans();
     fetchRevenueData();
   }, []);
 
@@ -322,357 +352,352 @@ export default function DashboardPage() {
   if (!session) return null;
 
   return (
-    <div className="p-6 bg-[#E9ECEF] min-h-screen">
-      {/* Header */}
-      <div className="flex items-center gap-3 mb-6">
-        <Sliders size={36} className="text-[#FFC107]" />
-        <h1 className="text-4xl font-bold text-[#212529]">Admin Panel</h1>
-      </div>
-
-      {/* ✅ Overdue Notification */}
-      {overdueCount > 0 && (
-        <div
-          onClick={() => setShowOverdue((prev) => !prev)}
-          className={`cursor-pointer transition-all duration-300 ${
-            showOverdue ? "bg-red-200" : "bg-red-100"
-          } border border-red-400 text-red-800 rounded-2xl px-6 py-5 mb-10 shadow-md hover:bg-red-200`}
-        >
+    <div className="dashboard-body min-h-screen bg-[#F5F7FB]">
+      {/* 🔹 Mobile: no side padding, Desktop: small padding */}
+      <div className="w-full px-0 sm:px-3 lg:px-6 py-4">
+        {/* Header */}
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between px-3 sm:px-0">
           <div className="flex items-center gap-3">
-            <AlertTriangle size={28} className="text-red-600" />
-            <span className="text-xl font-bold">
-              {overdueCount} member
-              {overdueCount > 1 ? "s have" : " has"} overdue installment
-              {overdueCount > 1 ? "s" : ""}!
-            </span>
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-tr from-[#FFC107] to-[#ff8a00] text-white shadow-[0_10px_20px_rgba(0,0,0,0.15)]">
+              <Sliders size={22} />
+            </div>
+            <div>
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-[#212529]">
+                Dashboard
+              </h1>
+              <p className="mt-1 text-xs sm:text-sm lg:text-base text-[#6C757D]">
+                Quick overview of gym performance and members.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Main card */}
+        <div className="main-card rounded-3xl bg-white shadow-[0_20px_27px_rgba(0,0,0,0.05)] border border-slate-100 px-3 sm:px-4 lg:px-6 py-5 space-y-6">
+          {/* Overdue banner (unchanged except layout) */}
+          {overdueCount > 0 && (
+            <div
+              onClick={() => setShowOverdue((prev) => !prev)}
+              className={`cursor-pointer rounded-2xl border border-red-100 bg-gradient-to-r from-red-50 to-red-100 px-4 py-3 shadow-sm transition-all ${
+                showOverdue ? "ring-1 ring-red-200" : ""
+              }`}
+            >
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-red-500 text-white shadow">
+                    <AlertTriangle size={18} />
+                  </div>
+                  <div>
+                    <p className="text-sm lg:text-base font-semibold text-red-700">
+                      {overdueCount} member
+                      {overdueCount > 1 ? "s have" : " has"} overdue installment
+                      {overdueCount > 1 ? "s" : ""}.
+                    </p>
+                    <p className="text-xs lg:text-sm text-red-600">
+                      Click to view details and pending amounts.
+                    </p>
+                  </div>
+                </div>
+                <span className="text-xs lg:text-sm font-semibold uppercase tracking-wide text-red-600">
+                  {showOverdue ? "Hide list" : "Show list"}
+                </span>
+              </div>
+
+              {showOverdue && overdueMembers.length > 0 && (
+                <div className="mt-3 rounded-xl bg-white p-3 shadow-inner">
+                  {/* ⬇️ this div handles horizontal scroll on mobile */}
+                  <div className="w-full overflow-x-auto">
+                    <table className="min-w-[600px] w-full text-xs sm:text-sm lg:text-base">
+                      <thead className="bg-[#0A2463] text-white">
+                        <tr>
+                          <th className="px-3 py-2 text-left font-semibold">
+                            Name
+                          </th>
+                          <th className="px-3 py-2 text-left font-semibold">
+                            Mobile
+                          </th>
+                          <th className="px-3 py-2 text-left font-semibold">
+                            Plan
+                          </th>
+                          <th className="px-3 py-2 text-left font-semibold">
+                            Due Date
+                          </th>
+                          <th className="px-3 py-2 text-right font-semibold">
+                            Pending (₹)
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {overdueMembers.map((m, idx) => {
+                          let pendingAmount = 0;
+                          if (m.payments?.length) {
+                            const unpaid = m.payments.filter(
+                              (p: any) => p.paymentStatus !== "Paid"
+                            );
+                            unpaid.forEach((p: any) => {
+                              const totalPaid = (p.installments || []).reduce(
+                                (sum: number, inst: any) =>
+                                  sum + (inst.amountPaid || 0),
+                                0
+                              );
+                              if (p.price || p.actualAmount)
+                                pendingAmount +=
+                                  (p.price || p.actualAmount) - totalPaid;
+                            });
+                          }
+                          return (
+                            <tr
+                              key={m._id}
+                              className={`${
+                                idx % 2 === 0 ? "bg-white" : "bg-slate-50"
+                              } hover:bg-red-50 transition-colors cursor-pointer`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                router.push(`/members/${m._id}`);
+                              }}
+                            >
+                              <td className="px-3 py-2 font-medium text-[#212529]">
+                                {m.name}
+                              </td>
+                              <td className="px-3 py-2 text-[#495057]">
+                                {m.mobile}
+                              </td>
+                              <td className="px-3 py-2">
+                                <span className="inline-flex rounded-full bg-red-50 px-3 py-1 text-[11px] lg:text-sm font-semibold text-red-700">
+                                  {m.plan || "N/A"}
+                                </span>
+                              </td>
+                              <td className="px-3 py-2 text-[#495057]">
+                                {m.overdueDate
+                                  ? new Date(
+                                      m.overdueDate || ""
+                                    ).toLocaleDateString("en-GB")
+                                  : "—"}
+                              </td>
+                              <td className="px-3 py-2 text-right font-semibold text-red-600">
+                                ₹{pendingAmount.toLocaleString("en-IN")}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* KPI cards – mobile full width, nice height */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4 px-1 sm:px-0">
+            <div
+              className="kpi-card w-full min-h-[96px] flex cursor-pointer items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50/60 px-4 py-3 shadow-sm hover:bg-white hover:shadow-md transition"
+              onClick={() => router.push("/members")}
+            >
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-tr from-[#FFC107] to-[#ffda6a] text-white shadow">
+                <User size={20} />
+              </div>
+              <div className="flex-1">
+                <p className="text-[11px] lg:text-sm font-semibold uppercase tracking-wide text-[#6C757D]">
+                  Total Members
+                </p>
+                <p className="mt-1 text-xl lg:text-2xl font-bold text-[#212529]">
+                  {totalMembers}
+                </p>
+              </div>
+            </div>
+
+            <div
+              className="kpi-card w-full min-h-[96px] flex cursor-pointer items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50/60 px-4 py-3 shadow-sm hover:bg-white hover:shadow-md transition mx-2 sm:mx-0"
+              onClick={() => router.push("/expiringsoon")}
+            >
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-tr from-orange-400 to-amber-500 text-white shadow">
+                <Calendar size={20} />
+              </div>
+              <div className="flex-1">
+                <p className="text-[11px] lg:text-sm font-semibold uppercase tracking-wide text-[#6C757D]">
+                  Expiring in 7 days
+                </p>
+                <p className="mt-1 text-xl lg:text-2xl font-bold text-[#212529]">
+                  {
+                    allMembers.filter((m: Member) => {
+                      const expiry = calculateExpiryDate(m);
+                      if (!expiry) return false;
+                      return expiry >= startOfToday && expiry <= endOf7Days;
+                    }).length
+                  }
+                </p>
+              </div>
+            </div>
+
+            <div
+              className="kpi-card w-full min-h-[96px] flex cursor-pointer items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50/60 px-4 py-3 shadow-sm hover:bg-white hover:shadow-md transition mx-2 sm:mx-0"
+              onClick={() => router.push("/expiredmembers")}
+            >
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-tr from-red-400 to-rose-500 text-white shadow">
+                <Calendar size={20} />
+              </div>
+              <div className="flex-1">
+                <p className="text-[11px] lg:text-sm font-semibold uppercase tracking-wide text-[#6C757D]">
+                  Expired Memberships
+                </p>
+                <p className="mt-1 text-xl lg:text-2xl font-bold text-[#212529]">
+                  {
+                    allMembers.filter((m: Member) => {
+                      const expiry = calculateExpiryDate(m);
+                      if (!expiry) return false;
+                      return expiry < startOfToday;
+                    }).length
+                  }
+                </p>
+              </div>
+            </div>
+
+            <div
+              className="kpi-card w-full min-h-[96px] flex cursor-pointer items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50/60 px-4 py-3 shadow-sm hover:bg-white hover:shadow-md transition mx-2 sm:mx-0"
+              onClick={() => router.push("/revenue")}
+            >
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-tr from-emerald-400 to-teal-500 text-white shadow">
+                <CreditCard size={20} />
+              </div>
+              <div className="flex-1">
+                <p className="text-[11px] lg:text-sm font-semibold uppercase tracking-wide text-[#6C757D]">
+                  Membership (This Month)
+                </p>
+                <p className="mt-1 text-xl lg:text-2xl font-bold text-[#212529]">
+                  ₹
+                  {allMembers
+                    .reduce((acc, m) => {
+                      if (!m.payments) return acc;
+
+                      const currentMonth = new Date().getMonth();
+                      const currentYear = new Date().getFullYear();
+
+                      const monthPayments = m.payments.reduce((sum, p) => {
+                        const paymentDate = new Date(p.date);
+                        const isThisMonth =
+                          paymentDate.getMonth() === currentMonth &&
+                          paymentDate.getFullYear() === currentYear;
+
+                        let monthlyInstallmentsTotal = 0;
+                        if (p.installments && p.installments.length > 0) {
+                          monthlyInstallmentsTotal = p.installments.reduce(
+                            (instSum, inst) => {
+                              const instDate = new Date(inst.paymentDate);
+                              const isInstThisMonth =
+                                instDate.getMonth() === currentMonth &&
+                                instDate.getFullYear() === currentYear;
+                              return (
+                                instSum +
+                                (isInstThisMonth ? inst.amountPaid || 0 : 0)
+                              );
+                            },
+                            0
+                          );
+                        }
+
+                        if (isThisMonth) {
+                          return (
+                            sum + (p.price || 0) + monthlyInstallmentsTotal
+                          );
+                        }
+
+                        return sum + monthlyInstallmentsTotal;
+                      }, 0);
+
+                      return acc + monthPayments;
+                    }, 0)
+                    .toLocaleString("en-IN")}
+                </p>
+              </div>
+            </div>
           </div>
 
-          {showOverdue && overdueMembers.length > 0 && (
-            <div className="mt-5 overflow-x-auto bg-white rounded-2xl shadow-lg p-6 transition-all duration-300">
-              <h3 className="text-2xl font-bold text-[#212529] mb-4">
-                Overdue Installments
-              </h3>
-              <table className="min-w-full divide-y divide-gray-300 rounded-2xl overflow-hidden">
-                <thead className="bg-[#0A2463] text-white">
-                  <tr>
-                    <th className="px-6 py-4 text-left">Name</th>
-                    <th className="px-6 py-4 text-left">Mobile</th>
-                    <th className="px-6 py-4 text-left">Plan</th>
-                    <th className="px-6 py-4 text-left">Due Date</th>
-                    <th className="px-6 py-4 text-right">Pending Amount (₹)</th>
+          {/* Recent Members table */}
+          <div className="pt-5">
+            <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 className="sm:text-xl lg:text-2xl font-semibold text-[#212529]">
+                  Recent Members
+                </h2>
+              </div>
+            </div>
+
+            {/* 🔹 Horizontal scroll container on mobile */}
+            <div className="table-scroll rounded-2xl border border-slate-100">
+              <table className="w-full text-xs sm:text-sm lg:text-base">
+                <thead>
+                  <tr className="bg-[#0A2463] text-white">
+                    <th className="px-3 py-3 text-left font-semibold uppercase tracking-wide whitespace-nowrap">
+                      Name
+                    </th>
+                    <th className="px-3 py-3 text-left font-semibold uppercase tracking-wide whitespace-nowrap">
+                      Plan
+                    </th>
+                    <th className="px-3 py-3 text-left font-semibold uppercase tracking-wide whitespace-nowrap">
+                      Mobile
+                    </th>
+                    <th className="px-3 py-3 text-left font-semibold uppercase tracking-wide whitespace-nowrap">
+                      Date Joined
+                    </th>
+                    <th className="px-3 py-3 text-left font-semibold uppercase tracking-wide whitespace-nowrap">
+                      Expire On
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {overdueMembers.map((m, idx) => {
-                    let pendingAmount = 0;
-                    if (m.payments?.length) {
-                      const unpaid = m.payments.filter(
-                        (p: any) => p.paymentStatus !== "Paid"
+                  {members
+                    .sort(
+                      (a, b) =>
+                        new Date(b.date || b.joinDate || "").getTime() -
+                        new Date(a.date || a.joinDate || "").getTime()
+                    )
+                    .slice(0, 7)
+                    .map((member: Member, idx: number) => {
+                      const expiry = calculateExpiryDate(member);
+                      return (
+                        <tr
+                          key={member._id}
+                          className={`${
+                            idx % 2 === 0 ? "bg-white" : "bg-slate-50"
+                          } hover:bg-slate-100/70 transition-colors cursor-pointer`}
+                          onClick={() => router.push(`/members/${member._id}`)}
+                        >
+                          <td className="px-3 py-3 text-sm lg:text-base font-semibold text-[#212529] whitespace-nowrap">
+                            {member.name}
+                          </td>
+                          <td className="px-3 py-3 whitespace-nowrap">
+                            <span className="inline-flex rounded-full bg-[#FFC107]/15 px-3 py-1 text-[11px] lg:text-sm font-semibold text-[#856404]">
+                              {member.plan}
+                            </span>
+                          </td>
+                          <td className="px-3 py-3 text-sm lg:text-base text-[#495057] whitespace-nowrap">
+                            {member.mobile}
+                          </td>
+                          <td className="px-3 py-3 text-sm lg:text-base text-[#495057] whitespace-nowrap">
+                            {new Date(
+                              member.joinDate ||
+                                member.date ||
+                                new Date().toISOString()
+                            ).toLocaleDateString("en-GB")}
+                          </td>
+                          <td className="px-3 py-3 text-sm lg:text-base font-semibold text-[#212529] whitespace-nowrap">
+                            {expiry ? expiry.toLocaleDateString("en-GB") : "—"}
+                          </td>
+                        </tr>
                       );
-                      unpaid.forEach((p: any) => {
-                        const totalPaid = (p.installments || []).reduce(
-                          (sum: number, inst: any) =>
-                            sum + (inst.amountPaid || 0),
-                          0
-                        );
-                        if (p.price || p.actualAmount)
-                          pendingAmount +=
-                            (p.price || p.actualAmount) - totalPaid;
-                      });
-                    }
-                    return (
-                      <tr
-                        key={m._id}
-                        className={`${
-                          idx % 2 === 0 ? "bg-white" : "bg-[#DEE2E6]"
-                        } hover:bg-red-100/50 cursor-pointer`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          router.push(`/members/${m._id}`);
-                        }}
-                      >
-                        <td className="px-6 py-4 font-semibold">{m.name}</td>
-                        <td className="px-6 py-4">{m.mobile}</td>
-                        <td className="px-6 py-4">
-                          <span className="px-3 py-1 rounded-full bg-[#FFC107]/20 font-semibold">
-                            {m.plan || "N/A"}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4">
-                          {m.overdueDate
-                            ? new Date(m.overdueDate || "").toLocaleDateString(
-                                "en-GB"
-                              )
-                            : "—"}
-                        </td>
-                        <td className="px-6 py-4 text-right font-semibold text-red-600">
-                          ₹{pendingAmount.toLocaleString("en-IN")}
-                        </td>
-                      </tr>
-                    );
-                  })}
+                    })}
                 </tbody>
               </table>
             </div>
-          )}
-        </div>
-      )}
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10 mt-10">
-        {/* Total Members */}
-        <div
-          className="bg-white p-6 rounded-2xl shadow flex items-center gap-4 cursor-pointer hover:shadow-lg transition"
-          onClick={() => router.push("/members")}
-        >
-          <User size={40} className="text-[#FFC107]" />
-          <div>
-            <p className="text-lg text-[#212529]">Total Members</p>
-            <p className="text-2xl font-bold text-[#212529]">{totalMembers}</p>
+            {members.length === 0 && (
+              <p className="px-3 py-4 text-center text-sm lg:text-base text-gray-500">
+                No recent members.
+              </p>
+            )}
           </div>
         </div>
-
-        {/* Expiring Soon */}
-        <div
-          className="bg-white p-6 rounded-2xl shadow flex items-center gap-4 cursor-pointer hover:shadow-lg transition"
-          onClick={() => router.push("/expiringsoon")}
-        >
-          <Calendar size={40} className="text-orange-500" />
-          <div>
-            <p className="text-lg text-[#212529]">Expiring Soon</p>
-            <p className="text-2xl font-bold text-[#212529]">
-              {
-                allMembers.filter((m: Member) => {
-                  if (!m.payments || m.payments.length === 0) return false;
-
-                  // 🔹 Find latest renewal date (last installment or createdAt)
-                  const latestPayment = [...m.payments].sort((a, b) => {
-                    const aDate =
-                      a.installments?.[a.installments.length - 1]
-                        ?.paymentDate ||
-                      a.date ||
-                      "";
-                    const bDate =
-                      b.installments?.[b.installments.length - 1]
-                        ?.paymentDate ||
-                      b.date ||
-                      "";
-                    return (
-                      new Date(bDate).getTime() - new Date(aDate).getTime()
-                    );
-                  })[0];
-
-                  if (!latestPayment) return false;
-
-                  const renewalDate =
-                    latestPayment.installments?.length &&
-                    latestPayment.installments?.length > 0
-                      ? latestPayment.installments[
-                          latestPayment.installments.length - 1
-                        ]?.paymentDate
-                      : latestPayment.date;
-
-                  if (!renewalDate) return false;
-
-                  const planToCheck = latestPayment.plan || m.plan;
-                  const expiry = calculateExpiryDateObj(
-                    renewalDate,
-                    planToCheck
-                  );
-
-                  return (
-                    expiry >= today &&
-                    expiry <=
-                      new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000)
-                  );
-                }).length
-              }
-            </p>
-          </div>
-        </div>
-
-        {/* Expired Memberships */}
-        <div
-          className="bg-white p-6 rounded-2xl shadow flex items-center gap-4 cursor-pointer hover:shadow-lg transition"
-          onClick={() => router.push("/expiredmembers")}
-        >
-          <Calendar size={40} className="text-red-500" />
-          <div>
-            <p className="text-lg text-[#212529]">Expired Memberships</p>
-            <p className="text-2xl font-bold text-[#212529]">
-              {
-                allMembers.filter((m: Member) => {
-                  if (!m.payments || m.payments.length === 0) return false;
-
-                  // 🔹 Find latest renewal date
-                  const latestPayment = [...m.payments].sort((a, b) => {
-                    const aDate =
-                      a.installments?.[a.installments.length - 1]
-                        ?.paymentDate ||
-                      a.date ||
-                      "";
-                    const bDate =
-                      b.installments?.[b.installments.length - 1]
-                        ?.paymentDate ||
-                      b.date ||
-                      "";
-                    return (
-                      new Date(bDate).getTime() - new Date(aDate).getTime()
-                    );
-                  })[0];
-
-                  if (!latestPayment) return false;
-
-                  const renewalDate =
-                    latestPayment.installments?.length &&
-                    latestPayment.installments?.length > 0
-                      ? latestPayment.installments[
-                          latestPayment.installments.length - 1
-                        ]?.paymentDate
-                      : latestPayment.date;
-
-                  if (!renewalDate) return false;
-
-                  const planToCheck = latestPayment.plan || m.plan;
-                  const expiry = calculateExpiryDateObj(
-                    renewalDate,
-                    planToCheck
-                  );
-
-                  return expiry < today;
-                }).length
-              }
-            </p>
-          </div>
-        </div>
-
-        {/* Membership */}
-        <div
-          className="bg-white p-6 rounded-2xl shadow flex items-center gap-4 cursor-pointer hover:shadow-lg transition"
-          onClick={() => router.push("/revenue")}
-        >
-          <CreditCard size={40} className="text-green-600" />
-          <div>
-            <p className="text-lg text-[#212529]">Membership</p>
-            <p className="text-2xl font-bold text-[#212529]">
-              ₹
-              {allMembers
-                .reduce((acc, m) => {
-                  if (!m.payments) return acc;
-
-                  const currentMonth = new Date().getMonth();
-                  const currentYear = new Date().getFullYear();
-
-                  // ✅ Sum all payments made in the current month
-                  const monthPayments = m.payments.reduce((sum, p) => {
-                    const paymentDate = new Date(p.date);
-                    const isThisMonth =
-                      paymentDate.getMonth() === currentMonth &&
-                      paymentDate.getFullYear() === currentYear;
-
-                    let monthlyInstallmentsTotal = 0;
-
-                    // ✅ Include installments paid this month
-                    if (p.installments && p.installments.length > 0) {
-                      monthlyInstallmentsTotal = p.installments.reduce(
-                        (instSum, inst) => {
-                          const instDate = new Date(inst.paymentDate);
-                          const isInstThisMonth =
-                            instDate.getMonth() === currentMonth &&
-                            instDate.getFullYear() === currentYear;
-                          return (
-                            instSum +
-                            (isInstThisMonth ? inst.amountPaid || 0 : 0)
-                          );
-                        },
-                        0
-                      );
-                    }
-
-                    // ✅ Include one-time payment if it’s in the same month
-                    if (isThisMonth) {
-                      return sum + (p.price || 0) + monthlyInstallmentsTotal;
-                    }
-
-                    return sum + monthlyInstallmentsTotal;
-                  }, 0);
-
-                  return acc + monthPayments;
-                }, 0)
-                .toLocaleString("en-IN")}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Recent Members Table */}
-      <div className="overflow-x-auto bg-white rounded-2xl shadow-lg p-6">
-        <h2 className="text-3xl font-bold text-[#212529] mb-4">
-          Recent Members
-        </h2>
-        <table className="min-w-full divide-y divide-gray-300 rounded-2xl overflow-hidden">
-          <thead className="bg-[#0A2463] text-white">
-            <tr>
-              <th className="px-6 py-4 text-left text-base font-semibold uppercase tracking-wider">
-                Name
-              </th>
-              <th className="px-6 py-4 text-left text-base font-semibold uppercase tracking-wider">
-                Plan
-              </th>
-              <th className="px-6 py-4 text-left text-base font-semibold uppercase tracking-wider">
-                Mobile
-              </th>
-              <th className="px-6 py-4 text-left text-base font-semibold uppercase tracking-wider">
-                Date Joined
-              </th>
-              <th className="px-6 py-4 text-left text-base font-semibold uppercase tracking-wider">
-                Expire On
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {members
-              .sort(
-                (a, b) =>
-                  new Date(b.date || "").getTime() -
-                  new Date(a.date || "").getTime()
-              )
-              .slice(0, 7)
-              .map((member: Member, idx: number) => (
-                <tr
-                  key={member._id}
-                  className={`${
-                    idx % 2 === 0 ? "bg-white" : "bg-[#DEE2E6]"
-                  } hover:bg-[#FFC107]/20 transition-colors`}
-                >
-                  <td className="px-6 py-4 font-semibold text-[#212529]">
-                    {member.name}
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="px-3 py-1 rounded-full bg-[#FFC107]/20 text-[#212529] font-semibold text-base">
-                      {member.plan}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-[#212529]">{member.mobile}</td>
-                  <td className="px-6 py-4 text-[#212529]">
-                    {new Date(
-                      member.joinDate || member.date || new Date().toISOString()
-                    ).toLocaleDateString("en-GB")}
-                  </td>
-                  <td className="px-6 py-4 text-[#212529] font-semibold">
-                    {calculateExpiryDate(
-                      member.joinDate ||
-                        member.date ||
-                        new Date().toISOString(),
-                      member.plan || "1 month"
-                    )}
-                  </td>
-                </tr>
-              ))}
-          </tbody>
-        </table>
-        {members.length === 0 && (
-          <p className="text-gray-500 mt-4 text-center">No recent members.</p>
-        )}
       </div>
     </div>
   );

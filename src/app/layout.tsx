@@ -38,8 +38,13 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`min-h-screen font-sans antialiased ${geistSans.variable} ${geistMono.variable}`}
-        style={{ fontFamily: 'var(--font-geist-sans), system-ui, sans-serif' }}
+        className={`
+          min-h-screen
+          overflow-x-hidden          /* ⬅️ ADD THIS */
+          font-sans antialiased
+          ${geistSans.variable} ${geistMono.variable}
+        `}
+        style={{ fontFamily: "var(--font-geist-sans), system-ui, sans-serif" }}
       >
         <LoaderProvider>
           <Providers>

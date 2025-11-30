@@ -104,6 +104,19 @@ export default function RevenuePage() {
   const [customStart, setCustomStart] = useState("");
   const [customEnd, setCustomEnd] = useState("");
 
+  // ✅ Detect mobile to tweak charts
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const handleResize = () => {
+      if (typeof window !== "undefined") {
+        setIsMobile(window.innerWidth < 640); // Tailwind "sm"
+      }
+    };
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -188,7 +201,24 @@ export default function RevenuePage() {
     { name: "Electricity", amount: totalElectricity },
   ];
 
-  // ✅ Export PDF (supports custom date range)
+  // ✅ Shorter labels on mobile for X axis
+  const shortLabel = (value: string) => {
+    if (!isMobile) return value;
+    switch (value) {
+      case "Membership":
+        return "Member";
+      case "Coach Salaries":
+        return "Coach";
+      case "Miscellaneous":
+        return "Misc";
+      case "Electricity":
+        return "Elec";
+      default:
+        return value;
+    }
+  };
+
+  // ✅ Export PDF (same as before)
   const exportPDF = async (useCustom = false) => {
     const doc = new jsPDF("p", "pt", "a4");
     const fmt = (a: number) => `Rs. ${a.toLocaleString("en-IN")}`;
@@ -227,7 +257,6 @@ export default function RevenuePage() {
     }
     doc.text(`Generated on: ${generatedDate}`, 120, 85);
 
-    // ---- TABLE ----
     autoTable(doc, {
       startY: 110,
       head: [["Category", "Amount (Rs.)"]],
@@ -238,9 +267,8 @@ export default function RevenuePage() {
         ["Electricity Bills", fmt(totalElectricity)],
         ["Total Revenue", fmt(totalRevenue)],
       ],
-      // 🟨 Header Styling
       headStyles: {
-        fillColor: [255, 204, 0], // bright yellow (gym theme)
+        fillColor: [255, 204, 0],
         textColor: [0, 0, 0],
         fontStyle: "bold",
         halign: "center",
@@ -248,7 +276,6 @@ export default function RevenuePage() {
         lineWidth: 0.2,
         lineColor: [0, 0, 0],
       },
-      // 🧾 Row Styling
       styles: {
         fontSize: 10,
         halign: "center",
@@ -257,18 +284,13 @@ export default function RevenuePage() {
         lineColor: [200, 200, 200],
         lineWidth: 0.1,
       },
-      // 🦓 Alternate Row Colors (Zebra stripes)
       alternateRowStyles: {
         fillColor: [245, 245, 245],
       },
-      // 🏁 Highlight the Total Revenue row
       didParseCell: (data) => {
-        if (
-          data.row.index === 4 && // last row
-          data.section === "body"
-        ) {
+        if (data.row.index === 4 && data.section === "body") {
           data.cell.styles.fontStyle = "bold";
-          data.cell.styles.fillColor = [255, 230, 153]; // light yellow highlight
+          data.cell.styles.fillColor = [255, 230, 153];
         }
       },
       margin: { left: 40, right: 40 },
@@ -276,7 +298,6 @@ export default function RevenuePage() {
 
     let y = (doc as any).lastAutoTable.finalY + 40;
 
-    // ---- MEMBER PAYMENTS ----
     if (memberPayments.length > 0) {
       doc.setFont("helvetica", "bold");
       doc.text("MEMBER PAYMENTS", 40, y);
@@ -299,7 +320,6 @@ export default function RevenuePage() {
       y = (doc as any).lastAutoTable.finalY + 35;
     }
 
-    // ---- COACH SALARIES ----
     if (coachPayments.length > 0) {
       doc.setFont("helvetica", "bold");
       doc.text("COACH SALARY PAYMENTS", 40, y);
@@ -320,7 +340,6 @@ export default function RevenuePage() {
       y = (doc as any).lastAutoTable.finalY + 35;
     }
 
-    // ---- MISCELLANEOUS ----
     if (filteredMisc.length > 0) {
       doc.setFont("helvetica", "bold");
       doc.text("MISCELLANEOUS EXPENSES", 40, y);
@@ -341,7 +360,6 @@ export default function RevenuePage() {
       y = (doc as any).lastAutoTable.finalY + 35;
     }
 
-    // ---- ELECTRICITY BILLS ----
     if (filteredElectricity.length > 0) {
       doc.setFont("helvetica", "bold");
       doc.text("ELECTRICITY BILLS", 40, y);
@@ -362,11 +380,9 @@ export default function RevenuePage() {
       y = (doc as any).lastAutoTable.finalY + 25;
     }
 
-    // FOOTER
     doc.setFont("helvetica", "italic");
     doc.setFontSize(10);
 
-    // SAVE PDF
     doc.save(
       useCustom && customStart && customEnd
         ? `Gym_Revenue_Report_${customStart}_to_${customEnd}.pdf`
@@ -374,150 +390,209 @@ export default function RevenuePage() {
     );
   };
 
+  const filterSelectClass =
+    "w-full sm:w-auto px-3 py-2 rounded-lg border border-gray-300 " +
+    "bg-gray-50 text-xs sm:text-sm md:text-base text-gray-800 " +
+    "hover:bg-yellow-50 focus:ring-2 focus:ring-yellow-400 font-medium";
+
   return (
-    <div className="p-6">
+    <div className="min-h-screen bg-[#E9ECEF] px-3 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8">
       {/* HEADER */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6 gap-4">
+      <div className="flex flex-col gap-4 sm:gap-5 md:flex-row md:items-center md:justify-between mb-4 sm:mb-6">
         <div className="flex items-center gap-3">
-          <BarChart2 size={36} className="text-yellow-500" />
-          <h1 className="text-[42px] font-bold text-[#0A2463]">
+          <BarChart2 size={32} className="text-yellow-500" />
+          <h1 className="text-2xl sm:text-3xl lg:text-[42px] font-bold text-[#0A2463] leading-tight">
             Revenue Report
           </h1>
         </div>
 
-        {/* Month Selector */}
-        <div className="flex flex-wrap gap-3 items-center bg-white shadow-md border border-gray-200 px-5 py-3 rounded-2xl">
-          <select
-            value={selectedMonth}
-            onChange={(e) => setSelectedMonth(Number(e.target.value))}
-            className="p-2 px-3 border border-gray-300 rounded-lg bg-gray-50 hover:bg-yellow-50 focus:ring-2 focus:ring-yellow-400 text-gray-800 font-medium"
-          >
-            {monthNames.map((m, i) => (
-              <option key={i} value={i}>
-                {m}
-              </option>
-            ))}
-          </select>
-
-          <select
-            value={selectedYear}
-            onChange={(e) => setSelectedYear(Number(e.target.value))}
-            className="p-2 px-3 border border-gray-300 rounded-lg bg-gray-50 hover:bg-yellow-50 focus:ring-2 focus:ring-yellow-400 text-gray-800 font-medium"
-          >
-            {Array.from({ length: 5 }, (_, i) => now.getFullYear() - i).map(
-              (y) => (
-                <option key={y} value={y}>
-                  {y}
+        {/* Month / Year / Export controls */}
+        <div className="w-full md:w-auto bg-white shadow-md border border-gray-200 px-3 sm:px-4 py-3 rounded-2xl flex flex-col lg:flex-row gap-3 lg:items-center">
+          {/* Month & Year */}
+          <div className="flex sm:flex-row gap-2 sm:gap-3 w-full lg:w-auto">
+            <select
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(Number(e.target.value))}
+              className={filterSelectClass}
+            >
+              {monthNames.map((m, i) => (
+                <option key={i} value={i}>
+                  {m}
                 </option>
-              )
-            )}
-          </select>
+              ))}
+            </select>
 
+            <select
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(Number(e.target.value))}
+              className={filterSelectClass}
+            >
+              {Array.from({ length: 5 }, (_, i) => now.getFullYear() - i).map(
+                (y) => (
+                  <option key={y} value={y}>
+                    {y}
+                  </option>
+                )
+              )}
+            </select>
+          </div>
+
+          {/* Standard PDF button */}
           <button
             onClick={() => exportPDF(false)}
-            className="bg-yellow-500 hover:bg-yellow-600 text-white px-5 py-2 rounded-lg shadow font-semibold transition"
+            className="w-full sm:w-auto bg-yellow-500 hover:bg-yellow-600 text-white px-4 sm:px-5 py-2 rounded-lg shadow font-semibold text-sm sm:text-base transition"
           >
             Export PDF
           </button>
 
-          {/* ✅ Custom Range Inputs */}
-          <div className="flex items-center gap-2">
-            <input
-              type="date"
-              value={customStart}
-              onChange={(e) => setCustomStart(e.target.value)}
-              className="p-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-800"
-            />
-            <span className="font-semibold text-gray-600">to</span>
-            <input
-              type="date"
-              value={customEnd}
-              onChange={(e) => setCustomEnd(e.target.value)}
-              className="p-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-800"
-            />
-          </div>
+          {/* Custom Range */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full lg:w-auto">
+            <div className="flex items-center gap-2 w-full">
+              <input
+                type="date"
+                value={customStart}
+                onChange={(e) => setCustomStart(e.target.value)}
+                className="flex-1 px-3 py-2 rounded-lg border border-gray-300 bg-gray-50 text-xs sm:text-sm text-gray-800 focus:ring-2 focus:ring-yellow-400"
+              />
+              <span className="font-semibold text-gray-600 text-xs sm:text-sm">
+                to
+              </span>
+              <input
+                type="date"
+                value={customEnd}
+                onChange={(e) => setCustomEnd(e.target.value)}
+                className="flex-1 px-3 py-2 rounded-lg border border-gray-300 bg-gray-50 text-xs sm:text-sm text-gray-800 focus:ring-2 focus:ring-yellow-400"
+              />
+            </div>
 
-          <button
-            onClick={() => exportPDF(true)}
-            disabled={!customStart || !customEnd}
-            className={`px-5 py-2 rounded-lg shadow font-semibold transition ${
-              customStart && customEnd
-                ? "bg-[#0A2463] hover:bg-[#152b7a] text-white"
-                : "bg-gray-300 text-gray-600 cursor-not-allowed"
-            }`}
-          >
-            Export Custom PDF
-          </button>
+            <button
+              onClick={() => exportPDF(true)}
+              disabled={!customStart || !customEnd}
+              className={`w-full sm:w-auto px-4 sm:px-5 py-2 rounded-lg shadow font-semibold text-sm sm:text-base transition ${
+                customStart && customEnd
+                  ? "bg-[#0A2463] hover:bg-[#152b7a] text-white"
+                  : "bg-gray-300 text-gray-600 cursor-not-allowed"
+              }`}
+            >
+              Export Custom PDF
+            </button>
+          </div>
         </div>
       </div>
 
       {/* SUMMARY CARDS */}
-      <div className="flex flex-wrap gap-4 items-center mb-6">
-        <SummaryCard title="Membership Revenue" value={totalMemberRevenue} icon="green" />
-        <SummaryCard title="Coach Salaries" value={totalCoachSalary} icon="red" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+        <SummaryCard
+          title="Membership Revenue"
+          value={totalMemberRevenue}
+          icon="green"
+        />
+        <SummaryCard
+          title="Coach Salaries"
+          value={totalCoachSalary}
+          icon="red"
+        />
         <SummaryCard title="Miscellaneous" value={totalMisc} icon="blue" />
-        <SummaryCard title="Electricity Bills" value={totalElectricity} icon="yellow" />
+        <SummaryCard
+          title="Electricity Bills"
+          value={totalElectricity}
+          icon="yellow"
+        />
       </div>
 
       {/* CHART */}
-      <div className="bg-white p-6 rounded-2xl shadow mb-10">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-2xl font-bold text-[#0A2463]">
-            Summary Chart - {monthNames[selectedMonth]} {selectedYear}
+      <div className="bg-white px-3 sm:px-6 lg:px-8 py-4 sm:py-6 rounded-2xl shadow mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+          <h2 className="text-lg sm:text-2xl font-bold text-[#0A2463]">
+            Summary Chart – {monthNames[selectedMonth]} {selectedYear}
           </h2>
-          <div className="flex items-center gap-2 bg-gray-100 px-3 py-1 rounded-xl">
+          <div className="self-start sm:self-auto flex items-center gap-2 bg-gray-100 px-2 sm:px-3 py-1 rounded-xl">
             <button
               onClick={() => setChartType("bar")}
-              className={`p-2 rounded-lg flex items-center gap-1 ${
+              className={`px-2 py-1 sm:p-2 rounded-lg flex items-center gap-1 text-xs sm:text-sm ${
                 chartType === "bar"
                   ? "bg-yellow-500 text-white"
                   : "text-gray-600 hover:bg-gray-200"
               }`}
             >
-              <BarIcon size={18} /> Bar
+              <BarIcon size={16} /> Bar
             </button>
             <button
               onClick={() => setChartType("pie")}
-              className={`p-2 rounded-lg flex items-center gap-1 ${
+              className={`px-2 py-1 sm:p-2 rounded-lg flex items-center gap-1 text-xs sm:text-sm ${
                 chartType === "pie"
                   ? "bg-yellow-500 text-white"
                   : "text-gray-600 hover:bg-gray-200"
               }`}
             >
-              <PieIcon size={18} /> Pie
+              <PieIcon size={16} /> Pie
             </button>
           </div>
         </div>
 
-        <div className="h-80">
+        <div className="h-64 sm:h-80">
           {chartType === "bar" ? (
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData}>
+              <BarChart
+                data={chartData}
+                margin={
+                  isMobile
+                    ? { top: 10, right: 10, left: 0, bottom: 30 }
+                    : { top: 20, right: 20, left: 0, bottom: 40 }
+                }
+              >
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip formatter={(v: number) => `₹${v.toLocaleString("en-IN")}`} />
+                <XAxis
+                  dataKey="name"
+                  tickFormatter={shortLabel}
+                  interval={0} // show all
+                  tick={{
+                    fontSize: isMobile ? 10 : 12,
+                  }}
+                  tickLine={false}
+                />
+                <YAxis tick={{ fontSize: isMobile ? 10 : 12 }} />
+                <Tooltip
+                  formatter={(v: number) => `₹${v.toLocaleString("en-IN")}`}
+                />
                 <Bar dataKey="amount" fill="#facc15" radius={[8, 8, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           ) : (
             <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
+              <PieChart
+                margin={
+                  isMobile
+                    ? { top: 0, right: 0, bottom: 60, left: 0 }
+                    : { top: 10, right: 20, bottom: 50, left: 20 }
+                }
+              >
                 <Pie
                   data={chartData}
                   dataKey="amount"
                   nameKey="name"
                   cx="50%"
-                  cy="50%"
-                  outerRadius={120}
-                  label
+                  cy={isMobile ? "55%" : "55%"}
+                  outerRadius={isMobile ? 80 : 110}
+                  // hide labels on mobile to avoid clutter
+                  label={!isMobile}
                 >
                   {chartData.map((_, i) => (
                     <Cell key={i} fill={COLORS[i % COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip formatter={(v: number) => `₹${v.toLocaleString("en-IN")}`} />
-                <Legend />
+                <Tooltip
+                  formatter={(v: number) => `₹${v.toLocaleString("en-IN")}`}
+                />
+                <Legend
+                  verticalAlign="bottom"
+                  align="center"
+                  iconType="circle"
+                  iconSize={10}
+                  wrapperStyle={{
+                    fontSize: isMobile ? 10 : 12,
+                  }}
+                />
               </PieChart>
             </ResponsiveContainer>
           )}
@@ -544,17 +619,20 @@ function SummaryCard({
     yellow: "text-yellow-500",
   };
   const icons = {
-    green: <CreditCard size={40} className={colors.green} />,
-    red: <Users size={40} className={colors.red} />,
-    blue: <FileText size={40} className={colors.blue} />,
-    yellow: <Calendar size={40} className={colors.yellow} />,
+    green: <CreditCard size={32} className={colors.green} />,
+    red: <Users size={32} className={colors.red} />,
+    blue: <FileText size={32} className={colors.blue} />,
+    yellow: <Calendar size={32} className={colors.yellow} />,
   };
+
   return (
-    <div className="bg-white p-5 rounded-2xl shadow flex items-center gap-4 transition-transform transform hover:scale-105">
+    <div className="w-full bg-white px-4 py-4 sm:px-5 sm:py-5 rounded-2xl shadow flex items-center gap-3 sm:gap-4 transition-transform hover:scale-[1.02]">
       {icons[icon]}
       <div>
-        <p className="text-gray-500 text-lg">{title}</p>
-        <p className="text-2xl font-bold">₹{value.toLocaleString("en-IN")}</p>
+        <p className="text-gray-500 text-sm sm:text-base">{title}</p>
+        <p className="text-xl sm:text-2xl font-bold">
+          ₹{value.toLocaleString("en-IN")}
+        </p>
       </div>
     </div>
   );

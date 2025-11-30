@@ -12,9 +12,10 @@ export default function RegistrationPage() {
   });
 
   const [errors, setErrors] = useState<{ email?: string; mobile?: string }>({});
-  const [showModal, setShowModal] = useState(false); // ✅ modal visibility
-  const [modalMessage, setModalMessage] = useState(""); // ✅ text to show inside modal
-  const [modalType, setModalType] = useState<"success" | "error">("success"); // ✅ success or error
+  const [showModal, setShowModal] = useState(false);
+  const [modalMessage, setModalMessage] = useState("");
+  const [modalType, setModalType] = useState<"success" | "error">("success");
+
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const mobileRegex = /^[6-9]\d{9}$/;
 
@@ -78,7 +79,6 @@ export default function RegistrationPage() {
       const result = await res.json();
 
       if (result.success) {
-        // ✅ Success
         setModalType("success");
         setModalMessage("✅ Member registered successfully!");
         setShowModal(true);
@@ -91,7 +91,6 @@ export default function RegistrationPage() {
           dob: "",
         });
       } else {
-        // ❌ Duplicate or validation error
         setModalType("error");
         setModalMessage(
           result.message ||
@@ -110,27 +109,29 @@ export default function RegistrationPage() {
   };
 
   return (
-    <div className="min-h-screen w-full bg-[#E9ECEF] p-10 relative">
+    <div className="min-h-screen w-full bg-[#E9ECEF] px-4 sm:px-8 lg:px-10 py-6 sm:py-8 lg:py-10 relative flex flex-col">
+      {/* Heading */}
       <div className="mb-6 text-center">
-        <h2 className="text-xl font-semibold text-[#212529] tracking-wider uppercase">
+        <h2 className="text-base sm:text-lg font-semibold text-[#212529] tracking-wider uppercase">
           Become a Member
         </h2>
-        <h1 className="text-5xl font-extrabold text-[#0A2463] mt-2 leading-snug">
+        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-[#0A2463] mt-2 leading-snug">
           Register Now
         </h1>
-        <p className="text-[#212529] mt-3">
+        <p className="text-sm sm:text-base text-[#212529] mt-3">
           Join today & unlock exclusive benefits 🚀
         </p>
       </div>
 
-      <div className="bg-white rounded-3xl p-10 max-w-4xl mx-auto shadow-lg hover:shadow-xl transition duration-500">
+      {/* Card */}
+      <div className="bg-white rounded-3xl p-6 sm:p-8 lg:p-10 max-w-4xl w-full mx-auto shadow-lg hover:shadow-xl transition duration-500">
         <form
-          className="grid grid-cols-1 md:grid-cols-2 gap-8"
+          className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8"
           onSubmit={handleSubmit}
         >
           {/* Full Name */}
           <div>
-            <label className="block text-lg font-semibold mb-2 text-[#212529]">
+            <label className="block text-sm sm:text-base lg:text-lg font-semibold mb-2 text-[#212529]">
               Full Name
             </label>
             <input
@@ -139,15 +140,14 @@ export default function RegistrationPage() {
               value={form.name}
               onChange={handleChange}
               placeholder="Enter full name"
-              className="w-full px-5 py-3 text-lg rounded-xl border border-[#ADB5BD] 
-                         focus:ring-2 focus:ring-[#0A2463] focus:outline-none"
+              className="w-full px-4 py-2.5 sm:px-5 sm:py-3 text-base sm:text-lg rounded-xl border border-[#ADB5BD] focus:ring-2 focus:ring-[#0A2463] focus:outline-none bg-white"
               required
             />
           </div>
 
           {/* Date of Birth */}
           <div>
-            <label className="block text-lg font-semibold mb-2 text-[#212529]">
+            <label className="block text-sm sm:text-base lg:text-lg font-semibold mb-2 text-[#212529]">
               Date of Birth
             </label>
             <input
@@ -155,15 +155,14 @@ export default function RegistrationPage() {
               name="dob"
               value={form.dob}
               onChange={handleChange}
-              className="w-full px-5 py-3 text-lg rounded-xl border border-[#ADB5BD] 
-                         focus:ring-2 focus:ring-[#0A2463] focus:outline-none text-[#212529]"
+              className="w-full px-4 py-2.5 sm:px-5 sm:py-3 text-base sm:text-lg rounded-xl border border-[#ADB5BD] focus:ring-2 focus:ring-[#0A2463] focus:outline-none text-[#212529] bg-white"
               required
             />
           </div>
 
           {/* Join Date */}
           <div>
-            <label className="block text-lg font-semibold mb-2 text-[#212529]">
+            <label className="block text-sm sm:text-base lg:text-lg font-semibold mb-2 text-[#212529]">
               Date of Registration
             </label>
             <input
@@ -171,15 +170,14 @@ export default function RegistrationPage() {
               name="date"
               value={form.date}
               onChange={handleChange}
-              className="w-full px-5 py-3 text-lg rounded-xl border border-[#ADB5BD] 
-                         focus:ring-2 focus:ring-[#0A2463] focus:outline-none text-[#212529]"
+              className="w-full px-4 py-2.5 sm:px-5 sm:py-3 text-base sm:text-lg rounded-xl border border-[#ADB5BD] focus:ring-2 focus:ring-[#0A2463] focus:outline-none text-[#212529] bg-white"
               required
             />
           </div>
 
           {/* Email */}
           <div>
-            <label className="block text-lg font-semibold mb-2 text-[#212529]">
+            <label className="block text-sm sm:text-base lg:text-lg font-semibold mb-2 text-[#212529]">
               Email Address
             </label>
             <input
@@ -188,17 +186,18 @@ export default function RegistrationPage() {
               value={form.email}
               onChange={handleChange}
               placeholder="example@email.com"
-              className="w-full px-5 py-3 text-lg rounded-xl border border-[#ADB5BD] 
-             focus:ring-2 focus:ring-[#0A2463] focus:outline-none text-[#212529]"
+              className="w-full px-4 py-2.5 sm:px-5 sm:py-3 text-base sm:text-lg rounded-xl border border-[#ADB5BD] focus:ring-2 focus:ring-[#0A2463] focus:outline-none text-[#212529] bg-white"
             />
             {errors.email && (
-              <p className="text-red-500 text-sm mt-1">{errors.email}</p>
+              <p className="text-red-500 text-xs sm:text-sm mt-1">
+                {errors.email}
+              </p>
             )}
           </div>
 
           {/* Mobile */}
           <div className="md:col-span-2">
-            <label className="block text-lg font-semibold mb-2 text-[#212529]">
+            <label className="block text-sm sm:text-base lg:text-lg font-semibold mb-2 text-[#212529]">
               Contact No.
             </label>
             <input
@@ -207,21 +206,21 @@ export default function RegistrationPage() {
               value={form.mobile}
               onChange={handleChange}
               placeholder="Enter phone number"
-              className="w-98 px-5 py-3 text-lg rounded-xl border border-[#ADB5BD] 
-                         focus:ring-2 focus:ring-[#0A2463] focus:outline-none text-[#212529]"
+              className="w-full px-4 py-2.5 sm:px-5 sm:py-3 text-base sm:text-lg rounded-xl border border-[#ADB5BD] focus:ring-2 focus:ring-[#0A2463] focus:outline-none text-[#212529] bg-white"
               required
             />
             {errors.mobile && (
-              <p className="text-red-500 text-sm mt-1">{errors.mobile}</p>
+              <p className="text-red-500 text-xs sm:text-sm mt-1">
+                {errors.mobile}
+              </p>
             )}
           </div>
 
           {/* Buttons */}
-          <div className="md:col-span-2 flex justify-end mt-8 gap-6">
+          <div className="md:col-span-2 flex flex-col sm:flex-row justify-end mt-4 sm:mt-6 gap-3 sm:gap-6">
             <button
               type="submit"
-              className="bg-[#0A2463] text-white text-lg px-10 py-3 rounded-xl font-bold 
-                         shadow-md hover:shadow-lg hover:scale-105 transform transition"
+              className="w-full sm:w-auto bg-[#0A2463] text-white text-base sm:text-lg px-6 sm:px-10 py-2.5 sm:py-3 rounded-xl font-bold shadow-md hover:shadow-lg hover:scale-105 transform transition"
             >
               🚀 Register
             </button>
@@ -236,8 +235,7 @@ export default function RegistrationPage() {
                   dob: "",
                 })
               }
-              className="bg-[#ADB5BD] text-[#212529] text-lg px-10 py-3 rounded-xl 
-                         font-semibold hover:bg-gray-400 transition"
+              className="w-full sm:w-auto bg-[#ADB5BD] text-[#212529] text-base sm:text-lg px-6 sm:px-10 py-2.5 sm:py-3 rounded-xl font-semibold hover:bg-gray-400 transition"
             >
               ❌ Cancel
             </button>
@@ -245,29 +243,31 @@ export default function RegistrationPage() {
         </form>
       </div>
 
-      {/* ✅ Popup Modal (both success & error) */}
+      {/* Popup Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 animate-fadeIn">
           <div
-            className={`rounded-3xl p-8 shadow-2xl text-center max-w-sm w-full animate-slideUp ${
+            className={`rounded-3xl p-6 sm:p-8 shadow-2xl text-center max-w-sm w-full mx-4 animate-slideUp ${
               modalType === "success" ? "bg-white" : "bg-red-50"
             }`}
           >
             <h2
-              className={`text-3xl font-bold mb-3 ${
+              className={`text-2xl sm:text-3xl font-bold mb-3 ${
                 modalType === "success" ? "text-green-600" : "text-red-600"
               }`}
             >
               {modalType === "success" ? "✅ Success!" : "⚠️ Error!"}
             </h2>
-            <p className="text-lg text-gray-700 mb-6">{modalMessage}</p>
+            <p className="text-sm sm:text-lg text-gray-700 mb-6">
+              {modalMessage}
+            </p>
             <button
               onClick={() => setShowModal(false)}
               className={`${
                 modalType === "success"
                   ? "bg-green-600 hover:bg-green-700"
                   : "bg-red-600 hover:bg-red-700"
-              } text-white px-6 py-2 rounded-xl font-semibold transition`}
+              } text-white px-6 py-2 rounded-xl font-semibold transition text-sm sm:text-base`}
             >
               OK
             </button>

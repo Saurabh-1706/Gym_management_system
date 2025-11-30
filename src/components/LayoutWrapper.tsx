@@ -5,7 +5,11 @@ import Navbar from "@/components/Navbar";
 import { Menu, X } from "lucide-react";
 import { useState, useEffect } from "react";
 
-export default function LayoutWrapper({ children }: { children: React.ReactNode }) {
+export default function LayoutWrapper({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const pathname = usePathname();
   const hideNavbar = pathname === "/auth";
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -16,7 +20,7 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
   }, [pathname]);
 
   return (
-    <div className="flex min-h-screen bg-[#E9ECEF] relative">
+  <div className="flex flex-col md:flex-row min-h-screen bg-white md:bg-[#E9ECEF] relative overflow-x-hidden">
       {/* ===== Sidebar (Navbar) ===== */}
       {!hideNavbar && (
         <>
@@ -75,8 +79,14 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
 
         {/* ===== Main Content (add margin-top for fixed header) ===== */}
         <main
-          className="flex-1 p-3 sm:p-5 md:p-8 lg:p-10 overflow-x-hidden 
-          mt-[64px] md:mt-0"
+          className="
+    flex-1 w-full max-w-full overflow-x-hidden
+    p-0         /* ⬅️ no padding on mobile */
+    sm:p-0
+    md:p-0
+    lg:p-0
+    mt-[64px] md:mt-0
+  "
         >
           {children}
         </main>
