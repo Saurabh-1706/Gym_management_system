@@ -406,8 +406,8 @@ export default function DashboardPage() {
               {showOverdue && overdueMembers.length > 0 && (
                 <div className="mt-3 rounded-xl bg-white p-3 shadow-inner">
                   {/* ⬇️ this div handles horizontal scroll on mobile */}
-                  <div className="w-full overflow-x-auto">
-                    <table className="min-w-[600px] w-full text-xs sm:text-sm lg:text-base">
+                  <div className="table-scroll rounded-2xl border border-slate-100">
+                    <table className="w-full text-xs sm:text-sm lg:text-base">
                       <thead className="bg-[#0A2463] text-white">
                         <tr>
                           <th className="px-3 py-2 text-left font-semibold">
