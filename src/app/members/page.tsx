@@ -246,6 +246,29 @@ export default function MembersPage() {
       return 0;
     });
 
+  const getMembershipStatus = (member: Member) => {
+    // If no plan or explicitly "no plan" → Inactive
+    if (!member.plan || member.plan.toLowerCase() === "no plan") {
+      return "Inactive";
+    }
+
+    const expiryDate = calculateExpiryDate(member);
+    const today = new Date();
+
+    // Normalize to date-only comparison (ignore time part)
+    const todayMidnight = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate()
+    );
+
+    if (expiryDate.getTime() >= todayMidnight.getTime()) {
+      return "Active"; // ✅ Active membership regardless of plan name
+    }
+
+    return "Inactive";
+  };
+
   return (
     <div className="px-3 sm:px-5 lg:px-8 py-4 sm:py-6 relative bg-[#E9ECEF]">
       {/* HEADER + FILTER BAR */}
@@ -368,7 +391,7 @@ export default function MembersPage() {
             const diffDays = Math.ceil(
               (expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
             );
-            const status = member.status || "Inactive";
+            const status = getMembershipStatus(member);
 
             return (
               <div
@@ -453,7 +476,7 @@ export default function MembersPage() {
             </thead>
             <tbody>
               {filteredMembers.map((member, index) => {
-                const status = member.status || "Inactive";
+                const status = getMembershipStatus(member);
                 const paymentStatus = getPaymentStatus(member);
                 return (
                   <tr

@@ -258,6 +258,27 @@ export default function MemberProfilePage() {
     return expiryDate;
   };
 
+  const getMembershipStatus = (m: Member): "Active" | "Inactive" => {
+    // If no plan or explicitly "No Plan" → Inactive
+    if (!m.plan || m.plan.toLowerCase() === "no plan") {
+      return "Inactive";
+    }
+
+    const expiryDate = calculateExpiryDate(m);
+    const today = new Date();
+
+    // Compare only date part (ignore time)
+    const todayMidnight = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate()
+    );
+
+    return expiryDate.getTime() >= todayMidnight.getTime()
+      ? "Active"
+      : "Inactive";
+  };
+
   useEffect(() => {
     if (!id) return;
 
@@ -321,6 +342,7 @@ export default function MemberProfilePage() {
 
   const joinDate = new Date(member.joinDate || member.date);
   const currentPlan = getLatestPlan(member);
+  const membershipStatus = getMembershipStatus(member);
 
   const handleRenew = async () => {
     try {
@@ -485,13 +507,13 @@ export default function MemberProfilePage() {
             {member.status && (
               <span
                 className={`hidden md:inline-flex absolute top-5 right-5 px-4 py-2 rounded-full text-sm font-semibold shadow-lg
-      ${
-        member.status === "Active"
-          ? "bg-green-600 text-white"
-          : "bg-red-600 text-white"
-      }`}
+    ${
+      membershipStatus === "Active"
+        ? "bg-green-600 text-white"
+        : "bg-red-600 text-white"
+    }`}
               >
-                {member.status}
+                {membershipStatus}
               </span>
             )}
 
@@ -565,13 +587,13 @@ export default function MemberProfilePage() {
                 {member.status && (
                   <span
                     className={`mt-2 md:hidden inline-flex px-3 py-1 rounded-full text-xs font-semibold
-      ${
-        member.status === "Active"
-          ? "bg-green-100 text-green-700 border border-green-300"
-          : "bg-red-100 text-red-700 border border-red-300"
-      }`}
+    ${
+      membershipStatus === "Active"
+        ? "bg-green-100 text-green-700 border border-green-300"
+        : "bg-red-100 text-red-700 border border-red-300"
+    }`}
                   >
-                    {member.status}
+                    {membershipStatus}
                   </span>
                 )}
               </div>
