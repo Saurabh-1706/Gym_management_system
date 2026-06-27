@@ -228,7 +228,7 @@ export default function CoachProfile() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#E9ECEF]">
+      <div className="min-h-screen flex items-center justify-center bg-[#0F0F0F] text-[#e5e2e1]">
         <Loader text="Loading coach profile..." />
       </div>
     );
@@ -237,18 +237,18 @@ export default function CoachProfile() {
   if (!coach) return null;
 
   return (
-    <div className="min-h-screen bg-[#E9ECEF] px-3 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8">
+    <div className="min-h-screen bg-[#0F0F0F] text-[#e5e2e1] px-4 sm:px-6 lg:px-8 py-6 space-y-6 font-body">
       {/* Header */}
       <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-start md:items-center justify-between gap-4 sm:gap-6 mb-6 sm:mb-8">
         <div className="flex items-center gap-3 sm:gap-4">
-          <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-2xl bg-[#FFC107] text-white shadow-md">
-            <UserCircle size={26} />
+          <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-2xl bg-[#f97316]/10 text-[#f97316] border border-[#f97316]/20 shadow-md">
+            <UserCircle size={24} />
           </div>
           <div>
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-[#0A2463] leading-tight">
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-headline tracking-wider text-[#f97316] leading-tight uppercase">
               Coach Profile
             </h1>
-            <p className="text-xs sm:text-sm text-gray-600 mt-1">
+            <p className="text-xs sm:text-sm text-zinc-400 mt-1">
               View and manage salary, status and personal details.
             </p>
           </div>
@@ -257,29 +257,29 @@ export default function CoachProfile() {
         <div className="flex flex-wrap gap-2 sm:gap-3">
           <button
             onClick={() => setShowPayModal(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#FFC107] text-[#0A2463] text-sm sm:text-base font-semibold shadow hover:bg-[#e0a800] transition"
+            className="btn-primary flex items-center gap-2 px-4 py-2 rounded-xl text-sm sm:text-base font-headline tracking-wider text-white shadow cursor-pointer uppercase"
           >
             <PlusCircle size={18} /> Pay Salary
           </button>
 
           <button
             onClick={openEditModal}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 text-white text-sm sm:text-base shadow hover:bg-blue-700 transition"
+            className="btn-secondary flex items-center gap-2 px-4 py-2 rounded-xl text-sm sm:text-base font-headline tracking-wider text-white shadow cursor-pointer uppercase"
           >
-            <CreditCard size={18} /> Edit
+            Edit Info
           </button>
 
           <button
             onClick={() => setShowDeleteConfirm(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-600 text-white text-sm sm:text-base shadow hover:bg-red-700 transition"
+            className="bg-red-950/40 text-red-400 border border-red-500/25 px-4 py-2 rounded-xl hover:bg-red-900/20 hover:text-red-300 transition text-sm sm:text-base font-headline tracking-wider cursor-pointer uppercase"
           >
-            <Trash2 size={18} /> Delete
+            Delete
           </button>
         </div>
       </div>
 
       {/* Coach card */}
-      <div className="max-w-6xl mx-auto bg-white rounded-3xl border border-gray-200 shadow-md px-4 sm:px-6 lg:px-8 py-5 sm:py-7 mb-5 sm:mb-7">
+      <div className="max-w-6xl mx-auto glass-card rounded-2xl border border-zinc-800 shadow-md px-4 sm:px-6 lg:px-8 py-6 mb-6">
         <div className="flex flex-col md:flex-row gap-6 lg:gap-10 items-center md:items-start">
           {/* Profile pic */}
           <div className="relative w-28 h-28 sm:w-32 sm:h-32 lg:w-40 lg:h-40 flex-shrink-0">
@@ -287,45 +287,45 @@ export default function CoachProfile() {
               <img
                 src={coach.profilePicture}
                 alt={coach.name}
-                className="w-full h-full rounded-full object-cover shadow-md border-4 border-[#FFC107] cursor-pointer"
+                className="w-full h-full rounded-full object-cover shadow-md border-4 border-[#f97316]/50 cursor-pointer"
                 onClick={() => setShowLightbox(true)}
               />
             ) : (
-              <div className="w-full h-full rounded-full bg-[#FFC107] flex items-center justify-center text-white text-3xl sm:text-4xl lg:text-5xl font-bold shadow-md">
+              <div className="w-full h-full rounded-full bg-[#f97316]/10 border border-[#f97316]/20 flex items-center justify-center text-[#f97316] text-3xl sm:text-4xl lg:text-5xl font-headline tracking-wider shadow-md">
                 {getInitials(coach.name)}
               </div>
             )}
 
-            {/* 🗂 Browse from files */}
-            <label className="absolute bottom-1 left-1 bg-white p-2 rounded-full shadow cursor-pointer hover:bg-gray-100">
+            {/* Browse from files */}
+            <label className="absolute bottom-1 left-1 bg-zinc-800 border border-zinc-700 p-2 rounded-full shadow cursor-pointer hover:bg-zinc-700">
               <input
                 type="file"
                 accept="image/*"
                 className="hidden"
                 onChange={handleProfilePictureChange}
               />
-              <FolderOpen size={20} className="text-[#0A2463]" />
+              <FolderOpen size={18} className="text-white" />
             </label>
 
-            {/* 📷 Capture from camera */}
-            <label className="absolute bottom-1 right-1 bg-white p-2 rounded-full shadow cursor-pointer hover:bg-gray-100">
+            {/* Capture from camera */}
+            <label className="absolute bottom-1 right-1 bg-zinc-800 border border-zinc-700 p-2 rounded-full shadow cursor-pointer hover:bg-zinc-700">
               <input
                 type="file"
                 accept="image/*"
-                capture="environment" // ⬅️ opens camera on most mobiles
+                capture="environment"
                 className="hidden"
                 onChange={handleProfilePictureChange}
               />
-              <Camera size={20} className="text-[#0A2463]" />
+              <Camera size={18} className="text-white" />
             </label>
 
             {uploading && (
-              <span className="absolute -bottom-6 left-0 text-xs sm:text-sm text-blue-600 font-semibold">
+              <span className="absolute -bottom-6 left-0 right-0 text-center text-xs text-blue-400 font-semibold">
                 Uploading...
               </span>
             )}
             {uploadSuccess && (
-              <span className="absolute -bottom-6 left-0 text-xs sm:text-sm text-green-600 font-semibold">
+              <span className="absolute -bottom-6 left-0 right-0 text-center text-xs text-[#22c55e] font-semibold">
                 Saved ✔
               </span>
             )}
@@ -340,35 +340,35 @@ export default function CoachProfile() {
           </div>
 
           {/* Details */}
-          <div className="flex-1 w-full space-y-3 sm:space-y-4 text-sm sm:text-base text-[#212529]">
-            <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-[#0A2463]">
+          <div className="flex-1 w-full space-y-3.5 text-sm sm:text-base text-zinc-300 text-left">
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-headline tracking-wider text-white">
               {coach.name}
             </h2>
 
             <p className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center justify-center rounded-lg bg-[#E9ECEF] px-2.5 py-1">
-                <CreditCard size={18} className="text-green-600 mr-1.5" />
-                <span className="font-semibold text-gray-800">Mobile:</span>
+              <span className="inline-flex items-center justify-center rounded-xl bg-white/5 border border-white/5 px-2.5 py-1 text-xs font-semibold text-[#e0c0b1] uppercase tracking-wider">
+                <CreditCard size={14} className="text-[#22c55e] mr-1.5" />
+                Mobile:
               </span>
-              <span className="font-medium">{coach.mobile}</span>
+              <span className="font-medium text-[#e5e2e1]">{coach.mobile}</span>
             </p>
 
             {coach.email && (
               <p className="flex flex-wrap items-center gap-2">
-                <span className="inline-flex items-center justify-center rounded-lg bg-[#E9ECEF] px-2.5 py-1">
-                  <CreditCard size={18} className="text-blue-600 mr-1.5" />
-                  <span className="font-semibold text-gray-800">Email:</span>
+                <span className="inline-flex items-center justify-center rounded-xl bg-white/5 border border-white/5 px-2.5 py-1 text-xs font-semibold text-[#e0c0b1] uppercase tracking-wider">
+                  <CreditCard size={14} className="text-blue-450 mr-1.5" />
+                  Email:
                 </span>
-                <span className="font-medium break-all">{coach.email}</span>
+                <span className="font-medium text-[#e5e2e1] break-all">{coach.email}</span>
               </p>
             )}
 
             <p className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center justify-center rounded-lg bg-[#E9ECEF] px-2.5 py-1">
-                <CreditCard size={18} className="text-purple-600 mr-1.5" />
-                <span className="font-semibold text-gray-800">Join Date:</span>
+              <span className="inline-flex items-center justify-center rounded-xl bg-white/5 border border-white/5 px-2.5 py-1 text-xs font-semibold text-[#e0c0b1] uppercase tracking-wider">
+                <CreditCard size={14} className="text-purple-450 mr-1.5" />
+                Join Date:
               </span>
-              <span className="font-medium">
+              <span className="font-medium text-[#e5e2e1]">
                 {(coach as any).joinDate
                   ? new Date((coach as any).joinDate).toLocaleDateString(
                       "en-GB"
@@ -379,9 +379,9 @@ export default function CoachProfile() {
 
             {/* Status toggle */}
             <div className="flex flex-wrap items-center gap-3 mt-2">
-              <span className="inline-flex items-center justify-center rounded-lg bg-[#FFF3CD] px-2.5 py-1">
-                <CreditCard size={18} className="text-orange-600 mr-1.5" />
-                <span className="font-semibold text-gray-800">Status:</span>
+              <span className="inline-flex items-center justify-center rounded-xl bg-white/5 border border-white/5 px-2.5 py-1 text-xs font-semibold text-[#e0c0b1] uppercase tracking-wider">
+                <CreditCard size={14} className="text-orange-450 mr-1.5" />
+                Status:
               </span>
 
               <button
@@ -416,16 +416,16 @@ export default function CoachProfile() {
                 }}
                 className={`w-12 h-6 flex items-center rounded-full p-1 transition-colors duration-300 cursor-pointer ${
                   coach.status === "Active"
-                    ? "bg-green-400 justify-end"
-                    : "bg-red-400 justify-start"
+                    ? "bg-[#22c55e] justify-end"
+                    : "bg-red-500 justify-start"
                 }`}
               >
-                <span className="w-5 h-5 bg-white rounded-full shadow-md transition-transform duration-300" />
+                <span className="w-4 h-4 bg-white rounded-full shadow-md transition-transform duration-300" />
               </button>
 
               <span
                 className={`font-semibold text-sm sm:text-base ${
-                  coach.status === "Active" ? "text-green-600" : "text-red-600"
+                  coach.status === "Active" ? "text-[#22c55e]" : "text-red-400"
                 }`}
               >
                 {coach.status || "Inactive"}
@@ -435,33 +435,27 @@ export default function CoachProfile() {
         </div>
       </div>
 
-      {/* Salary history – tighter + horizontal scroll on mobile */}
-      <div className="max-w-6xl mx-auto bg-white rounded-3xl border border-gray-200 shadow-md px-3 sm:px-5 lg:px-8 py-5 sm:py-7">
+      {/* Salary history */}
+      <div className="max-w-6xl mx-auto glass-card rounded-2xl border border-zinc-800 shadow-md px-4 sm:px-6 lg:px-8 py-6 text-left">
         <div className="flex items-center justify-between mb-4 sm:mb-6">
-          <h3 className="text-xl sm:text-2xl lg:text-3xl font-bold text-[#0A2463] flex items-center gap-2">
-            <CreditCard size={26} className="text-[#FFC107]" />
+          <h3 className="text-xl sm:text-2xl lg:text-3xl font-headline tracking-wider text-[#f97316] uppercase flex items-center gap-2">
+            <CreditCard size={26} className="text-[#f97316]" />
             Salary History
           </h3>
         </div>
 
         {coach.salaryHistory && coach.salaryHistory.length > 0 ? (
-          <div className="w-full overflow-x-auto mx-1 sm:mx-0">
-            <div className="table-scroll rounded-2xl border border-slate-100">
-              <table className="w-full text-xs sm:text-sm lg:text-base">
-                <thead className="bg-[#0A2463] text-white uppercase tracking-wide">
-                  <tr>
-                    <th className="px-2 sm:px-4 lg:px-6 py-2 sm:py-3 text-center">
-                      #
-                    </th>
-                    <th className="px-2 sm:px-4 lg:px-6 py-2 sm:py-3 text-center whitespace-nowrap">
-                      Amount (₹)
-                    </th>
-                    <th className="px-2 sm:px-4 lg:px-6 py-2 sm:py-3 text-center whitespace-nowrap">
-                      Paid On
-                    </th>
+          <div className="w-full overflow-x-auto">
+            <div className="rounded-xl border border-zinc-800 overflow-hidden bg-[#0A0A0A]">
+              <table className="w-full text-left border-collapse text-xs sm:text-sm">
+                <thead>
+                  <tr className="border-b border-zinc-800 bg-zinc-900/50 text-[#e0c0b1] font-headline text-base tracking-wider uppercase">
+                    <th className="px-6 py-3.5">#</th>
+                    <th className="px-6 py-3.5 whitespace-nowrap">Amount (₹)</th>
+                    <th className="px-6 py-3.5 whitespace-nowrap">Paid On</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="divide-y divide-zinc-900 text-zinc-300">
                   {coach.salaryHistory
                     .slice()
                     .sort(
@@ -472,17 +466,15 @@ export default function CoachProfile() {
                     .map((s, idx) => (
                       <tr
                         key={idx}
-                        className={`${
-                          idx % 2 === 0 ? "bg-gray-50" : "bg-white"
-                        } hover:bg-gray-100`}
+                        className="hover:bg-white/5 transition"
                       >
-                        <td className="px-2 sm:px-4 lg:px-6 py-2 sm:py-3 font-medium text-center">
+                        <td className="px-6 py-3.5 text-zinc-500 font-medium">
                           {idx + 1}
                         </td>
-                        <td className="px-2 sm:px-4 lg:px-6 py-2 sm:py-3 text-green-600 font-semibold text-center whitespace-nowrap">
-                          ₹{s.amountPaid}
+                        <td className="px-6 py-3.5 text-[#22c55e] font-semibold whitespace-nowrap">
+                          ₹{s.amountPaid.toLocaleString("en-IN")}
                         </td>
-                        <td className="px-2 sm:px-4 lg:px-6 py-2 sm:py-3 text-gray-800 text-center whitespace-nowrap">
+                        <td className="px-6 py-3.5 text-zinc-400 whitespace-nowrap">
                           {new Date(s.paidOn).toLocaleDateString("en-GB")}
                         </td>
                       </tr>
@@ -492,7 +484,7 @@ export default function CoachProfile() {
             </div>
           </div>
         ) : (
-          <p className="text-gray-500 text-center py-6 text-sm sm:text-base">
+          <p className="text-zinc-500 text-center py-6 text-sm sm:text-base font-medium">
             No salary records found.
           </p>
         )}
@@ -501,13 +493,13 @@ export default function CoachProfile() {
       {/* Lightbox */}
       {showLightbox && coach.profilePicture && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm cursor-pointer"
           onClick={() => setShowLightbox(false)}
         >
           <img
             src={coach.profilePicture}
             alt={coach.name}
-            className="max-h-[80vh] max-w-[80vw] rounded-xl shadow-2xl"
+            className="max-h-[85vh] max-w-[85vw] rounded-xl shadow-2xl border border-zinc-700/50"
             onClick={(e) => e.stopPropagation()}
           />
         </div>
@@ -515,52 +507,68 @@ export default function CoachProfile() {
 
       {/* Pay Salary Modal */}
       {showPayModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/40 px-3">
-          <div className="bg-white p-6 sm:p-8 rounded-3xl max-w-md w-full shadow-2xl border border-gray-200">
-            <h3 className="text-xl sm:text-2xl font-bold text-[#0A2463] mb-4 sm:mb-6 flex items-center gap-3">
-              <RefreshCcw size={24} className="text-[#FFC107]" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/60 px-3">
+          <div className="glass-card p-6 sm:p-8 rounded-2xl max-w-md w-full shadow-2xl border border-zinc-800 text-left">
+            <h3 className="text-xl sm:text-2xl font-headline tracking-wider text-[#f97316] mb-5 flex items-center gap-3 uppercase">
+              <RefreshCcw size={22} className="text-[#f97316]" />
               Pay Salary
             </h3>
 
-            <div className="flex flex-col gap-4 sm:gap-5">
-              <input
-                type="number"
-                placeholder="Amount (₹)"
-                value={payAmount}
-                onChange={(e) =>
-                  setPayAmount(
-                    e.target.value === "" ? "" : Number(e.target.value)
-                  )
-                }
-                className="w-full px-4 py-2.5 rounded-lg border border-gray-300 bg-gray-50 text-sm sm:text-base text-[#0A2463] focus:ring-2 focus:ring-[#FFC107] outline-none"
-              />
-              <input
-                type="date"
-                value={payDate}
-                onChange={(e) => setPayDate(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-lg border border-gray-300 bg-gray-50 text-sm sm:text-base text-[#0A2463] focus:ring-2 focus:ring-[#FFC107] outline-none"
-              />
+            <div className="flex flex-col gap-4">
+              <div>
+                <label className="text-xs font-semibold text-[#e0c0b1] uppercase tracking-widest mb-2 block ml-1">
+                  Amount Paid (₹)
+                </label>
+                <input
+                  type="number"
+                  placeholder="Amount"
+                  value={payAmount}
+                  onChange={(e) =>
+                    setPayAmount(
+                      e.target.value === "" ? "" : Number(e.target.value)
+                    )
+                  }
+                  className="input-dark w-full px-4 py-2.5 rounded-xl text-sm sm:text-base"
+                />
+              </div>
 
-              <select
-                value={payMode}
-                onChange={(e) => setPayMode(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-lg border border-gray-300 bg-gray-50 text-sm sm:text-base text-[#0A2463] focus:ring-2 focus:ring-[#FFC107] outline-none"
-              >
-                <option value="Cash">Cash</option>
-                <option value="UPI">UPI</option>
-                <option value="Bank Transfer">Bank Transfer</option>
-              </select>
+              <div>
+                <label className="text-xs font-semibold text-[#e0c0b1] uppercase tracking-widest mb-2 block ml-1">
+                  Payment Date
+                </label>
+                <input
+                  type="date"
+                  value={payDate}
+                  onChange={(e) => setPayDate(e.target.value)}
+                  className="input-dark w-full px-4 py-2.5 rounded-xl text-sm sm:text-base text-[#e5e2e1]"
+                />
+              </div>
 
-              <div className="flex justify-end gap-3 sm:gap-4 mt-2">
+              <div>
+                <label className="text-xs font-semibold text-[#e0c0b1] uppercase tracking-widest mb-2 block ml-1">
+                  Mode of Payment
+                </label>
+                <select
+                  value={payMode}
+                  onChange={(e) => setPayMode(e.target.value)}
+                  className="input-dark w-full px-4 py-2.5 rounded-xl text-sm sm:text-base cursor-pointer text-[#e5e2e1]"
+                >
+                  <option value="Cash" className="bg-[#121212]">Cash</option>
+                  <option value="UPI" className="bg-[#121212]">UPI</option>
+                  <option value="Bank Transfer" className="bg-[#121212]">Bank Transfer</option>
+                </select>
+              </div>
+
+              <div className="flex justify-end gap-3 sm:gap-4 mt-6">
                 <button
                   onClick={handlePaySalary}
-                  className="bg-green-600 text-white px-4 sm:px-6 py-2.5 rounded-xl hover:bg-green-700 transition font-semibold shadow text-sm sm:text-base"
+                  className="btn-primary px-5 sm:px-7 py-2.5 rounded-xl font-headline text-xl tracking-wider text-white shadow cursor-pointer uppercase"
                 >
                   Pay
                 </button>
                 <button
                   onClick={() => setShowPayModal(false)}
-                  className="bg-gray-500 text-white px-4 sm:px-6 py-2.5 rounded-xl hover:bg-gray-600 transition font-semibold shadow text-sm sm:text-base"
+                  className="btn-secondary px-5 sm:px-7 py-2.5 rounded-xl font-headline text-xl tracking-wider text-white shadow cursor-pointer uppercase"
                 >
                   Cancel
                 </button>
@@ -572,70 +580,95 @@ export default function CoachProfile() {
 
       {/* Edit Coach Modal */}
       {showEditModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/40 px-3">
-          <div className="bg-white p-6 sm:p-8 rounded-3xl max-w-md w-full shadow-2xl border border-gray-200">
-            <h3 className="text-xl sm:text-2xl font-bold text-[#0A2463] mb-4 sm:mb-6 flex items-center gap-3">
-              <CreditCard size={24} className="text-[#FFC107]" />
-              Edit Coach
+        <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/60 px-3">
+          <div className="glass-card p-6 sm:p-8 rounded-2xl max-w-md w-full shadow-2xl border border-zinc-800 text-left">
+            <h3 className="text-xl sm:text-2xl font-headline tracking-wider text-[#f97316] mb-5 flex items-center gap-3 uppercase">
+              <CreditCard size={22} className="text-[#f97316]" />
+              Edit Coach Info
             </h3>
 
-            <div className="flex flex-col gap-4 sm:gap-5">
-              <input
-                type="text"
-                placeholder="Name"
-                value={editName}
-                onChange={(e) => setEditName(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-lg border border-gray-300 bg-gray-50 text-sm sm:text-base text-[#0A2463] focus:ring-2 focus:ring-[#FFC107] outline-none"
-              />
-              <input
-                type="text"
-                placeholder="Mobile"
-                value={editMobile}
-                onChange={(e) => setEditMobile(e.target.value)}
-                className={`w-full px-4 py-2.5 rounded-lg border ${
-                  editMobile && !/^\d{10}$/.test(editMobile)
-                    ? "border-red-500"
-                    : "border-gray-300"
-                } bg-gray-50 text-sm sm:text-base text-[#0A2463] focus:ring-2 focus:ring-[#FFC107] outline-none`}
-              />
-              <input
-                type="email"
-                placeholder="Email"
-                value={editEmail}
-                onChange={(e) => setEditEmail(e.target.value)}
-                className={`w-full px-4 py-2.5 rounded-lg border ${
-                  editEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editEmail)
-                    ? "border-red-500"
-                    : "border-gray-300"
-                } bg-gray-50 text-sm sm:text-base text-[#0A2463] focus:ring-2 focus:ring-[#FFC107] outline-none`}
-              />
-              <input
-                type="text"
-                value={(coach as any).joinDate || ""}
-                disabled
-                className="w-full px-4 py-2.5 rounded-lg border border-gray-300 bg-gray-100 text-xs sm:text-sm text-gray-500 cursor-not-allowed"
-              />
-              <select
-                value={editStatus}
-                onChange={(e) =>
-                  setEditStatus(e.target.value as "Active" | "Inactive")
-                }
-                className="w-full px-4 py-2.5 rounded-lg border border-gray-300 bg-gray-50 text-sm sm:text-base text-[#0A2463] focus:ring-2 focus:ring-[#FFC107] outline-none"
-              >
-                <option value="Active">Active</option>
-                <option value="Inactive">Inactive</option>
-              </select>
+            <div className="flex flex-col gap-4">
+              <div>
+                <label className="text-xs font-semibold text-[#e0c0b1] uppercase tracking-widest mb-2 block ml-1">
+                  Full Name
+                </label>
+                <input
+                  type="text"
+                  placeholder="Name"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  className="input-dark w-full px-4 py-2.5 rounded-xl text-sm sm:text-base"
+                />
+              </div>
 
-              <div className="flex justify-end gap-3 sm:gap-4 mt-2">
+              <div>
+                <label className="text-xs font-semibold text-[#e0c0b1] uppercase tracking-widest mb-2 block ml-1">
+                  Contact No.
+                </label>
+                <input
+                  type="text"
+                  placeholder="Mobile"
+                  value={editMobile}
+                  onChange={(e) => setEditMobile(e.target.value)}
+                  className={`input-dark w-full px-4 py-2.5 rounded-xl text-sm sm:text-base ${
+                    editMobile && !/^\d{10}$/.test(editMobile) ? "border-red-500" : ""
+                  }`}
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-[#e0c0b1] uppercase tracking-widest mb-2 block ml-1">
+                  Email Address
+                </label>
+                <input
+                  type="email"
+                  placeholder="Email"
+                  value={editEmail}
+                  onChange={(e) => setEditEmail(e.target.value)}
+                  className={`input-dark w-full px-4 py-2.5 rounded-xl text-sm sm:text-base ${
+                    editEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editEmail) ? "border-red-500" : ""
+                  }`}
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-[#e0c0b1] uppercase tracking-widest mb-2 block ml-1">
+                  Join Date
+                </label>
+                <input
+                  type="text"
+                  value={(coach as any).joinDate ? new Date((coach as any).joinDate).toLocaleDateString("en-GB") : ""}
+                  disabled
+                  className="input-dark w-full px-4 py-2.5 rounded-xl text-sm sm:text-base text-zinc-500 cursor-not-allowed opacity-60"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-[#e0c0b1] uppercase tracking-widest mb-2 block ml-1">
+                  Status
+                </label>
+                <select
+                  value={editStatus}
+                  onChange={(e) =>
+                    setEditStatus(e.target.value as "Active" | "Inactive")
+                  }
+                  className="input-dark w-full px-4 py-2.5 rounded-xl text-sm sm:text-base cursor-pointer text-[#e5e2e1]"
+                >
+                  <option value="Active" className="bg-[#121212]">Active</option>
+                  <option value="Inactive" className="bg-[#121212]">Inactive</option>
+                </select>
+              </div>
+
+              <div className="flex justify-end gap-3 sm:gap-4 mt-6">
                 <button
                   onClick={handleSaveEdit}
-                  className="bg-green-600 text-white px-4 sm:px-6 py-2.5 rounded-xl hover:bg-green-700 transition font-semibold shadow text-sm sm:text-base"
+                  className="btn-primary px-5 sm:px-7 py-2.5 rounded-xl font-headline text-xl tracking-wider text-white shadow cursor-pointer uppercase"
                 >
                   Save
                 </button>
                 <button
                   onClick={() => setShowEditModal(false)}
-                  className="bg-gray-500 text-white px-4 sm:px-6 py-2.5 rounded-xl hover:bg-gray-600 transition font-semibold shadow text-sm sm:text-base"
+                  className="btn-secondary px-5 sm:px-7 py-2.5 rounded-xl font-headline text-xl tracking-wider text-white shadow cursor-pointer uppercase"
                 >
                   Cancel
                 </button>
@@ -647,24 +680,24 @@ export default function CoachProfile() {
 
       {/* Delete Confirmation */}
       {showDeleteConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-3">
-          <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-xl max-w-md w-full text-center">
-            <h2 className="text-xl sm:text-2xl font-bold text-[#0A2463] mb-3">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-3">
+          <div className="glass-card rounded-2xl p-6 sm:p-8 shadow-xl max-w-md w-full border border-zinc-800 text-center text-[#e5e2e1]">
+            <h2 className="text-xl sm:text-2xl font-headline tracking-wider text-[#f97316] mb-3 uppercase">
               Confirm Deletion
             </h2>
-            <p className="text-gray-700 text-sm sm:text-base mb-5">
+            <p className="text-zinc-300 text-sm sm:text-base mb-6">
               Are you sure you want to delete <strong>{coach?.name}</strong>?
             </p>
             <div className="flex justify-center gap-3 sm:gap-6">
               <button
                 onClick={handleDeleteCoach}
-                className="bg-red-600 text-white px-4 sm:px-6 py-2.5 rounded-xl font-semibold hover:bg-red-700 transition text-sm sm:text-base"
+                className="btn-primary px-5 py-2 rounded-xl font-headline text-lg tracking-wider text-white shadow cursor-pointer uppercase"
               >
                 Yes, Delete
               </button>
               <button
                 onClick={() => setShowDeleteConfirm(false)}
-                className="bg-gray-400 text-white px-4 sm:px-6 py-2.5 rounded-xl font-semibold hover:bg-gray-500 transition text-sm sm:text-base"
+                className="btn-secondary px-5 py-2 rounded-xl font-headline text-lg tracking-wider text-white shadow cursor-pointer uppercase"
               >
                 Cancel
               </button>
@@ -675,14 +708,14 @@ export default function CoachProfile() {
 
       {/* Popup message */}
       {popupMessage && (
-        <div className="fixed inset-0 flex items-center justify-center z-[999] bg-black/40 px-3">
-          <div className="bg-white px-6 sm:px-8 py-5 sm:py-6 rounded-2xl shadow-xl text-center max-w-sm w-full">
-            <p className="text-sm sm:text-lg font-semibold text-[#15145a] whitespace-pre-line">
+        <div className="fixed inset-0 flex items-center justify-center z-[999] bg-black/60 px-3">
+          <div className="glass-card px-6 sm:px-8 py-5 sm:py-6 rounded-2xl shadow-xl text-center max-w-sm w-full border border-zinc-800 text-[#e5e2e1]">
+            <p className="text-lg font-headline tracking-wider mb-4 whitespace-pre-line">
               {popupMessage}
             </p>
             <button
               onClick={() => setPopupMessage(null)}
-              className="mt-4 bg-yellow-400 text-[#15145a] px-5 sm:px-6 py-2 rounded-lg font-bold hover:bg-yellow-500 transition text-sm sm:text-base"
+              className="btn-primary px-6 py-2 rounded-xl font-headline text-lg tracking-wider text-white shadow cursor-pointer"
             >
               OK
             </button>
@@ -691,7 +724,7 @@ export default function CoachProfile() {
       )}
 
       {processing && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[1000]">
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[1000]">
           <Loader text="Processing..." />
         </div>
       )}

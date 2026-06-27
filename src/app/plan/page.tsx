@@ -103,18 +103,20 @@ export default function PlanPage() {
   };
 
   return (
-    <div className="px-3 sm:px-6 lg:px-8 py-4 sm:py-6">
+    <div className="min-h-screen bg-[#0F0F0F] text-[#e5e2e1] px-4 sm:px-6 lg:px-8 py-6 space-y-6 font-body">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div className="flex items-center gap-3">
-          <ClipboardList size={32} className="text-yellow-500" />
-          <h1 className="text-2xl sm:text-3xl lg:text-[42px] font-bold text-yellow-500">
-            View Plans
+          <span className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-2xl bg-[#f97316]/10 text-[#f97316] border border-[#f97316]/20 shadow-md">
+            <ClipboardList size={24} />
+          </span>
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-headline tracking-wider text-[#f97316]">
+            Subscription Plans
           </h1>
         </div>
         <button
           onClick={() => setShowModal(true)}
-          className="self-start sm:self-auto bg-yellow-400 text-[#15145a] px-5 sm:px-8 py-2.5 sm:py-3 text-base sm:text-xl flex items-center gap-2 rounded-full font-bold shadow hover:bg-yellow-500 transition"
+          className="btn-primary self-start sm:self-auto px-5 sm:px-8 py-2.5 rounded-xl font-headline text-xl tracking-wider text-white shadow cursor-pointer flex items-center gap-2"
         >
           <PlusCircle size={20} /> Add Plan
         </button>
@@ -125,17 +127,29 @@ export default function PlanPage() {
         {sortedPlans.map((plan) => (
           <div
             key={plan._id}
-            className="bg-white text-[#15145a] p-5 sm:p-6 rounded-2xl shadow-lg hover:shadow-2xl transition-all"
+            className="glass-card p-6 rounded-2xl border border-zinc-800 shadow-lg hover:shadow-2xl hover:border-zinc-700/80 transition-all flex flex-col justify-between"
           >
-            <h3 className="text-2xl sm:text-3xl font-bold mb-2">{plan.name}</h3>
-            <p className="text-gray-800 text-xl sm:text-2xl">
-              ⏱ {plan.validity} {plan.validityType || "Months"}
-            </p>
-            <p className="text-gray-800 mb-4 text-xl sm:text-2xl">
-              💰 ₹{plan.amount}
-            </p>
+            <div>
+              <h3 className="text-2xl sm:text-3xl font-headline tracking-wider text-[#f97316] mb-3 uppercase">
+                {plan.name}
+              </h3>
+              <div className="space-y-2 mb-6">
+                <p className="text-zinc-300 text-lg flex items-center gap-2 font-medium">
+                  <span className="text-zinc-500">Validity:</span>
+                  <span className="text-[#e5e2e1] font-semibold">
+                    {plan.validity} {plan.validityType || "Months"}
+                  </span>
+                </p>
+                <p className="text-zinc-300 text-lg flex items-center gap-2 font-medium">
+                  <span className="text-zinc-500">Price:</span>
+                  <span className="text-[#22c55e] font-semibold">
+                    ₹{plan.amount}
+                  </span>
+                </p>
+              </div>
+            </div>
 
-            <div className="flex justify-end gap-3">
+            <div className="flex justify-end gap-3 pt-4 border-t border-zinc-800/60">
               {plan._id && (
                 <>
                   <button
@@ -149,7 +163,7 @@ export default function PlanPage() {
                       setValidityType(plan.validityType || "months");
                       setShowModal(true);
                     }}
-                    className="bg-yellow-500 text-white text-sm sm:text-base px-4 py-2 rounded-lg shadow hover:bg-yellow-600 transition flex items-center gap-1"
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-750 text-[#e5e2e1] border border-zinc-700 text-sm font-headline tracking-wider uppercase cursor-pointer transition shadow"
                   >
                     <Edit size={16} /> Edit
                   </button>
@@ -159,7 +173,7 @@ export default function PlanPage() {
                       setSelectedId(plan._id!);
                       setShowDeleteModal(true);
                     }}
-                    className="bg-red-500 text-white text-sm sm:text-base px-4 py-2 rounded-lg shadow hover:bg-red-600 transition"
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-red-650 hover:bg-red-700 text-white text-sm font-headline tracking-wider uppercase cursor-pointer transition shadow"
                   >
                     Delete
                   </button>
@@ -172,15 +186,15 @@ export default function PlanPage() {
 
       {/* Delete Modal */}
       {showDeleteModal && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-2xl w-full max-w-sm mx-4 text-center">
-            <h2 className="text-lg sm:text-xl font-bold mb-3 text-[#15145a]">
-              Are you sure?
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="glass-card p-6 sm:p-8 rounded-2xl shadow-2xl w-full max-w-md mx-4 text-center border border-zinc-800">
+            <h2 className="text-2xl font-headline tracking-wider mb-3 text-red-500 uppercase">
+              Delete Plan
             </h2>
-            <p className="text-sm text-gray-700 mb-5">
-              Do you really want to delete this plan?
+            <p className="text-zinc-300 mb-6 text-sm sm:text-base">
+              Are you sure you want to permanently delete this plan?
             </p>
-            <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4">
+            <div className="flex justify-center gap-3 sm:gap-4">
               <button
                 onClick={async () => {
                   if (selectedId) {
@@ -202,7 +216,7 @@ export default function PlanPage() {
                     setSelectedId(null);
                   }
                 }}
-                className="bg-red-500 text-white px-4 py-2 rounded text-sm sm:text-base"
+                className="bg-red-650 text-white px-5 sm:px-6 py-2.5 rounded-xl hover:bg-red-700 transition font-headline text-xl tracking-wider shadow cursor-pointer"
               >
                 Yes, Delete
               </button>
@@ -211,7 +225,7 @@ export default function PlanPage() {
                   setShowDeleteModal(false);
                   setSelectedId(null);
                 }}
-                className="bg-gray-300 text-black px-4 py-2 rounded text-sm sm:text-base"
+                className="btn-secondary px-5 sm:px-6 py-2.5 rounded-xl font-headline text-xl tracking-wider text-white shadow cursor-pointer"
               >
                 Cancel
               </button>
@@ -222,10 +236,10 @@ export default function PlanPage() {
 
       {/* Add/Edit Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-white text-[#15145a] p-6 sm:p-8 lg:p-10 rounded-2xl shadow-2xl w-full max-w-lg mx-4 relative">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="glass-card text-[#e5e2e1] p-6 sm:p-8 lg:p-10 rounded-2xl shadow-2xl w-full max-w-lg mx-4 relative border border-zinc-800">
             <button
-              className="absolute top-3 right-4 text-gray-500 text-2xl hover:text-red-600"
+              className="absolute top-4 right-4 text-zinc-400 hover:text-white text-2xl cursor-pointer"
               onClick={() => {
                 setShowModal(false);
                 setSelectedId(null);
@@ -236,42 +250,44 @@ export default function PlanPage() {
               &times;
             </button>
 
-            <h2 className="text-2xl sm:text-3xl font-bold mb-5">
+            <h2 className="text-2xl sm:text-3xl font-headline tracking-wider text-[#f97316] mb-6 uppercase">
               {selectedId ? "Edit Plan" : "Add New Plan"}
             </h2>
             <form onSubmit={handleSubmit}>
               <div className="space-y-5 sm:space-y-6">
                 <div>
-                  <label className="block mb-2 font-bold text-base sm:text-lg">
+                  <label className="text-xs font-semibold text-[#e0c0b1] uppercase tracking-widest mb-2 block ml-1">
                     Plan Name
                   </label>
                   <input
                     name="name"
                     type="text"
+                    required
                     value={form.name}
                     onChange={handleChange}
-                    className="w-full px-4 py-2.5 sm:py-3 rounded text-black bg-gray-100 text-base sm:text-lg"
+                    className="input-dark w-full px-4 py-2.5 rounded-xl text-sm sm:text-base"
                     placeholder="Enter plan name"
                   />
                 </div>
 
-                {/* Validity + dropdown – stacked on mobile */}
+                {/* Validity + dropdown */}
                 <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-end">
                   <div className="flex-1">
-                    <label className="block mb-2 font-bold text-base sm:text-lg">
+                    <label className="text-xs font-semibold text-[#e0c0b1] uppercase tracking-widest mb-2 block ml-1">
                       Validity
                     </label>
                     <input
                       name="validity"
                       type="number"
+                      required
                       value={form.validity}
                       onChange={handleChange}
-                      className="w-full px-4 py-2.5 sm:py-3 rounded text-black bg-gray-100 text-base sm:text-lg"
+                      className="input-dark w-full px-4 py-2.5 rounded-xl text-sm sm:text-base"
                       placeholder={`Enter ${validityType}`}
                     />
                   </div>
                   <div className="sm:w-40">
-                    <label className="block mb-2 font-bold text-base sm:text-lg">
+                    <label className="text-xs font-semibold text-[#e0c0b1] uppercase tracking-widest mb-2 block ml-1">
                       Type
                     </label>
                     <select
@@ -279,7 +295,7 @@ export default function PlanPage() {
                       onChange={(e) =>
                         setValidityType(e.target.value as "months" | "days")
                       }
-                      className="w-full px-4 py-2.5 sm:py-3 rounded text-black bg-gray-100 text-base sm:text-lg"
+                      className="w-full px-4 py-2.5 rounded-xl bg-[#050505] border border-zinc-800 text-sm sm:text-base text-[#e5e2e1] focus:border-[#f97316] outline-none cursor-pointer"
                     >
                       <option value="months">Months</option>
                       <option value="days">Days</option>
@@ -288,25 +304,26 @@ export default function PlanPage() {
                 </div>
 
                 <div>
-                  <label className="block mb-2 font-bold text-base sm:text-lg">
-                    Amount
+                  <label className="text-xs font-semibold text-[#e0c0b1] uppercase tracking-widest mb-2 block ml-1">
+                    Amount (₹)
                   </label>
                   <input
                     name="amount"
                     type="number"
+                    required
                     value={form.amount}
                     onChange={handleChange}
-                    className="w-full px-4 py-2.5 sm:py-3 rounded text-black bg-gray-100 text-base sm:text-lg"
+                    className="input-dark w-full px-4 py-2.5 rounded-xl text-sm sm:text-base"
                     placeholder="Enter amount"
                   />
                 </div>
 
-                <div className="flex flex-col sm:flex-row gap-3 sm:gap-6 justify-end mt-4 sm:mt-6">
+                <div className="flex justify-end gap-3 sm:gap-4 mt-6 sm:mt-8">
                   <button
                     type="submit"
-                    className="w-full sm:w-auto bg-yellow-400 text-[#15145a] px-6 sm:px-8 py-2.5 sm:py-3 rounded font-bold shadow text-base sm:text-lg hover:bg-yellow-500 transition"
+                    className="btn-primary px-6 sm:px-8 py-2.5 rounded-xl font-headline text-xl tracking-wider text-white shadow cursor-pointer"
                   >
-                    Save
+                    Save Plan
                   </button>
                   <button
                     type="button"
@@ -316,7 +333,7 @@ export default function PlanPage() {
                       setForm({ name: "", validity: "", amount: "" });
                       setValidityType("months");
                     }}
-                    className="w-full sm:w-auto bg-gray-200 text-[#15145a] px-6 sm:px-8 py-2.5 sm:py-3 rounded font-bold text-base sm:text-lg hover:bg-gray-300 transition"
+                    className="btn-secondary px-6 sm:px-8 py-2.5 rounded-xl font-headline text-xl tracking-wider text-white shadow cursor-pointer"
                   >
                     Cancel
                   </button>
@@ -327,16 +344,16 @@ export default function PlanPage() {
         </div>
       )}
 
-      {/* Popup Modal (Success/Error Messages) */}
+      {/* Popup Modal */}
       {popupMessage && (
-        <div className="fixed inset-0 flex items-center justify-center z-[999] bg-black/40">
-          <div className="bg-white px-6 sm:px-8 py-5 sm:py-6 rounded-2xl shadow-xl text-center max-w-sm w-full mx-4">
-            <p className="text-base sm:text-xl font-semibold text-[#15145a]">
+        <div className="fixed inset-0 flex items-center justify-center z-[999] bg-black/60">
+          <div className="glass-card px-6 sm:px-8 py-5 sm:py-6 rounded-2xl shadow-xl text-center max-w-sm w-full mx-4 border border-zinc-800 text-[#e5e2e1]">
+            <p className="text-lg sm:text-xl font-headline tracking-wider mb-4">
               {popupMessage}
             </p>
             <button
               onClick={() => setPopupMessage(null)}
-              className="mt-4 bg-yellow-400 text-[#15145a] px-5 sm:px-6 py-2 rounded-lg font-bold hover:bg-yellow-500 transition text-sm sm:text-base"
+              className="btn-primary px-6 py-2 rounded-xl font-headline text-lg tracking-wider text-white shadow cursor-pointer"
             >
               OK
             </button>

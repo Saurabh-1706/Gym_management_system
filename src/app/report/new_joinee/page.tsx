@@ -51,11 +51,13 @@ export default function NewJoineeReportPage() {
   }, [from, to]);
 
   return (
-    <div className="px-3 sm:px-5 lg:px-8 py-4 sm:py-6 bg-[#E9ECEF] min-h-screen">
+    <div className="min-h-screen bg-[#0F0F0F] text-[#e5e2e1] px-4 sm:px-6 lg:px-8 py-6 space-y-6 font-body text-left">
       {/* Header */}
       <div className="flex items-center gap-3 mb-4 sm:mb-6">
-        <Users size={32} className="text-yellow-500" />
-        <h1 className="text-2xl sm:text-3xl lg:text-[42px] font-bold text-[#0A2463]">
+        <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-2xl bg-[#f97316]/10 text-[#f97316] border border-[#f97316]/20 shadow-md">
+          <Users size={24} />
+        </div>
+        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-headline tracking-wider text-[#f97316] uppercase">
           New Joinee Report
         </h1>
       </div>
@@ -63,104 +65,90 @@ export default function NewJoineeReportPage() {
       {/* Date Filters + Summary */}
       <div className="flex lg:flex-row flex-wrap gap-4 lg:gap-6 items-stretch mb-6">
         {/* From */}
-        <div className="flex flex-col sm:flex-row sm:items-center gap-2 text-gray-800">
-          <label className="font-semibold text-base sm:text-lg">From</label>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 text-[#e5e2e1]">
+          <label className="text-xs font-semibold text-[#e0c0b1] uppercase tracking-widest block ml-1 whitespace-nowrap">From</label>
           <input
             type="date"
             value={from}
             onChange={(e) => setFrom(e.target.value)}
-            className="px-3 sm:px-4 py-2.5 rounded-xl border border-gray-300 shadow-md
-              text-gray-900 text-sm sm:text-lg focus:outline-none focus:ring-2
-              focus:ring-yellow-500 focus:border-yellow-500 transition-all duration-300
-              hover:shadow-lg bg-white"
+            className="input-dark px-3 sm:px-4 py-2.5 rounded-xl text-sm sm:text-base text-[#e5e2e1]"
           />
         </div>
 
         {/* To */}
-        <div className="flex flex-col sm:flex-row sm:items-center gap-2 text-gray-800">
-          <label className="font-semibold text-base sm:text-lg">To</label>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 text-[#e5e2e1]">
+          <label className="text-xs font-semibold text-[#e0c0b1] uppercase tracking-widest block ml-1 whitespace-nowrap">To</label>
           <input
             type="date"
             value={to}
             onChange={(e) => setTo(e.target.value)}
-            className="px-3 sm:px-4 py-2.5 rounded-xl border border-gray-300 shadow-md
-              text-gray-900 text-sm sm:text-lg focus:outline-none focus:ring-2
-              focus:ring-yellow-500 focus:border-yellow-500 transition-all duration-300
-              hover:shadow-lg bg-white"
+            className="input-dark px-3 sm:px-4 py-2.5 rounded-xl text-sm sm:text-base text-[#e5e2e1]"
           />
         </div>
 
         {/* New Joinee Summary Card */}
-        <div className="lg:ml-auto w-full sm:w-auto bg-white p-4 sm:p-5 rounded-2xl shadow flex items-center gap-3 sm:gap-4 transition-transform transform hover:scale-105">
-          <Users size={32} className="text-blue-500" />
+        <div className="lg:ml-auto w-full sm:w-auto glass-card border border-zinc-800 px-5 py-4 rounded-xl flex items-center gap-3 sm:gap-4 transition-transform hover:scale-[1.02] shadow-lg text-left">
+          <div className="p-3 bg-white/5 border border-white/5 rounded-xl">
+            <Users size={24} className="text-blue-400" />
+          </div>
           <div>
-            <p className="text-gray-500 text-sm sm:text-lg">New Joinees</p>
-            <p className="text-xl sm:text-2xl font-bold">{members.length}</p>
+            <p className="text-zinc-400 text-sm font-medium">New Joinees</p>
+            <p className="text-2xl font-headline tracking-wider text-[#e5e2e1]">{members.length}</p>
           </div>
         </div>
       </div>
 
       {/* Members Table */}
-      <div className="bg-white rounded-2xl shadow p-4 sm:p-6 overflow-x-auto">
-        <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-4">
+      <div className="glass-card rounded-2xl border border-zinc-800 p-4 sm:p-6 shadow-lg">
+        <h2 className="text-xl sm:text-2xl font-headline tracking-wider text-[#f97316] mb-6 uppercase">
           New Members
         </h2>
-        <div className="table-scroll rounded-2xl border border-slate-100">
-          <table className="w-full text-xs sm:text-sm lg:text-base">
-            <thead className="bg-yellow-500 text-white uppercase text-xs sm:text-sm lg:text-xl">
-              <tr>
-                <th className="px-3 sm:px-6 py-2 sm:py-3 text-left font-semibold">
-                  #
-                </th>
-                <th className="px-3 sm:px-6 py-2 sm:py-3 text-left font-semibold">
-                  Name
-                </th>
-                <th className="px-3 sm:px-6 py-2 sm:py-3 text-left font-semibold">
-                  Mobile
-                </th>
-                <th className="px-3 sm:px-6 py-2 sm:py-3 text-left font-semibold">
-                  Plan
-                </th>
-                <th className="px-3 sm:px-6 py-2 sm:py-3 text-left font-semibold">
-                  Join Date
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-gray-50 divide-y text-xs sm:text-sm lg:text-xl divide-gray-200">
-              {members.length === 0 && (
+        <div className="w-full overflow-x-auto">
+          <div className="rounded-xl border border-zinc-800 overflow-hidden bg-[#0A0A0A]">
+            <table className="w-full text-left border-collapse text-xs sm:text-sm">
+              <thead className="bg-zinc-900/50 text-[#e0c0b1] font-headline text-base tracking-wider uppercase border-b border-zinc-800">
                 <tr>
-                  <td
-                    colSpan={5}
-                    className="text-center py-6 text-gray-400 text-sm sm:text-base"
+                  <th className="px-5 py-3.5">#</th>
+                  <th className="px-5 py-3.5">Name</th>
+                  <th className="px-5 py-3.5">Mobile</th>
+                  <th className="px-5 py-3.5">Plan</th>
+                  <th className="px-5 py-3.5">Join Date</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-900 text-zinc-300">
+                {members.length === 0 && (
+                  <tr>
+                    <td
+                      colSpan={5}
+                      className="text-center py-8 text-zinc-500 text-sm sm:text-base font-medium uppercase tracking-wider"
+                    >
+                      No members found in this range.
+                    </td>
+                  </tr>
+                )}
+                {members.map((m, index) => (
+                  <tr
+                    key={m._id}
+                    className="hover:bg-white/5 transition"
                   >
-                    No members found in this range.
-                  </td>
-                </tr>
-              )}
-              {members.map((m, index) => (
-                <tr
-                  key={m._id}
-                  className={`transition-transform transform hover:scale-[1.01] hover:shadow-md ${
-                    index % 2 === 0 ? "bg-white" : "bg-gray-50"
-                  }`}
-                >
-                  <td className="px-3 sm:px-6 py-2 sm:py-4 font-medium">
-                    {index + 1}
-                  </td>
-                  <td className="px-3 sm:px-6 py-2 sm:py-4 font-medium">
-                    {m.name}
-                  </td>
-                  <td className="px-3 sm:px-6 py-2 sm:py-4">{m.mobile}</td>
-                  <td className="px-3 sm:px-6 py-2 sm:py-4 font-semibold">
-                    {m.plan || "No Plan"}
-                  </td>
-                  <td className="px-3 sm:px-6 py-2 sm:py-4">
-                    {formatDate(m.joinDate)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                    <td className="px-5 py-3.5 text-zinc-500 font-medium">
+                      {index + 1}
+                    </td>
+                    <td className="px-5 py-3.5 font-semibold text-[#e5e2e1]">
+                      {m.name}
+                    </td>
+                    <td className="px-5 py-3.5 text-zinc-400">{m.mobile}</td>
+                    <td className="px-5 py-3.5 font-semibold text-[#f97316]">
+                      {m.plan || "No Plan"}
+                    </td>
+                    <td className="px-5 py-3.5 text-zinc-400">
+                      {formatDate(m.joinDate)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>

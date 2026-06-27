@@ -55,36 +55,26 @@ export default function Navbar({ onLinkClick }: NavbarProps) {
   }, [pathname]);
 
   return (
-    <div
-      className="
-        relative
-        flex flex-col 
-        bg-[#0A2463] text-white 
-        rounded-r-3xl shadow-xl 
-        w-64 sm:w-72 
-        max-h-[90vh]
-        mt-4 mb-4 ml-2
-        p-4 sm:p-6
-        scrollbar-thin scrollbar-thumb-[#FFC107]/60 scrollbar-track-transparent
-      "
-    >
+    <div className="flex flex-col h-full bg-[#0e0e0e] text-[#e5e2e1] p-4 sm:p-5">
       {/* ===== Scrollable Content Section ===== */}
-      <div className="overflow-y-auto flex-1 pr-2">
+      <div className="overflow-y-auto flex-1 pr-1 scrollbar-thin">
         {/* ===== Logo Section ===== */}
         <Link
           href="/"
-          className="block mb-4 md:mb-6 text-center"
+          className="block mb-8 text-center"
           onClick={onLinkClick}
         >
-          <img
-            src="/logo-removebg-preview.png"
-            alt="Mojad Fitness Logo"
-            className="w-28 sm:w-32 md:w-40 mx-auto object-contain"
-          />
+          <div className="flex flex-col items-center">
+            <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center border border-primary/20 mb-2">
+              <span className="text-[#f97316] font-bold text-2xl">⚡</span>
+            </div>
+            <span className="font-headline text-3xl tracking-widest text-[#f97316]">IRON PULSE</span>
+            <span className="text-[10px] uppercase tracking-[0.25em] text-[#e0c0b1] opacity-70">Elite Performance</span>
+          </div>
         </Link>
 
         {/* ===== Navigation Links ===== */}
-        <nav className="space-y-2 sm:space-y-3">
+        <nav className="space-y-1.5">
           {navItems.map((item) => {
             const hasSubmenu = item.submenu && item.submenu.length > 0;
             const isActive = !hasSubmenu && pathname === item.href;
@@ -97,21 +87,21 @@ export default function Navbar({ onLinkClick }: NavbarProps) {
                       onClick={() =>
                         setOpenSubmenu(openSubmenu === item.href ? null : item.href)
                       }
-                      className="flex items-center justify-between w-full px-4 py-2 rounded-lg text-base sm:text-lg hover:bg-[#0F3C78]/80 transition"
+                      className="flex items-center justify-between w-full px-4 py-2.5 rounded-lg text-base hover:bg-white/5 transition-all text-[#e0c0b1] hover:text-white"
                     >
-                      <div className="flex items-center gap-2 sm:gap-3">
-                        {item.icon}
-                        <span>{item.label}</span>
+                      <div className="flex items-center gap-3">
+                        <span className="text-[#f97316]">{item.icon}</span>
+                        <span className="font-body text-sm font-medium">{item.label}</span>
                       </div>
                       <ChevronRight
-                        className={`transition-transform duration-300 ${
+                        className={`transition-transform duration-300 w-4 h-4 ${
                           openSubmenu === item.href ? "rotate-90" : ""
                         }`}
                       />
                     </button>
 
                     {openSubmenu === item.href && (
-                      <div className="ml-6 mt-1 flex flex-col gap-1">
+                      <div className="ml-8 mt-1 flex flex-col gap-1 border-l border-zinc-800 pl-3">
                         {item.submenu.map((sub) => {
                           const isSubActive = pathname === sub.href;
                           return (
@@ -119,10 +109,10 @@ export default function Navbar({ onLinkClick }: NavbarProps) {
                               key={sub.href}
                               href={sub.href}
                               onClick={onLinkClick}
-                              className={`px-4 py-1.5 sm:py-2 rounded-lg text-white text-sm sm:text-base transition-all ${
+                              className={`px-3 py-1.5 rounded-md text-xs font-body transition-all ${
                                 isSubActive
-                                  ? "bg-[#FFC107] text-[#0A2463]"
-                                  : "hover:bg-[#0A2463]/70"
+                                  ? "text-[#f97316] font-semibold"
+                                  : "text-zinc-400 hover:text-white hover:bg-white/5"
                               }`}
                             >
                               {sub.label}
@@ -136,14 +126,16 @@ export default function Navbar({ onLinkClick }: NavbarProps) {
                   <Link
                     href={item.href}
                     onClick={onLinkClick}
-                    className={`flex items-center gap-3 px-4 py-2 rounded-lg text-base sm:text-lg transition-colors ${
+                    className={`flex items-center gap-3 px-4 py-2.5 rounded-lg text-base transition-all ${
                       isActive
-                        ? "bg-[#FFC107] text-[#0A2463] font-semibold shadow-md"
-                        : "hover:bg-[#0F3C78]/70 text-white"
+                        ? "bg-[#22c55e]/10 text-[#22c55e] border-l-4 border-[#22c55e] font-semibold shadow-sm"
+                        : "hover:bg-white/5 text-[#e0c0b1] hover:text-white"
                     }`}
                   >
-                    {item.icon}
-                    <span>{item.label}</span>
+                    <span className={isActive ? "text-[#22c55e]" : "text-zinc-500"}>
+                      {item.icon}
+                    </span>
+                    <span className="font-body text-sm font-medium">{item.label}</span>
                   </Link>
                 )}
               </div>
@@ -157,17 +149,17 @@ export default function Navbar({ onLinkClick }: NavbarProps) {
         <div
           className="
             sticky bottom-0 left-0
-            bg-[#0A2463]
-            pt-3 mt-2
-            border-t border-[#ffffff2e]
+            bg-[#0e0e0e]
+            pt-4 mt-2
+            border-t border-zinc-800/80
           "
         >
           <button
             onClick={() => signOut({ callbackUrl: "/auth" })}
-            className="flex items-center justify-center gap-3 px-4 py-2 sm:py-3 w-full bg-[#FFC107] hover:bg-[#e0a800] rounded-lg font-semibold text-[#0A2463] transition"
+            className="flex items-center justify-center gap-2 px-4 py-2.5 w-full bg-[#f97316] hover:bg-[#ff8c3a] rounded-lg font-headline text-lg tracking-wider text-white transition-all shadow-md active:scale-98"
           >
-            <LogOut size={20} />
-            <span>Logout</span>
+            <LogOut size={16} />
+            <span>LOGOUT</span>
           </button>
         </div>
       )}

@@ -169,153 +169,163 @@ export default function MiscellaneousPage() {
   });
 
   return (
-    <div className="min-h-screen bg-[#F5F7FA] px-3 sm:px-4 lg:px-8 py-4 sm:py-6">
+    <div className="min-h-screen bg-[#0F0F0F] text-[#e5e2e1] px-4 sm:px-6 lg:px-8 py-6 space-y-6 font-body text-left">
       {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
+      <div className="flex flex-col gap-4 sm:gap-5 md:flex-row md:items-center md:justify-between mb-4 sm:mb-6 lg:mb-8">
         <div className="flex items-center gap-3">
-          <Receipt size={32} className="text-[#0A2463]" />
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#0A2463]">
+          <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-2xl bg-[#f97316]/10 text-[#f97316] border border-[#f97316]/20 shadow-md">
+            <Receipt size={24} />
+          </div>
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-headline tracking-wider text-[#f97316] uppercase">
             Miscellaneous Costs
           </h1>
         </div>
         <button
           onClick={() => openModal()}
-          className="self-start sm:self-auto flex items-center gap-2 bg-[#FFC107] text-[#212529] px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl shadow hover:bg-[#e0a800] hover:scale-105 transition font-semibold text-sm sm:text-base"
+          className="btn-primary flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl font-headline text-xl tracking-wider text-white shadow cursor-pointer uppercase whitespace-nowrap"
         >
           <PlusCircle size={18} /> Add New
         </button>
       </div>
 
       {/* Costs Table */}
-      <div className="bg-white rounded-2xl shadow px-3 sm:px-5 lg:px-6 py-4 sm:py-6">
-        <h2 className="text-lg sm:text-2xl font-bold text-gray-800 mb-3 sm:mb-4 flex items-center gap-2">
-          <Calendar className="text-[#FFC107]" /> Costs History
+      <div className="glass-card rounded-2xl border border-zinc-800 p-4 sm:p-6 shadow-lg">
+        <h2 className="text-xl sm:text-2xl font-headline tracking-wider text-[#f97316] mb-6 flex items-center gap-2 uppercase">
+          <Calendar className="text-[#f97316]" size={20} /> Costs History
         </h2>
 
-        <div className="table-scroll rounded-2xl border border-slate-100">
-          <table className="w-full text-xs sm:text-sm lg:text-base">
-            <thead className="bg-yellow-500 text-white">
-              <tr>
-                <th className="px-3 sm:px-4 py-3 sm:py-4 text-center text-xs sm:text-sm md:text-lg font-semibold uppercase">
-                  Month-Year
-                </th>
-                <th className="px-3 sm:px-4 py-3 sm:py-4 text-center text-xs sm:text-sm md:text-lg font-semibold uppercase">
-                  Name
-                </th>
-                <th className="px-3 sm:px-4 py-3 sm:py-4 text-center text-xs sm:text-sm md:text-lg font-semibold uppercase">
-                  Date
-                </th>
-                <th className="px-3 sm:px-4 py-3 sm:py-4 text-center text-xs sm:text-sm md:text-lg font-semibold uppercase">
-                  Amount
-                </th>
-                <th className="px-3 sm:px-4 py-3 sm:py-4 text-center text-xs sm:text-sm md:text-lg font-semibold uppercase">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="font-semibold text-xs sm:text-sm md:text-base">
-              {Object.entries(grouped).map(([month, items]) =>
-                items.map((c, idx) => (
-                  <tr
-                    key={c._id}
-                    className={`${
-                      idx % 2 === 0 ? "bg-white" : "bg-[#F8F9FA]"
-                    } hover:bg-[#FFC107]/10 transition`}
-                  >
-                    {idx === 0 && (
-                      <td
-                        className="px-3 sm:px-4 py-3 sm:py-4 text-center align-middle font-semibold text-sm sm:text-base md:text-lg"
-                        rowSpan={items.length}
-                      >
-                        {month}
+        <div className="w-full overflow-x-auto">
+          <div className="rounded-xl border border-zinc-800 overflow-hidden bg-[#0A0A0A]">
+            <table className="w-full text-left border-collapse text-xs sm:text-sm">
+              <thead>
+                <tr className="border-b border-zinc-800 bg-zinc-900/50 text-[#e0c0b1] font-headline text-base tracking-wider uppercase">
+                  <th className="px-5 py-3.5 text-center">Month-Year</th>
+                  <th className="px-5 py-3.5 text-center">Name</th>
+                  <th className="px-5 py-3.5 text-center">Date</th>
+                  <th className="px-5 py-3.5 text-center">Amount</th>
+                  <th className="px-5 py-3.5 text-center">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-900 text-zinc-300">
+                {Object.entries(grouped).map(([month, items]) =>
+                  items.map((c, idx) => (
+                    <tr
+                      key={c._id}
+                      className="hover:bg-white/5 transition"
+                    >
+                      {idx === 0 && (
+                        <td
+                          className="px-5 py-3.5 text-center align-middle font-headline text-[#e0c0b1] text-base border-r border-zinc-900 bg-[#050505]"
+                          rowSpan={items.length}
+                        >
+                          {month}
+                        </td>
+                      )}
+                      <td className="px-5 py-3.5 text-center font-semibold text-[#e5e2e1] break-words">
+                        {c.name}
                       </td>
-                    )}
-                    <td className="px-3 sm:px-4 py-3 sm:py-4 text-center break-words">
-                      {c.name}
-                    </td>
-                    <td className="px-3 sm:px-4 py-3 sm:py-4 text-center">
-                      {new Date(c.date).toLocaleDateString("en-GB")}
-                    </td>
-                    <td className="px-3 sm:px-4 py-3 sm:py-4 text-center">
-                      ₹ {c.amount}
-                    </td>
-                    <td className="px-3 sm:px-4 py-3 sm:py-4">
-                      <div className="flex justify-center gap-2 sm:gap-3">
-                        <button
-                          onClick={() => openModal(c)}
-                          className="px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-500 text-white rounded-lg shadow hover:bg-blue-600 transition flex items-center gap-1 text-xs sm:text-sm"
-                        >
-                          <Edit size={14} /> Edit
-                        </button>
-                        <button
-                          onClick={() => {
-                            setDeleteId(c._id);
-                            setDeleteName(c.name);
-                          }}
-                          className="px-3 sm:px-4 py-1.5 sm:py-2 bg-red-500 text-white rounded-lg shadow hover:bg-red-600 transition flex items-center gap-1 text-xs sm:text-sm"
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
+                      <td className="px-5 py-3.5 text-center text-zinc-400">
+                        {new Date(c.date).toLocaleDateString("en-GB")}
+                      </td>
+                      <td className="px-5 py-3.5 text-center font-semibold text-[#f97316]">
+                        ₹ {c.amount.toLocaleString("en-IN")}
+                      </td>
+                      <td className="px-5 py-3.5">
+                        <div className="flex justify-center gap-2 sm:gap-3">
+                          <button
+                            onClick={() => openModal(c)}
+                            className="btn-secondary px-3 py-1.5 rounded-xl font-headline text-xs tracking-wider text-white shadow cursor-pointer uppercase flex items-center gap-1"
+                          >
+                            <Edit size={14} /> Edit
+                          </button>
+                          <button
+                            onClick={() => {
+                              setDeleteId(c._id);
+                              setDeleteName(c.name);
+                            }}
+                            className="bg-red-950/40 text-red-400 border border-red-500/25 px-3 py-1.5 rounded-xl hover:bg-red-900/20 hover:text-red-300 transition text-xs font-headline tracking-wider cursor-pointer uppercase flex items-center gap-1"
+                          >
+                            <Trash2 size={14} /> Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+
+                {costs.length === 0 && (
+                  <tr>
+                    <td
+                      colSpan={5}
+                      className="text-center py-8 text-zinc-500 text-sm sm:text-base font-medium uppercase tracking-wider"
+                    >
+                      No costs recorded yet.
                     </td>
                   </tr>
-                ))
-              )}
-
-              {costs.length === 0 && (
-                <tr>
-                  <td
-                    colSpan={5}
-                    className="text-center py-6 text-gray-400 text-sm sm:text-base"
-                  >
-                    No costs recorded yet.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
       {/* Add/Edit Modal */}
       {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/40">
-          <div className="bg-white px-5 sm:px-8 lg:px-10 py-6 sm:py-8 rounded-3xl max-w-md w-[90%] sm:w-full shadow-2xl border border-gray-200">
-            <h3 className="text-xl sm:text-3xl font-bold text-[#0A2463] mb-4 sm:mb-6 flex items-center gap-3">
-              <PlusCircle className="text-[#FFC107]" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/60 px-3">
+          <div className="glass-card p-6 sm:p-8 rounded-2xl max-w-md w-[90%] sm:w-full border border-zinc-800 text-left">
+            <h3 className="text-xl sm:text-2xl font-headline tracking-wider text-[#f97316] mb-5 flex items-center gap-3 uppercase">
+              <PlusCircle className="text-[#f97316]" size={22} />
               {formId ? "Edit Cost" : "Add New Cost"}
             </h3>
-            <div className="flex flex-col gap-4 sm:gap-6">
-              <input
-                type="text"
-                placeholder="Name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="border rounded-xl px-4 sm:px-5 py-2.5 sm:py-3 text-sm sm:text-lg shadow w-full"
-              />
-              <input
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                className="border rounded-xl px-4 sm:px-5 py-2.5 sm:py-3 text-sm sm:text-lg shadow w-full placeholder-gray-400"
-              />
-              <input
-                type="number"
-                placeholder="Amount"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                className="border rounded-xl px-4 sm:px-5 py-2.5 sm:py-3 text-sm sm:text-lg shadow w-full"
-              />
-              <div className="flex justify-end gap-3 sm:gap-4 mt-2">
+            <div className="flex flex-col gap-4">
+              <div>
+                <label className="text-xs font-semibold text-[#e0c0b1] uppercase tracking-widest mb-2 block ml-1">
+                  Cost Name
+                </label>
+                <input
+                  type="text"
+                  placeholder="Name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="input-dark w-full px-4 py-2.5 rounded-xl text-sm sm:text-base"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-[#e0c0b1] uppercase tracking-widest mb-2 block ml-1">
+                  Cost Date
+                </label>
+                <input
+                  type="date"
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                  className="input-dark w-full px-4 py-2.5 rounded-xl text-sm sm:text-base text-[#e5e2e1]"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-[#e0c0b1] uppercase tracking-widest mb-2 block ml-1">
+                  Cost Amount (₹)
+                </label>
+                <input
+                  type="number"
+                  placeholder="Amount"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  className="input-dark w-full px-4 py-2.5 rounded-xl text-sm sm:text-base"
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 sm:gap-4 mt-6">
                 <button
                   onClick={handleSubmit}
-                  className="bg-green-600 text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl hover:bg-green-700 transition font-semibold shadow text-sm sm:text-base"
+                  className="btn-primary px-5 sm:px-6 py-2.5 rounded-xl font-headline text-xl tracking-wider text-white shadow cursor-pointer uppercase"
                 >
                   {formId ? "Save Changes" : "Add Cost"}
                 </button>
                 <button
                   onClick={() => setModalOpen(false)}
-                  className="bg-gray-500 text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl hover:bg-gray-600 transition font-semibold shadow text-sm sm:text-base"
+                  className="btn-secondary px-5 sm:px-6 py-2.5 rounded-xl font-headline text-xl tracking-wider text-white shadow cursor-pointer uppercase"
                 >
                   Cancel
                 </button>
@@ -325,28 +335,27 @@ export default function MiscellaneousPage() {
         </div>
       )}
 
-      {/* 🗑️ Delete Confirmation Modal */}
+      {/* Delete Confirmation Modal */}
       {deleteId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/40">
-          <div className="bg-white px-5 sm:px-8 lg:px-10 py-6 sm:py-8 rounded-3xl max-w-md w-[90%] sm:w-full shadow-2xl border border-gray-200 text-center">
-            <h3 className="text-2xl sm:text-3xl font-bold text-red-600 mb-3 sm:mb-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/60 px-3">
+          <div className="glass-card p-6 sm:p-8 rounded-2xl max-w-md w-[90%] sm:w-full border border-zinc-800 text-center text-[#e5e2e1]">
+            <h3 className="text-xl sm:text-2xl font-headline tracking-wider text-red-500 mb-3 uppercase">
               Confirm Deletion
             </h3>
-            <p className="text-gray-700 text-sm sm:text-lg mb-5 sm:mb-6">
+            <p className="text-zinc-300 mb-6 text-sm sm:text-base">
               Are you sure you want to delete{" "}
-              <span className="font-semibold text-[#0A2463]">{deleteName}</span>
-              ?
+              <span className="font-semibold text-[#f97316]">{deleteName}</span>?
             </p>
             <div className="flex justify-center gap-3 sm:gap-4">
               <button
                 onClick={confirmDelete}
-                className="bg-red-600 text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl hover:bg-red-700 transition font-semibold shadow text-sm sm:text-base"
+                className="btn-primary px-5 sm:px-6 py-2.5 rounded-xl font-headline text-lg tracking-wider text-white shadow cursor-pointer uppercase"
               >
                 Yes, Delete
               </button>
               <button
                 onClick={() => setDeleteId(null)}
-                className="bg-gray-500 text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl hover:bg-gray-600 transition font-semibold shadow text-sm sm:text-base"
+                className="btn-secondary px-5 sm:px-6 py-2.5 rounded-xl font-headline text-lg tracking-wider text-white shadow cursor-pointer uppercase"
               >
                 Cancel
               </button>
@@ -355,20 +364,20 @@ export default function MiscellaneousPage() {
         </div>
       )}
 
-      {/* ✅ Feedback Modal */}
+      {/* Feedback Modal */}
       {feedback && (
-        <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/40">
+        <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/60 px-3">
           <div
-            className={`p-5 sm:p-6 rounded-2xl shadow-2xl text-center max-w-sm w-[90%] sm:w-full transition-all ${
+            className={`p-6 rounded-2xl shadow-2xl text-center max-w-sm w-[90%] sm:w-full border transition-all ${
               feedback.type === "success"
-                ? "bg-green-50 text-green-700 border border-green-300"
-                : "bg-red-50 text-red-700 border border-red-300"
+                ? "bg-green-950/20 text-[#22c55e] border-[#22c55e]/25 backdrop-blur-md"
+                : "bg-red-950/20 text-red-400 border border-red-500/25 backdrop-blur-md"
             }`}
           >
-            <h3 className="text-xl sm:text-2xl font-bold mb-2">
+            <h3 className="text-2xl font-headline tracking-wider mb-2">
               {feedback.type === "success" ? "✅ Success" : "❌ Error"}
             </h3>
-            <p className="text-sm sm:text-lg">{feedback.message}</p>
+            <p className="text-sm sm:text-lg font-medium">{feedback.message}</p>
           </div>
         </div>
       )}

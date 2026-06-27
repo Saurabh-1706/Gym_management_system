@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Bebas_Neue } from "next/font/google";
 import "./globals.css";
 import Providers from "@/components/providers";
 import LayoutWrapper from "@/components/LayoutWrapper";
@@ -14,6 +14,14 @@ const geistSans = Geist({
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
+  subsets: ["latin"],
+  display: "swap",
+  preload: true,
+});
+
+const bebasNeue = Bebas_Neue({
+  variable: "--font-bebas-neue",
+  weight: "400",
   subsets: ["latin"],
   display: "swap",
   preload: true,
@@ -36,13 +44,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" className="dark">
       <body
         className={`
           min-h-screen
-          overflow-x-hidden          /* ⬅️ ADD THIS */
+          overflow-x-hidden
           font-sans antialiased
-          ${geistSans.variable} ${geistMono.variable}
+          ${geistSans.variable} ${geistMono.variable} ${bebasNeue.variable}
         `}
         style={{ fontFamily: "var(--font-geist-sans), system-ui, sans-serif" }}
       >

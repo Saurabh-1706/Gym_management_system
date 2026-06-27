@@ -160,18 +160,18 @@ export default function ExpiringSoonPage() {
   );
 
   return (
-    <div className="min-h-screen bg-[#E9ECEF] px-3 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8">
+    <div className="min-h-screen bg-[#0F0F0F] text-[#e5e2e1] px-4 sm:px-6 lg:px-8 py-6 space-y-6 font-body">
       {/* Header */}
       <div className="flex flex-col gap-4 sm:gap-5 md:flex-row md:items-center md:justify-between mb-4 sm:mb-6 lg:mb-8">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-2xl bg-yellow-400 text-[#0A2463] shadow-md">
-            <Clock size={26} />
+          <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-2xl bg-[#f97316]/10 border border-[#f97316]/20 text-[#f97316] shadow-md">
+            <Clock size={24} />
           </div>
           <div>
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-[#d97706] leading-tight">
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-headline tracking-wider text-[#f97316] leading-tight">
               Expiring Soon Memberships
             </h1>
-            <p className="text-xs sm:text-sm text-gray-600 mt-1">
+            <p className="text-xs sm:text-sm text-zinc-400 mt-1">
               Members whose plans will end in the next 7 days.
             </p>
           </div>
@@ -179,7 +179,7 @@ export default function ExpiringSoonPage() {
 
         <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-stretch sm:items-center">
           <div className="relative w-full sm:w-64 lg:w-72">
-            <span className="absolute inset-y-0 left-3 flex items-center text-gray-400">
+            <span className="absolute inset-y-0 left-3 flex items-center text-zinc-500">
               🔍
             </span>
             <input
@@ -187,7 +187,7 @@ export default function ExpiringSoonPage() {
               placeholder="Search member..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 pr-4 py-2 rounded-2xl border bg-gray-100 placeholder-gray-500 border-gray-400 shadow-sm w-full text-sm sm:text-base text-gray-700 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition-all duration-300"
+              className="input-dark w-full pl-10 pr-4 py-2.5 rounded-xl text-sm sm:text-base"
             />
           </div>
         </div>
@@ -195,12 +195,11 @@ export default function ExpiringSoonPage() {
 
       {/* Summary Row */}
       <div className="flex justify-between items-center mb-4 sm:mb-6">
-        <span className="text-xs sm:text-sm text-gray-600">
-          Showing {filteredMembers.length} of {expiringMembers.length} expiring
-          members
+        <span className="text-xs sm:text-sm text-zinc-400 font-medium">
+          Showing {filteredMembers.length} of {expiringMembers.length} expiring members
         </span>
         {expiringMembers.length > 0 && (
-          <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-yellow-100 text-yellow-800 text-xs sm:text-sm font-semibold">
+          <span className="inline-flex items-center gap-2 px-3 py-1 rounded-xl bg-[#f97316]/15 text-[#f97316] border border-[#f97316]/25 text-xs sm:text-sm font-semibold">
             <Clock size={16} />
             Total Expiring: {expiringMembers.length}
           </span>
@@ -209,8 +208,8 @@ export default function ExpiringSoonPage() {
 
       {/* Members Grid */}
       {filteredMembers.length === 0 ? (
-        <div className="bg-white rounded-2xl shadow-md border border-gray-200 py-10 px-4 text-center">
-          <p className="text-gray-500 text-base sm:text-lg lg:text-2xl">
+        <div className="glass-card rounded-2xl py-10 px-4 text-center border border-zinc-800">
+          <p className="text-zinc-500 text-base sm:text-lg lg:text-2xl font-headline tracking-wider uppercase">
             No memberships expiring soon.
           </p>
         </div>
@@ -246,41 +245,43 @@ export default function ExpiringSoonPage() {
             return (
               <div
                 key={member._id}
-                className="bg-white rounded-2xl shadow-md p-5 sm:p-6 border border-gray-200 hover:shadow-2xl hover:scale-[1.02] transition duration-300 cursor-pointer"
+                className="glass-card rounded-2xl p-5 sm:p-6 border border-zinc-800 hover:border-zinc-700/80 hover:scale-[1.02] transition duration-300 cursor-pointer flex flex-col justify-between shadow-lg"
                 onClick={() => router.push(`/members/${member._id}`)}
               >
-                <h2 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-2 mb-3 break-words">
-                  <User size={22} className="text-yellow-500" /> {member.name}
-                </h2>
+                <div>
+                  <h2 className="text-xl sm:text-2xl font-headline tracking-wider text-[#f97316] flex items-center gap-2 mb-4 break-words">
+                    <User size={22} className="text-[#f97316]" /> {member.name}
+                  </h2>
 
-                <div className="space-y-2 sm:space-y-2.5 text-gray-700 text-sm sm:text-base">
-                  <p className="flex items-center gap-2">
-                    <Calendar size={16} className="text-indigo-600" />
-                    <span className="font-medium">Renewal Date:</span>
-                    <span>
-                      {renewalDate
-                        ? new Date(renewalDate).toLocaleDateString("en-GB")
-                        : "—"}
-                    </span>
-                  </p>
-
-                  <p className="flex items-center gap-2 flex-wrap">
-                    <CreditCard size={16} className="text-green-600" />
-                    <span className="font-medium">Plan:</span>
-                    <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs sm:text-sm max-w-full truncate">
-                      {planToShow}
-                    </span>
-                  </p>
-
-                  {expiryDate && (
+                  <div className="space-y-2 text-zinc-350 text-sm sm:text-base">
                     <p className="flex items-center gap-2">
-                      <Calendar size={16} className="text-red-500" />
-                      <span className="font-medium">Expiring On:</span>
+                      <Calendar size={16} className="text-blue-400" />
+                      <span className="font-medium text-[#e5e2e1]">Renewal Date:</span>
                       <span>
-                        {expiryDate.toLocaleDateString("en-GB")}
+                        {renewalDate
+                          ? new Date(renewalDate).toLocaleDateString("en-GB")
+                          : "—"}
                       </span>
                     </p>
-                  )}
+
+                    <p className="flex items-center gap-2 flex-wrap">
+                      <CreditCard size={16} className="text-[#22c55e]" />
+                      <span className="font-medium text-[#e5e2e1]">Plan:</span>
+                      <span className="px-2.5 py-0.5 bg-white/5 border border-white/5 text-zinc-300 rounded-full text-xs font-semibold">
+                        {planToShow}
+                      </span>
+                    </p>
+
+                    {expiryDate && (
+                      <p className="flex items-center gap-2 text-red-455">
+                        <Calendar size={16} className="text-red-500" />
+                        <span className="font-medium text-red-400">Expiring On:</span>
+                        <span className="font-semibold">
+                          {expiryDate.toLocaleDateString("en-GB")}
+                        </span>
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
             );

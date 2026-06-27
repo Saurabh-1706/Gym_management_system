@@ -19,6 +19,7 @@ if (!MONGODB_URI) {
 const users = [
   { email: "saurabhmojad1706@gmail.com", name: "Saurabh", password: "S@urabh@1706" },
   { email: "mojadfitness@gmail.com", name: "Gym", password: "Mojad@11102025" },
+  { email: "admin@gmail.com", name: "Admin", password: "Admin@123" }
 ];
 
 async function seedUsers() {

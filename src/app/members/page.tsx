@@ -270,15 +270,17 @@ export default function MembersPage() {
   };
 
   return (
-    <div className="px-3 sm:px-5 lg:px-8 py-4 sm:py-6 relative bg-[#E9ECEF]">
+    <div className="px-4 sm:px-6 lg:px-8 py-6 bg-[#0F0F0F] text-[#e5e2e1] min-h-screen font-body relative">
       {/* HEADER + FILTER BAR */}
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between mb-6 sm:mb-8">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between mb-8">
         {/* Title */}
-        <div className="flex items-center gap-3">
-          <Users size={32} className="text-[#FFC107]" />
-          <h2 className="text-2xl sm:text-3xl lg:text-[42px] font-bold text-[#0A2463]">
-            View Members
-          </h2>
+        <div>
+          <h1 className="text-4xl sm:text-5xl font-headline tracking-wider text-[#e5e2e1] uppercase">
+            Athletes Directory
+          </h1>
+          <p className="text-[#e0c0b1] opacity-75 text-xs sm:text-sm mt-1">
+            Real-time telemetry and roster of registered athletes.
+          </p>
         </div>
 
         {/* Controls */}
@@ -286,37 +288,37 @@ export default function MembersPage() {
           {/* Row 1: Search + View toggle */}
           <div className="flex flex-wrap gap-3 sm:gap-4 items-center">
             {/* Search */}
-            <div className="relative flex-1 min-w-[180px]">
-              <span className="absolute inset-y-0 left-3 flex items-center text-gray-600 text-sm">
+            <div className="relative flex-1 min-w-[200px]">
+              <span className="absolute inset-y-0 left-3 flex items-center text-zinc-500 text-sm">
                 🔍
               </span>
               <input
                 type="text"
-                placeholder="Search member..."
+                placeholder="Search athlete..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 rounded-2xl border bg-gray-100 border-gray-400 shadow-sm text-sm sm:text-base text-[#212529] focus:outline-none focus:ring-2 focus:ring-[#0A2463] transition-all duration-300"
+                className="w-full pl-9 pr-4 py-2 rounded-xl text-sm sm:text-base text-[#e5e2e1] bg-[#050505] border border-zinc-800 focus:border-[#f97316] focus:ring-1 focus:ring-[#f97316] outline-none transition-all"
               />
             </div>
 
             {/* View toggle */}
-            <div className="flex items-center gap-1 bg-white border border-gray-400 rounded-2xl px-2 py-1 shadow-sm">
+            <div className="flex items-center gap-1 bg-[#131313] border border-zinc-800 rounded-xl p-1">
               <button
                 onClick={() => setViewMode("card")}
-                className={`p-2 rounded-xl ${
+                className={`p-2 rounded-lg transition-colors cursor-pointer ${
                   viewMode === "card"
-                    ? "bg-[#FFC107] text-white"
-                    : "text-gray-400 hover:bg-gray-200"
+                    ? "bg-[#f97316] text-white"
+                    : "text-zinc-500 hover:text-white"
                 }`}
               >
                 <LayoutGrid size={18} />
               </button>
               <button
                 onClick={() => setViewMode("table")}
-                className={`p-2 rounded-xl ${
+                className={`p-2 rounded-lg transition-colors cursor-pointer ${
                   viewMode === "table"
-                    ? "bg-[#FFC107] text-white"
-                    : "text-gray-400 hover:bg-gray-200"
+                    ? "bg-[#f97316] text-white"
+                    : "text-zinc-500 hover:text-white"
                 }`}
               >
                 <TableIcon size={18} />
@@ -327,11 +329,11 @@ export default function MembersPage() {
           {/* Row 2: Plan filter + Sort in one line */}
           <div className="flex flex-wrap gap-3 sm:gap-4">
             {/* Plan Filter */}
-            <div className="relative flex-1 min-w-[160px]">
+            <div className="relative flex-1 min-w-[150px]">
               <select
                 value={selectedPlan}
                 onChange={(e) => setSelectedPlan(e.target.value)}
-                className="w-full appearance-none border border-gray-400 rounded-2xl py-2 pl-4 pr-9 text-sm sm:text-base text-[#212529] font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FFC107] focus:border-[#FFC107] transition-all duration-300 cursor-pointer bg-white"
+                className="w-full bg-[#131313] border border-zinc-800 rounded-xl py-2 pl-4 pr-9 text-sm text-[#e5e2e1] outline-none focus:border-[#f97316] cursor-pointer"
               >
                 <option value="All">All Plans</option>
                 {plans
@@ -349,42 +351,36 @@ export default function MembersPage() {
                   ))}
                 <option value="Custom">Custom</option>
               </select>
-              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-xs sm:text-sm">
-                ▼
-              </div>
             </div>
 
             {/* Sort */}
-            <div className="relative flex-1 min-w-[160px]">
+            <div className="relative flex-1 min-w-[150px]">
               <select
                 value={sortBy}
                 onChange={(e) =>
                   setSortBy(e.target.value as "name" | "expiry" | "newest")
                 }
-                className="w-full appearance-none border border-gray-400 rounded-2xl py-2 pl-4 pr-9 text-sm sm:text-base text-[#212529] font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FFC107] focus:border-[#FFC107] transition-all duration-300 cursor-pointer bg-white"
+                className="w-full bg-[#131313] border border-zinc-800 rounded-xl py-2 pl-4 pr-9 text-sm text-[#e5e2e1] outline-none focus:border-[#f97316] cursor-pointer"
               >
                 <option value="name">Sort by Name</option>
                 <option value="expiry">Sort by Expiring Soon</option>
                 <option value="newest">Sort by Newest Renewal</option>
               </select>
-              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-xs sm:text-sm">
-                ▼
-              </div>
             </div>
           </div>
         </div>
       </div>
 
       {/* Total Members */}
-      <div className="flex items-center mb-4 sm:mb-6">
-        <span className="ml-auto text-lg sm:text-2xl font-semibold text-[#0A2463]">
-          Total Members: {filteredMembers.length}
+      <div className="flex items-center mb-6">
+        <span className="ml-auto text-lg sm:text-xl font-headline tracking-widest text-[#f97316]">
+          TOTAL REGISTRY: {filteredMembers.length}
         </span>
       </div>
 
       {/* View Mode */}
       {viewMode === "card" ? (
-        <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
           {filteredMembers.map((member, index) => {
             const expiryDate = calculateExpiryDate(member);
             const today = new Date();
@@ -396,58 +392,60 @@ export default function MembersPage() {
             return (
               <div
                 key={member._id}
-                className="bg-white rounded-2xl shadow-lg p-5 sm:p-6 border border-gray-200 hover:shadow-2xl hover:scale-[1.03] transition duration-300 cursor-pointer relative"
+                className="glass-card rounded-2xl p-6 hover:scale-[1.02] cursor-pointer relative flex flex-col justify-between min-h-[220px]"
                 onClick={() => router.push(`/members/${member._id}`)}
               >
-                <span className="absolute top-3 left-3 text-xs sm:text-sm font-semibold text-gray-500">
-                  #{index + 1}
-                </span>
-
-                <div className="absolute top-3 right-3 flex items-center gap-2">
-                  <span
-                    className={`w-3 h-3 rounded-full ${
-                      status === "Active" ? "bg-green-500" : "bg-red-600"
-                    }`}
-                  ></span>
-                  <span
-                    className={`px-2 py-1 rounded-full text-[10px] sm:text-xs font-semibold ${
-                      getPaymentStatus(member) === "Paid"
-                        ? "bg-green-100 text-green-800"
-                        : "bg-red-100 text-red-800"
-                    }`}
-                  >
-                    {getPaymentStatus(member)}
+                <div>
+                  <span className="absolute top-4 left-4 text-xs font-mono text-zinc-500">
+                    #{index + 1}
                   </span>
-                </div>
 
-                <h2 className="text-xl sm:text-2xl font-bold text-[#0A2463] flex items-center gap-2 px-2 sm:px-4 mb-3">
-                  <User size={22} className="text-[#FFC107]" />
-                  {member.name}
-                </h2>
-
-                <div className="space-y-2 text-[#212529] px-2 sm:px-4 text-sm sm:text-[16px]">
-                  <p className="flex items-center gap-2">
-                    <Calendar size={18} className="text-[#0A2463]" />
-                    Joined: {getRenewalDate(member).toLocaleDateString("en-GB")}
-                  </p>
-                  <p className="flex items-center gap-2">
-                    <CreditCard size={18} className="text-green-600" />
-                    <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs sm:text-base font-semibold">
-                      {getPlanDisplay(member)}
+                  <div className="absolute top-4 right-4 flex items-center gap-2">
+                    <span
+                      className={`w-2 h-2 rounded-full ${
+                        status === "Active" ? "bg-[#22c55e] animate-pulse" : "bg-red-500"
+                      }`}
+                    ></span>
+                    <span
+                      className={`px-2.5 py-0.5 rounded-full text-[10px] sm:text-xs font-semibold ${
+                        getPaymentStatus(member) === "Paid"
+                          ? "bg-[#22c55e]/10 text-[#22c55e] border border-[#22c55e]/25"
+                          : "bg-red-500/10 text-red-400 border border-red-500/25"
+                      }`}
+                    >
+                      {getPaymentStatus(member)}
                     </span>
-                  </p>
-                  <p className="flex items-center gap-2">
-                    <Phone size={18} className="text-purple-500" />
-                    {member.mobile}
-                  </p>
+                  </div>
+
+                  <h2 className="text-xl font-headline tracking-wider text-[#e5e2e1] flex items-center gap-2 mt-4 mb-4">
+                    <User size={20} className="text-[#f97316]" />
+                    {member.name}
+                  </h2>
+
+                  <div className="space-y-2 text-[#e0c0b1]/80 text-sm">
+                    <p className="flex items-center gap-2">
+                      <Calendar size={15} className="text-zinc-500" />
+                      <span>Joined: {getRenewalDate(member).toLocaleDateString("en-GB")}</span>
+                    </p>
+                    <p className="flex items-center gap-2">
+                      <CreditCard size={15} className="text-zinc-500" />
+                      <span className="px-2.5 py-0.5 bg-white/5 text-zinc-300 rounded-full text-xs font-semibold border border-white/5">
+                        {getPlanDisplay(member)}
+                      </span>
+                    </p>
+                    <p className="flex items-center gap-2">
+                      <Phone size={15} className="text-zinc-500" />
+                      <span>{member.mobile}</span>
+                    </p>
+                  </div>
                 </div>
 
                 {member.plan?.toLowerCase() !== "no plan" && diffDays < 8 && (
                   <div
-                    className={`absolute bottom-3 right-3 px-3 py-1 rounded-full text-xs sm:text-sm font-semibold shadow-lg ${
+                    className={`mt-4 self-end px-3 py-1 rounded-lg text-xs font-semibold shadow-md ${
                       diffDays < 0
-                        ? "bg-red-600 text-white"
-                        : "bg-orange-400 text-white"
+                        ? "bg-red-950/40 text-red-400 border border-red-500/25"
+                        : "bg-[#f97316]/10 text-[#f97316] border border-[#f97316]/25"
                     }`}
                   >
                     {diffDays < 0
@@ -460,60 +458,66 @@ export default function MembersPage() {
           })}
         </div>
       ) : (
-        <div className="table-scroll rounded-2xl border border-slate-100">
-          <table className="w-full text-xs sm:text-sm lg:text-base">
-            <thead className="bg-[#FFC107] text-white text-sm sm:text-base lg:text-[22px]">
+        <div className="table-scroll rounded-xl border border-zinc-800/80 overflow-hidden">
+          <table className="w-full text-xs sm:text-sm">
+            <thead className="bg-[#1c1b1b] text-zinc-300 border-b border-zinc-800">
               <tr>
-                <th className="p-2 sm:p-3">Sr.No.</th>
-                <th className="p-2 sm:p-3">Name</th>
-                <th className="p-2 sm:p-3">Mobile</th>
-                <th className="p-2 sm:p-3">Plan</th>
-                <th className="p-2 sm:p-3">Joined</th>
-                <th className="p-2 sm:p-3">Expiry</th>
-                <th className="p-2 sm:p-3">Payment Status</th>
-                <th className="p-2 sm:p-3">Status</th>
+                <th className="p-3 text-left font-bold uppercase tracking-wider">Sr.No.</th>
+                <th className="p-3 text-left font-bold uppercase tracking-wider">Name</th>
+                <th className="p-3 text-left font-bold uppercase tracking-wider">Mobile</th>
+                <th className="p-3 text-left font-bold uppercase tracking-wider">Plan</th>
+                <th className="p-3 text-left font-bold uppercase tracking-wider">Joined</th>
+                <th className="p-3 text-left font-bold uppercase tracking-wider">Expiry</th>
+                <th className="p-3 text-center font-bold uppercase tracking-wider">Payment</th>
+                <th className="p-3 text-left font-bold uppercase tracking-wider">Status</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-zinc-850">
               {filteredMembers.map((member, index) => {
                 const status = getMembershipStatus(member);
                 const paymentStatus = getPaymentStatus(member);
                 return (
                   <tr
                     key={member._id}
-                    className="border-b text-sm sm:text-[16px] lg:text-[18px] hover:bg-gray-100 cursor-pointer"
+                    className="hover:bg-white/5 transition-colors cursor-pointer"
                     onClick={() => router.push(`/members/${member._id}`)}
                   >
-                    <td className="p-2 sm:p-3">{index + 1}</td>
-                    <td className="p-2 sm:p-3">{member.name}</td>
-                    <td className="p-2 sm:p-3">{member.mobile}</td>
-                    <td className="p-2 sm:p-3">{getPlanDisplay(member)}</td>
-                    <td className="p-2 sm:p-3">
+                    <td className="p-3 text-zinc-500">{index + 1}</td>
+                    <td className="p-3 font-semibold text-[#e5e2e1]">{member.name}</td>
+                    <td className="p-3 text-zinc-400">{member.mobile}</td>
+                    <td className="p-3">
+                      <span className="px-2.5 py-0.5 bg-white/5 border border-white/5 rounded-full text-xs text-zinc-300">
+                        {getPlanDisplay(member)}
+                      </span>
+                    </td>
+                    <td className="p-3 text-zinc-400">
                       {getRenewalDate(member).toLocaleDateString("en-GB")}
                     </td>
-                    <td className="p-2 sm:p-3">
+                    <td className="p-3 text-zinc-400">
                       {calculateExpiryDate(member).toLocaleDateString("en-GB")}
                     </td>
-                    <td className="p-2 sm:p-3">
-                      <div className="flex items-center justify-start sm:justify-center">
+                    <td className="p-3">
+                      <div className="flex items-center justify-center">
                         <span
-                          className={`px-3 py-1 rounded-full text-[10px] sm:text-xs font-semibold ${
+                          className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${
                             paymentStatus === "Paid"
-                              ? "bg-green-100 text-green-800"
-                              : "bg-red-100 text-red-800"
+                              ? "bg-[#22c55e]/10 text-[#22c55e] border border-[#22c55e]/25"
+                              : "bg-red-500/10 text-red-400 border border-red-500/25"
                           }`}
                         >
                           {paymentStatus}
                         </span>
                       </div>
                     </td>
-                    <td className="p-2 sm:p-3 flex items-center gap-2">
-                      <span
-                        className={`w-3 h-3 rounded-full ${
-                          status === "Active" ? "bg-green-500" : "bg-red-600"
-                        }`}
-                      ></span>
-                      {status}
+                    <td className="p-3">
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`w-2 h-2 rounded-full ${
+                            status === "Active" ? "bg-[#22c55e]" : "bg-red-500"
+                          }`}
+                        ></span>
+                        <span>{status}</span>
+                      </div>
                     </td>
                   </tr>
                 );
@@ -525,23 +529,23 @@ export default function MembersPage() {
 
       {/* Delete Modal */}
       {showDeleteModal && selectedMember && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl p-6 sm:p-7 shadow-2xl w-full max-w-md mx-4 relative">
-            <h3 className="text-lg sm:text-xl font-semibold text-[#0A2463] mb-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="glass-card rounded-2xl p-6 shadow-2xl w-full max-w-md mx-4 relative border border-zinc-800">
+            <h3 className="text-lg font-headline tracking-wider text-[#e5e2e1] mb-4">
               Are you sure you want to delete {selectedMember.name}?
             </h3>
 
-            <div className="flex flex-col sm:flex-row justify-end gap-3 sm:gap-4">
+            <div className="flex justify-end gap-3">
               <button
                 onClick={handleDelete}
-                className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition text-sm sm:text-base"
+                className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition text-sm cursor-pointer"
               >
                 Yes, Delete
               </button>
 
               <button
                 onClick={() => setShowDeleteModal(false)}
-                className="bg-gray-300 text-[#212529] px-4 py-2 rounded-lg hover:bg-gray-400 transition text-sm sm:text-base"
+                className="bg-zinc-800 text-[#e5e2e1] border border-zinc-700 px-4 py-2 rounded-lg hover:bg-zinc-700 transition text-sm cursor-pointer"
               >
                 Cancel
               </button>

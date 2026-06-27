@@ -113,37 +113,27 @@ export default function CoachPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#E9ECEF] px-3 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8">
+    <div className="min-h-screen bg-[#0F0F0F] text-[#e5e2e1] px-4 sm:px-6 lg:px-8 py-6 space-y-6 font-body">
       {/* Header */}
       <div className="flex flex-col gap-4 sm:gap-5 md:flex-row md:items-center md:justify-between mb-4 sm:mb-6 lg:mb-8">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-2xl bg-[#FFC107] text-white shadow-md">
-            <Users size={26} />
+          <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-2xl bg-[#f97316]/10 text-[#f97316] border border-[#f97316]/20 shadow-md">
+            <Users size={24} />
           </div>
           <div>
-            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#0A2463] leading-tight">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-headline tracking-wider text-[#f97316] leading-tight uppercase">
               View Coaches
             </h2>
-            <p className="text-xs sm:text-sm text-gray-600 mt-1">
+            <p className="text-xs sm:text-sm text-zinc-400 mt-1">
               Manage coach profiles, salaries and join dates.
             </p>
           </div>
         </div>
 
-        <div
-          className="
-    flex 
-    flex-row               /* ⬅️ Now all items in a single line on mobile */
-    items-center
-    justify-between
-    gap-2
-    sm:flex-row sm:justify-end sm:gap-4
-    w-full
-  "
-        >
-          {/* Search — stays full width on mobile */}
+        <div className="flex flex-row items-center justify-between gap-2 sm:flex-row sm:justify-end sm:gap-4 w-full md:w-auto">
+          {/* Search */}
           <div className="relative flex-1 sm:flex-none sm:w-56">
-            <span className="absolute inset-y-0 left-3 flex items-center text-gray-600">
+            <span className="absolute inset-y-0 left-3 flex items-center text-zinc-500">
               🔍
             </span>
             <input
@@ -151,20 +141,18 @@ export default function CoachPage() {
               placeholder="Search coach..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 pr-4 py-2 rounded-2xl border bg-gray-100 border-gray-400 shadow-sm w-full 
-      text-sm sm:text-base text-[#212529] focus:outline-none focus:ring-2 focus:ring-[#0A2463] 
-      transition-all duration-300"
+              className="input-dark w-full pl-10 pr-4 py-2 rounded-xl text-sm sm:text-base"
             />
           </div>
 
           {/* View toggle */}
-          <div className="flex items-center gap-1 bg-white border border-gray-400 rounded-2xl px-1.5 py-1 shadow-sm">
+          <div className="flex items-center gap-1 bg-[#050505] border border-zinc-800 rounded-xl px-1.5 py-1.5 shadow-sm">
             <button
               onClick={() => setViewMode("card")}
-              className={`p-1.5 rounded-xl ${
+              className={`p-1.5 rounded-lg cursor-pointer transition ${
                 viewMode === "card"
-                  ? "bg-[#FFC107] text-white"
-                  : "text-gray-400 hover:bg-gray-200"
+                  ? "bg-[#f97316] text-white"
+                  : "text-zinc-500 hover:bg-white/5"
               }`}
             >
               <LayoutGrid size={18} />
@@ -172,10 +160,10 @@ export default function CoachPage() {
 
             <button
               onClick={() => setViewMode("table")}
-              className={`p-1.5 rounded-xl ${
+              className={`p-1.5 rounded-lg cursor-pointer transition ${
                 viewMode === "table"
-                  ? "bg-[#FFC107] text-white"
-                  : "text-gray-400 hover:bg-gray-200"
+                  ? "bg-[#f97316] text-white"
+                  : "text-zinc-500 hover:bg-white/5"
               }`}
             >
               <TableIcon size={18} />
@@ -185,13 +173,7 @@ export default function CoachPage() {
           {/* Add Coach */}
           <button
             onClick={() => setShowAddModal(true)}
-            className="
-      flex items-center justify-center gap-1
-      bg-[#FFC107] text-white px-3 py-2 rounded-xl
-      hover:bg-[#e0ac00] transition shadow
-      text-sm font-semibold
-      whitespace-nowrap
-    "
+            className="btn-primary flex items-center justify-center gap-1 px-4 py-2 rounded-xl text-sm font-headline tracking-wider text-white shadow cursor-pointer whitespace-nowrap uppercase"
           >
             <PlusCircle size={18} /> Add
           </button>
@@ -200,10 +182,10 @@ export default function CoachPage() {
 
       {/* Total count */}
       <div className="flex justify-between items-center mb-4 sm:mb-6">
-        <span className="text-sm sm:text-base text-gray-600">
+        <span className="text-xs sm:text-sm text-zinc-400 font-medium">
           Showing {filteredCoaches.length} of {coaches.length} coaches
         </span>
-        <span className="text-lg sm:text-xl lg:text-2xl font-semibold text-[#0A2463]">
+        <span className="text-lg sm:text-xl lg:text-2xl font-headline tracking-wider text-[#f97316] uppercase">
           Total Coaches: {filteredCoaches.length}
         </span>
       </div>
@@ -214,21 +196,21 @@ export default function CoachPage() {
           {filteredCoaches.map((coach, index) => (
             <div
               key={coach._id}
-              className="bg-white rounded-2xl shadow-md p-5 sm:p-6 border border-gray-200 hover:shadow-2xl hover:scale-[1.02] transition duration-300 cursor-pointer relative"
+              className="glass-card rounded-2xl p-5 sm:p-6 border border-zinc-800 hover:border-zinc-700/80 hover:scale-[1.02] transition duration-300 cursor-pointer relative"
               onClick={() => router.push(`/coach/${coach._id}`)}
             >
-              <span className="absolute top-3 left-4 text-xs sm:text-sm font-semibold text-gray-500">
+              <span className="absolute top-3 right-4 text-xs font-semibold text-zinc-500 font-headline">
                 #{index + 1}
               </span>
 
-              <h2 className="text-xl sm:text-2xl font-bold text-[#0A2463] flex items-center gap-2 pl-3 pr-2 mb-3">
-                <User size={22} className="text-[#FFC107]" /> {coach.name}
+              <h2 className="text-xl sm:text-2xl font-headline tracking-wider text-[#f97316] flex items-center gap-2 mb-4 break-words">
+                <User size={22} className="text-[#f97316]" /> {coach.name}
               </h2>
 
-              <div className="space-y-1.5 sm:space-y-2 text-[#212529] px-3 text-sm sm:text-base">
+              <div className="space-y-2 text-zinc-300 text-sm sm:text-base">
                 <p className="flex items-center gap-2">
-                  <Calendar size={16} className="text-blue-500" />
-                  <span className="font-medium">Joined:</span>
+                  <Calendar size={16} className="text-blue-400" />
+                  <span className="font-medium text-[#e5e2e1]">Joined:</span>
                   <span>
                     {coach.joinDate
                       ? new Date(coach.joinDate).toLocaleDateString("en-GB")
@@ -236,22 +218,22 @@ export default function CoachPage() {
                   </span>
                 </p>
                 <p className="flex items-center gap-2">
-                  <CreditCard size={16} className="text-green-600" />
-                  <span className="font-medium">Total Salary:</span>
-                  <span>₹{getTotalSalary(coach).toLocaleString("en-IN")}</span>
+                  <CreditCard size={16} className="text-[#22c55e]" />
+                  <span className="font-medium text-[#e5e2e1]">Total Salary:</span>
+                  <span className="font-semibold text-[#22c55e]">₹{getTotalSalary(coach).toLocaleString("en-IN")}</span>
                 </p>
                 <p className="flex items-center gap-2">
-                  <Calendar size={16} className="text-orange-500" />
-                  <span className="font-medium">Last Payment:</span>
+                  <Calendar size={16} className="text-orange-400" />
+                  <span className="font-medium text-[#e5e2e1]">Last Payment:</span>
                   <span>{getLastPaymentDate(coach)}</span>
                 </p>
                 <p className="flex items-center gap-2">
-                  <CreditCard size={16} className="text-purple-500" />
-                  <span className="font-medium">Mobile:</span>
+                  <CreditCard size={16} className="text-purple-400" />
+                  <span className="font-medium text-[#e5e2e1]">Mobile:</span>
                   <span>{coach.mobile}</span>
                 </p>
                 {coach.email && (
-                  <p className="text-gray-600 text-xs sm:text-sm break-all">
+                  <p className="text-zinc-500 text-xs sm:text-sm break-all pt-1 border-t border-zinc-900 mt-2">
                     {coach.email}
                   </p>
                 )}
@@ -260,73 +242,71 @@ export default function CoachPage() {
           ))}
         </div>
       ) : (
-        <div className="table-scroll rounded-2xl border border-slate-100">
-          <table className="w-full text-xs sm:text-sm lg:text-base">
-            <thead className="bg-[#0A2463] text-white text-xs sm:text-sm lg:text-base">
-              <tr>
-                <th className="p-3 sm:p-4">Sr. No.</th>
-                <th className="p-3 sm:p-4">Name</th>
-                <th className="p-3 sm:p-4">Mobile</th>
-                <th className="p-3 sm:p-4">Email</th>
-                <th className="p-3 sm:p-4 whitespace-nowrap">Join Date</th>
-                <th className="p-3 sm:p-4 whitespace-nowrap">
-                  Total Salary (₹)
-                </th>
-                <th className="p-3 sm:p-4 whitespace-nowrap">Last Payment</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredCoaches.map((coach, index) => (
-                <tr
-                  key={coach._id}
-                  className="border-b text-xs sm:text-sm lg:text-base hover:bg-gray-100 cursor-pointer"
-                  onClick={() => router.push(`/coach/${coach._id}`)}
-                >
-                  <td className="p-3 sm:p-4">{index + 1}</td>
-                  <td className="p-3 sm:p-4 font-semibold">{coach.name}</td>
-                  <td className="p-3 sm:p-4 whitespace-nowrap">
-                    {coach.mobile}
-                  </td>
-                  <td className="p-3 sm:p-4 break-all">{coach.email || "-"}</td>
-                  <td className="p-3 sm:p-4 whitespace-nowrap">
-                    {coach.joinDate
-                      ? new Date(coach.joinDate).toLocaleDateString("en-GB")
-                      : "-"}
-                  </td>
-                  <td className="p-3 sm:p-4 whitespace-nowrap">
-                    ₹{getTotalSalary(coach).toLocaleString("en-IN")}
-                  </td>
-                  <td className="p-3 sm:p-4 whitespace-nowrap">
-                    {getLastPaymentDate(coach)}
-                  </td>
+        <div className="w-full overflow-x-auto">
+          <div className="rounded-xl border border-zinc-800 overflow-hidden bg-[#0A0A0A]">
+            <table className="w-full text-left border-collapse text-xs sm:text-sm">
+              <thead>
+                <tr className="border-b border-zinc-800 bg-zinc-900/50 text-[#e0c0b1] font-headline text-base tracking-wider uppercase">
+                  <th className="px-4 py-3.5">Sr. No.</th>
+                  <th className="px-4 py-3.5">Name</th>
+                  <th className="px-4 py-3.5">Mobile</th>
+                  <th className="px-4 py-3.5">Email</th>
+                  <th className="px-4 py-3.5 whitespace-nowrap">Join Date</th>
+                  <th className="px-4 py-3.5 whitespace-nowrap">Total Salary (₹)</th>
+                  <th className="px-4 py-3.5 whitespace-nowrap">Last Payment</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-zinc-900 text-zinc-300">
+                {filteredCoaches.map((coach, index) => (
+                  <tr
+                    key={coach._id}
+                    className="hover:bg-white/5 transition cursor-pointer"
+                    onClick={() => router.push(`/coach/${coach._id}`)}
+                  >
+                    <td className="px-4 py-3.5 text-zinc-500">{index + 1}</td>
+                    <td className="px-4 py-3.5 font-semibold text-[#e5e2e1]">{coach.name}</td>
+                    <td className="px-4 py-3.5 whitespace-nowrap text-zinc-400">{coach.mobile}</td>
+                    <td className="px-4 py-3.5 break-all text-zinc-400">{coach.email || "-"}</td>
+                    <td className="px-4 py-3.5 whitespace-nowrap text-zinc-400">
+                      {coach.joinDate
+                        ? new Date(coach.joinDate).toLocaleDateString("en-GB")
+                        : "-"}
+                    </td>
+                    <td className="px-4 py-3.5 whitespace-nowrap text-[#22c55e] font-semibold">
+                      ₹{getTotalSalary(coach).toLocaleString("en-IN")}
+                    </td>
+                    <td className="px-4 py-3.5 whitespace-nowrap text-zinc-400">
+                      {getLastPaymentDate(coach)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
       {/* Add Coach Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-3">
-          <div className="bg-white p-6 sm:p-8 rounded-3xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto relative">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-3">
+          <div className="glass-card p-6 sm:p-8 rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto relative border border-zinc-800 text-[#e5e2e1]">
             <button
-              className="absolute top-4 right-5 text-2xl text-gray-500 hover:text-red-600"
+              className="absolute top-4 right-5 text-2xl text-zinc-450 hover:text-white cursor-pointer"
               onClick={() => setShowAddModal(false)}
             >
               &times;
             </button>
 
-            <h2 className="text-2xl sm:text-3xl font-bold mb-5 sm:mb-7 text-gray-800">
+            <h2 className="text-2xl sm:text-3xl font-headline tracking-wider text-[#f97316] mb-5 sm:mb-7 uppercase">
               Add New Coach
             </h2>
 
             <form
               onSubmit={handleAddCoach}
-              className="flex flex-col gap-4 sm:gap-5 text-sm sm:text-base"
+              className="flex flex-col gap-4 sm:gap-5 text-sm sm:text-base text-left"
             >
               <div>
-                <label className="block mb-1.5 font-semibold text-gray-700">
+                <label className="text-xs font-semibold text-[#e0c0b1] uppercase tracking-widest mb-2 block ml-1">
                   Name
                 </label>
                 <input
@@ -337,12 +317,12 @@ export default function CoachPage() {
                     setNewCoach({ ...newCoach, name: e.target.value })
                   }
                   required
-                  className="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-yellow-500 text-sm sm:text-base"
+                  className="input-dark w-full px-4 py-2.5 rounded-xl text-sm sm:text-base"
                 />
               </div>
 
               <div>
-                <label className="block mb-1.5 font-semibold text-gray-700">
+                <label className="text-xs font-semibold text-[#e0c0b1] uppercase tracking-widest mb-2 block ml-1">
                   Mobile
                 </label>
                 <input
@@ -353,16 +333,16 @@ export default function CoachPage() {
                     setNewCoach({ ...newCoach, mobile: e.target.value })
                   }
                   required
-                  className={`w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-yellow-500 text-sm sm:text-base ${
+                  className={`input-dark w-full px-4 py-2.5 rounded-xl text-sm sm:text-base ${
                     newCoach.mobile && !/^\d{10}$/.test(newCoach.mobile)
                       ? "border-red-500"
-                      : "border-gray-300"
+                      : ""
                   }`}
                 />
               </div>
 
               <div>
-                <label className="block mb-1.5 font-semibold text-gray-700">
+                <label className="text-xs font-semibold text-[#e0c0b1] uppercase tracking-widest mb-2 block ml-1">
                   Email
                 </label>
                 <input
@@ -372,17 +352,17 @@ export default function CoachPage() {
                   onChange={(e) =>
                     setNewCoach({ ...newCoach, email: e.target.value })
                   }
-                  className={`w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-yellow-500 text-sm sm:text-base ${
+                  className={`input-dark w-full px-4 py-2.5 rounded-xl text-sm sm:text-base ${
                     newCoach.email &&
                     !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newCoach.email)
                       ? "border-red-500"
-                      : "border-gray-300"
+                      : ""
                   }`}
                 />
               </div>
 
               <div>
-                <label className="block mb-1.5 font-semibold text-gray-700">
+                <label className="text-xs font-semibold text-[#e0c0b1] uppercase tracking-widest mb-2 block ml-1">
                   Join Date
                 </label>
                 <input
@@ -392,21 +372,21 @@ export default function CoachPage() {
                     setNewCoach({ ...newCoach, joinDate: e.target.value })
                   }
                   required
-                  className="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-yellow-500 text-sm sm:text-base"
+                  className="input-dark w-full px-4 py-2.5 rounded-xl text-sm sm:text-base text-[#e5e2e1]"
                 />
               </div>
 
-              <div className="flex flex-wrap gap-3 justify-end mt-4">
+              <div className="flex justify-end gap-3 sm:gap-4 mt-6">
                 <button
                   type="submit"
-                  className="bg-yellow-500 text-white px-5 sm:px-7 py-2.5 rounded-xl flex items-center gap-2 hover:bg-yellow-600 transition text-sm sm:text-base font-semibold"
+                  className="btn-primary px-5 sm:px-7 py-2.5 rounded-xl font-headline text-xl tracking-wider text-white shadow cursor-pointer flex items-center gap-2 uppercase"
                 >
                   <PlusCircle size={18} /> Add Coach
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="bg-gray-200 text-gray-800 px-5 sm:px-7 py-2.5 rounded-xl hover:bg-gray-300 transition text-sm sm:text-base font-semibold"
+                  className="btn-secondary px-5 sm:px-7 py-2.5 rounded-xl font-headline text-xl tracking-wider text-white shadow cursor-pointer uppercase"
                 >
                   Cancel
                 </button>
@@ -418,14 +398,14 @@ export default function CoachPage() {
 
       {/* Popup Modal */}
       {popupMessage && (
-        <div className="fixed inset-0 flex items-center justify-center z-[999] bg-black/40 px-3">
-          <div className="bg-white px-6 sm:px-8 py-5 sm:py-6 rounded-2xl shadow-xl text-center max-w-sm w-full">
-            <p className="text-sm sm:text-lg font-semibold text-[#15145a] whitespace-pre-line">
+        <div className="fixed inset-0 flex items-center justify-center z-[999] bg-black/60 px-3">
+          <div className="glass-card px-6 sm:px-8 py-5 sm:py-6 rounded-2xl shadow-xl text-center max-w-sm w-full border border-zinc-800 text-[#e5e2e1]">
+            <p className="text-lg font-headline tracking-wider mb-4 whitespace-pre-line">
               {popupMessage}
             </p>
             <button
               onClick={() => setPopupMessage(null)}
-              className="mt-4 bg-yellow-400 text-[#15145a] px-5 sm:px-6 py-2 rounded-lg font-bold hover:bg-yellow-500 transition text-sm sm:text-base"
+              className="btn-primary px-6 py-2 rounded-xl font-headline text-lg tracking-wider text-white shadow cursor-pointer"
             >
               OK
             </button>

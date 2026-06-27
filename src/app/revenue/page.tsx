@@ -391,23 +391,24 @@ export default function RevenuePage() {
   };
 
   const filterSelectClass =
-    "w-full sm:w-auto px-3 py-2 rounded-lg border border-gray-300 " +
-    "bg-gray-50 text-xs sm:text-sm md:text-base text-gray-800 " +
-    "hover:bg-yellow-50 focus:ring-2 focus:ring-yellow-400 font-medium";
+    "w-full sm:w-auto px-3 py-2 rounded-xl border border-zinc-800 " +
+    "bg-[#050505] text-xs sm:text-sm text-[#e5e2e1] focus:border-[#f97316] outline-none cursor-pointer font-medium";
 
   return (
-    <div className="min-h-screen bg-[#E9ECEF] px-3 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8">
+    <div className="min-h-screen bg-[#0F0F0F] text-[#e5e2e1] px-4 sm:px-6 lg:px-8 py-6 space-y-6 font-body">
       {/* HEADER */}
       <div className="flex flex-col gap-4 sm:gap-5 md:flex-row md:items-center md:justify-between mb-4 sm:mb-6">
         <div className="flex items-center gap-3">
-          <BarChart2 size={32} className="text-yellow-500" />
-          <h1 className="text-2xl sm:text-3xl lg:text-[42px] font-bold text-[#0A2463] leading-tight">
+          <span className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-2xl bg-[#f97316]/10 text-[#f97316] border border-[#f97316]/20 shadow-md">
+            <BarChart2 size={24} />
+          </span>
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-headline tracking-wider text-[#f97316]">
             Revenue Report
           </h1>
         </div>
 
         {/* Month / Year / Export controls */}
-        <div className="w-full md:w-auto bg-white shadow-md border border-gray-200 px-3 sm:px-4 py-3 rounded-2xl flex flex-col lg:flex-row gap-3 lg:items-center">
+        <div className="w-full md:w-auto glass-card px-4 py-3.5 rounded-2xl border border-zinc-800 flex flex-col lg:flex-row gap-3 lg:items-center">
           {/* Month & Year */}
           <div className="flex sm:flex-row gap-2 sm:gap-3 w-full lg:w-auto">
             <select
@@ -416,7 +417,7 @@ export default function RevenuePage() {
               className={filterSelectClass}
             >
               {monthNames.map((m, i) => (
-                <option key={i} value={i}>
+                <option key={i} value={i} className="bg-[#121212]">
                   {m}
                 </option>
               ))}
@@ -429,7 +430,7 @@ export default function RevenuePage() {
             >
               {Array.from({ length: 5 }, (_, i) => now.getFullYear() - i).map(
                 (y) => (
-                  <option key={y} value={y}>
+                  <option key={y} value={y} className="bg-[#121212]">
                     {y}
                   </option>
                 )
@@ -440,7 +441,7 @@ export default function RevenuePage() {
           {/* Standard PDF button */}
           <button
             onClick={() => exportPDF(false)}
-            className="w-full sm:w-auto bg-yellow-500 hover:bg-yellow-600 text-white px-4 sm:px-5 py-2 rounded-lg shadow font-semibold text-sm sm:text-base transition"
+            className="btn-primary w-full sm:w-auto px-5 py-2 rounded-xl font-headline text-lg tracking-wider text-white shadow cursor-pointer transition"
           >
             Export PDF
           </button>
@@ -452,26 +453,26 @@ export default function RevenuePage() {
                 type="date"
                 value={customStart}
                 onChange={(e) => setCustomStart(e.target.value)}
-                className="flex-1 px-3 py-2 rounded-lg border border-gray-300 bg-gray-50 text-xs sm:text-sm text-gray-800 focus:ring-2 focus:ring-yellow-400"
+                className="input-dark flex-1 px-3 py-2 rounded-xl text-xs sm:text-sm"
               />
-              <span className="font-semibold text-gray-600 text-xs sm:text-sm">
+              <span className="font-semibold text-zinc-400 text-xs sm:text-sm">
                 to
               </span>
               <input
                 type="date"
                 value={customEnd}
                 onChange={(e) => setCustomEnd(e.target.value)}
-                className="flex-1 px-3 py-2 rounded-lg border border-gray-300 bg-gray-50 text-xs sm:text-sm text-gray-800 focus:ring-2 focus:ring-yellow-400"
+                className="input-dark flex-1 px-3 py-2 rounded-xl text-xs sm:text-sm"
               />
             </div>
 
             <button
               onClick={() => exportPDF(true)}
               disabled={!customStart || !customEnd}
-              className={`w-full sm:w-auto px-4 sm:px-5 py-2 rounded-lg shadow font-semibold text-sm sm:text-base transition ${
+              className={`w-full sm:w-auto px-5 py-2 rounded-xl shadow font-headline text-lg tracking-wider transition ${
                 customStart && customEnd
-                  ? "bg-[#0A2463] hover:bg-[#152b7a] text-white"
-                  : "bg-gray-300 text-gray-600 cursor-not-allowed"
+                  ? "bg-[#f97316] hover:bg-[#ff8c3a] text-white cursor-pointer"
+                  : "bg-zinc-800 text-zinc-500 border border-zinc-700 cursor-not-allowed"
               }`}
             >
               Export Custom PDF
@@ -501,31 +502,31 @@ export default function RevenuePage() {
       </div>
 
       {/* CHART */}
-      <div className="bg-white px-3 sm:px-6 lg:px-8 py-4 sm:py-6 rounded-2xl shadow mb-8">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-          <h2 className="text-lg sm:text-2xl font-bold text-[#0A2463]">
+      <div className="glass-card px-4 sm:px-6 lg:px-8 py-5 rounded-2xl border border-zinc-800 mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+          <h2 className="text-xl sm:text-2xl font-headline tracking-wider text-[#f97316] uppercase">
             Summary Chart – {monthNames[selectedMonth]} {selectedYear}
           </h2>
-          <div className="self-start sm:self-auto flex items-center gap-2 bg-gray-100 px-2 sm:px-3 py-1 rounded-xl">
+          <div className="self-start sm:self-auto flex items-center gap-2 bg-[#050505] border border-zinc-800 px-2 py-1 rounded-xl">
             <button
               onClick={() => setChartType("bar")}
-              className={`px-2 py-1 sm:p-2 rounded-lg flex items-center gap-1 text-xs sm:text-sm ${
+              className={`px-3 py-1.5 rounded-lg flex items-center gap-1 font-headline text-sm tracking-wider cursor-pointer ${
                 chartType === "bar"
-                  ? "bg-yellow-500 text-white"
-                  : "text-gray-600 hover:bg-gray-200"
+                  ? "bg-[#f97316] text-white"
+                  : "text-zinc-400 hover:text-zinc-300"
               }`}
             >
-              <BarIcon size={16} /> Bar
+              <BarIcon size={14} /> Bar
             </button>
             <button
               onClick={() => setChartType("pie")}
-              className={`px-2 py-1 sm:p-2 rounded-lg flex items-center gap-1 text-xs sm:text-sm ${
+              className={`px-3 py-1.5 rounded-lg flex items-center gap-1 font-headline text-sm tracking-wider cursor-pointer ${
                 chartType === "pie"
-                  ? "bg-yellow-500 text-white"
-                  : "text-gray-600 hover:bg-gray-200"
+                  ? "bg-[#f97316] text-white"
+                  : "text-zinc-400 hover:text-zinc-300"
               }`}
             >
-              <PieIcon size={16} /> Pie
+              <PieIcon size={14} /> Pie
             </button>
           </div>
         </div>
@@ -541,21 +542,26 @@ export default function RevenuePage() {
                     : { top: 20, right: 20, left: 0, bottom: 40 }
                 }
               >
-                <CartesianGrid strokeDasharray="3 3" />
+                <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
                 <XAxis
                   dataKey="name"
                   tickFormatter={shortLabel}
-                  interval={0} // show all
+                  interval={0}
                   tick={{
                     fontSize: isMobile ? 10 : 12,
+                    fill: "#a1a1aa",
                   }}
                   tickLine={false}
                 />
-                <YAxis tick={{ fontSize: isMobile ? 10 : 12 }} />
+                <YAxis
+                  tick={{ fontSize: isMobile ? 10 : 12, fill: "#a1a1aa" }}
+                />
                 <Tooltip
+                  contentStyle={{ backgroundColor: "#09090b", borderColor: "#27272a", borderRadius: "12px", color: "#e5e2e1" }}
+                  itemStyle={{ color: "#e5e2e1" }}
                   formatter={(v: number) => `₹${v.toLocaleString("en-IN")}`}
                 />
-                <Bar dataKey="amount" fill="#facc15" radius={[8, 8, 0, 0]} />
+                <Bar dataKey="amount" fill="#f97316" radius={[8, 8, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           ) : (
@@ -574,7 +580,6 @@ export default function RevenuePage() {
                   cx="50%"
                   cy={isMobile ? "55%" : "55%"}
                   outerRadius={isMobile ? 80 : 110}
-                  // hide labels on mobile to avoid clutter
                   label={!isMobile}
                 >
                   {chartData.map((_, i) => (
@@ -582,6 +587,8 @@ export default function RevenuePage() {
                   ))}
                 </Pie>
                 <Tooltip
+                  contentStyle={{ backgroundColor: "#09090b", borderColor: "#27272a", borderRadius: "12px", color: "#e5e2e1" }}
+                  itemStyle={{ color: "#e5e2e1" }}
                   formatter={(v: number) => `₹${v.toLocaleString("en-IN")}`}
                 />
                 <Legend
@@ -591,6 +598,7 @@ export default function RevenuePage() {
                   iconSize={10}
                   wrapperStyle={{
                     fontSize: isMobile ? 10 : 12,
+                    color: "#a1a1aa",
                   }}
                 />
               </PieChart>
@@ -613,10 +621,10 @@ function SummaryCard({
   icon: "green" | "red" | "blue" | "yellow";
 }) {
   const colors: Record<string, string> = {
-    green: "text-green-500",
-    red: "text-red-500",
-    blue: "text-blue-500",
-    yellow: "text-yellow-500",
+    green: "text-[#22c55e]",
+    red: "text-red-400",
+    blue: "text-blue-400",
+    yellow: "text-[#f97316]",
   };
   const icons = {
     green: <CreditCard size={32} className={colors.green} />,
@@ -626,11 +634,13 @@ function SummaryCard({
   };
 
   return (
-    <div className="w-full bg-white px-4 py-4 sm:px-5 sm:py-5 rounded-2xl shadow flex items-center gap-3 sm:gap-4 transition-transform hover:scale-[1.02]">
-      {icons[icon]}
+    <div className="w-full glass-card px-5 py-5 rounded-2xl border border-zinc-800 flex items-center gap-3 sm:gap-4 transition-transform hover:scale-[1.02] shadow-lg">
+      <div className="p-3 bg-white/5 border border-white/5 rounded-xl">
+        {icons[icon]}
+      </div>
       <div>
-        <p className="text-gray-500 text-sm sm:text-base">{title}</p>
-        <p className="text-xl sm:text-2xl font-bold">
+        <p className="text-zinc-400 text-sm sm:text-base font-medium">{title}</p>
+        <p className="text-2xl font-headline tracking-wide text-[#e5e2e1] mt-0.5">
           ₹{value.toLocaleString("en-IN")}
         </p>
       </div>

@@ -3,7 +3,7 @@
 import { signIn } from "next-auth/react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -22,115 +22,113 @@ export default function LoginPage() {
       password,
     });
 
-    if (res?.ok) router.push("/");
-    else alert(res?.error || "Invalid credentials");
+    if (res?.ok) {
+      router.push("/");
+    } else {
+      alert(res?.error || "Invalid credentials");
+    }
 
     setLoading(false);
   };
 
   return (
-    <div className="flex min-h-screen w-full bg-gray-50">
-      {/* Left side - Logo / Branding (only on large screens) */}
-      <div className="hidden lg:flex w-1/2 bg-gradient-to-b from-[#0A2463] to-[#1A3B8F] items-center justify-center relative">
-        <div className="flex flex-col items-center text-center px-6">
-          <img
-            src="/logo-removebg-preview.png"
-            alt="Mojad Fitness Logo"
-            className="max-w-xs lg:max-w-sm object-contain animate-fadeIn"
-          />
-          <div className="mt-8 text-white">
-            <h2 className="text-3xl font-semibold tracking-wide">
-              Mojad Fitness
-            </h2>
-            <p className="mt-2 text-base opacity-80 max-w-md">
-              Empowering your fitness journey every day.
-            </p>
+    <div className="flex items-center justify-center min-h-screen p-6 bg-[#0F0F0F] text-[#e5e2e1] font-body w-full">
+      <main className="w-full max-w-md z-10">
+        {/* Brand Header Section */}
+        <div className="flex flex-col items-center mb-8 text-center">
+          <div className="mb-6 relative">
+            {/* Gym Logo Container */}
+            <div className="w-20 h-20 bg-primary/10 rounded-xl flex items-center justify-center border border-primary/20">
+              <span className="text-[#f97316] text-5xl font-headline select-none">⚡</span>
+            </div>
+            {/* Decorative Glow behind logo */}
+            <div className="absolute -inset-4 bg-primary/20 blur-2xl rounded-full -z-10 opacity-30"></div>
+          </div>
+          <h1 className="font-headline text-4xl tracking-widest text-[#e5e2e1] mb-2">WELCOME BACK</h1>
+          <p className="font-body text-sm text-[#e0c0b1] opacity-80 max-w-xs mx-auto">
+            Enter your credentials to access your performance dashboard
+          </p>
+        </div>
+
+        {/* Login Card */}
+        <div className="glass-card rounded-2xl p-8 md:p-10">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Email Input Group */}
+            <div className="space-y-2">
+              <label className="font-body text-xs font-semibold text-[#e0c0b1] block ml-1 uppercase tracking-widest" htmlFor="email">
+                Email Address
+              </label>
+              <div className="relative group">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-zinc-500 group-focus-within:text-[#f97316] transition-colors">
+                  <Mail size={18} />
+                </div>
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="name@example.com"
+                  required
+                  className="input-dark w-full pl-12 pr-4 py-3.5 rounded-xl text-[#e5e2e1] placeholder:text-zinc-650"
+                />
+              </div>
+            </div>
+
+            {/* Password Input Group */}
+            <div className="space-y-2">
+              <div className="flex justify-between items-center px-1">
+                <label className="font-body text-xs font-semibold text-[#e0c0b1] block uppercase tracking-widest" htmlFor="password">
+                  Password
+                </label>
+              </div>
+              <div className="relative group">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-zinc-500 group-focus-within:text-[#f97316] transition-colors">
+                  <Lock size={18} />
+                </div>
+                <input
+                  id="password"
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  required
+                  className="input-dark w-full pl-12 pr-11 py-3.5 rounded-xl text-[#e5e2e1] placeholder:text-zinc-655"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-[#e5e2e1] focus:outline-none"
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+            </div>
+
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={loading}
+              className="btn-primary w-full py-3.5 rounded-xl font-headline text-2xl tracking-widest shadow-lg active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+            >
+              {loading ? "SIGNING IN..." : "SIGN IN"}
+            </button>
+          </form>
+        </div>
+
+        {/* System Status/Contextual info */}
+        <div className="mt-8 flex justify-center gap-6">
+          <div className="flex items-center gap-2 text-zinc-500">
+            <span className="w-1.5 h-1.5 bg-[#22c55e] rounded-full animate-pulse neon-glow-secondary"></span>
+            <span className="font-body text-[10px] uppercase tracking-wider">System Operational</span>
+          </div>
+          <div className="flex items-center gap-2 text-zinc-550">
+            <span className="w-1.5 h-1.5 bg-[#f97316] rounded-full"></span>
+            <span className="font-body text-[10px] uppercase tracking-wider">Secure Access</span>
           </div>
         </div>
-      </div>
-
-      {/* Right side - Login Form */}
-      <div className="flex w-full lg:w-1/2 items-center justify-center px-4 py-8 sm:px-6">
-        <form
-          onSubmit={handleSubmit}
-          className="w-full max-w-md rounded-2xl bg-white shadow-xl px-5 py-6 sm:px-8 sm:py-8 space-y-6"
-        >
-          {/* Mobile logo / title */}
-          <div className="flex flex-col items-center gap-2 mb-2">
-            <div className="flex items-center gap-2">
-              <img
-                src="/logo-removebg-preview.png"
-                alt="Mojad Fitness Logo"
-                className="h-10 w-auto object-contain lg:hidden"
-              />
-              <span className="text-lg font-semibold text-[#0A2463] lg:hidden">
-                Mojad Fitness
-              </span>
-            </div>
-          </div>
-
-          <div className="text-center">
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#0A2463]">
-              Welcome Back
-            </h1>
-            <p className="mt-2 text-sm sm:text-base text-gray-500">
-              Enter your credentials to access your dashboard.
-            </p>
-          </div>
-
-          {/* Email */}
-          <div>
-            <label className="block mb-1 text-sm font-medium text-gray-700">
-              Email
-            </label>
-            <input
-              type="email"
-              placeholder="you@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="border border-gray-300 px-3 py-2.5 rounded-xl w-full text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-[#0A2463] focus:border-[#0A2463] transition"
-              required
-            />
-          </div>
-
-          {/* Password */}
-          <div>
-            <label className="block mb-1 text-sm font-medium text-gray-700">
-              Password
-            </label>
-            <div className="relative">
-              <input
-                type={showPassword ? "text" : "password"}
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="border border-gray-300 px-3 py-2.5 pr-11 rounded-xl w-full text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-[#0A2463] focus:border-[#0A2463] transition"
-                required
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
-              >
-                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-              </button>
-            </div>
-          </div>
-
-          {/* Submit button */}
-          <button
-            type="submit"
-            disabled={loading}
-            className={`w-full mt-2 py-2.5 sm:py-3 rounded-xl font-semibold text-white text-sm sm:text-base transition-all duration-300 ${
-              loading
-                ? "bg-gray-400 cursor-not-allowed"
-                : "bg-[#0A2463] hover:bg-[#0F3C78] shadow-md hover:shadow-lg"
-            }`}
-          >
-            {loading ? "Logging in..." : "Login"}
-          </button>
-        </form>
-      </div>
+      </main>
     </div>
   );
 }

@@ -20,22 +20,22 @@ export default function LayoutWrapper({
   }, [pathname]);
 
   return (
-  <div className="flex flex-col md:flex-row min-h-screen bg-white md:bg-[#E9ECEF] relative overflow-x-hidden">
+    <div className="flex flex-col md:flex-row min-h-screen bg-[#0F0F0F] text-[#e5e2e1] relative overflow-x-hidden">
       {/* ===== Sidebar (Navbar) ===== */}
       {!hideNavbar && (
         <>
           <aside
-            className={`fixed top-0 left-0 h-full bg-[#0A2463] text-white shadow-lg z-40 transform transition-transform duration-300
+            className={`fixed top-0 left-0 h-full bg-[#0e0e0e] text-[#e5e2e1] border-r border-zinc-800/80 shadow-lg z-40 transform transition-transform duration-300
               w-72 md:translate-x-0 ${
                 mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
               }`}
           >
             {/* ===== Mobile Header inside sidebar ===== */}
-            <div className="flex items-center justify-between px-5 py-4 md:hidden border-b border-gray-600">
-              <h2 className="text-lg font-semibold">Gym Menu</h2>
+            <div className="flex items-center justify-between px-5 py-4 md:hidden border-b border-zinc-850">
+              <h2 className="text-lg font-headline tracking-wider text-primary">Gym Menu</h2>
               <button
                 onClick={() => setMobileMenuOpen(false)}
-                className="p-2 hover:bg-[#FFC107]/20 rounded-md"
+                className="p-2 hover:bg-white/10 rounded-md text-primary"
               >
                 <X size={24} />
               </button>
@@ -51,7 +51,7 @@ export default function LayoutWrapper({
           {mobileMenuOpen && (
             <div
               onClick={() => setMobileMenuOpen(false)}
-              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-30 md:hidden"
+              className="fixed inset-0 bg-black/70 backdrop-blur-sm z-30 md:hidden"
             ></div>
           )}
         </>
@@ -62,17 +62,17 @@ export default function LayoutWrapper({
         {/* ===== Mobile Header (Top Bar) ===== */}
         {!hideNavbar && (
           <header
-            className="fixed top-0 left-0 right-0 bg-white shadow-md z-50 flex items-center justify-between 
-            px-5 py-3 md:hidden border-b border-gray-200"
+            className="fixed top-0 left-0 right-0 bg-[#0F0F0F]/90 border-b border-zinc-800/80 shadow-md backdrop-blur-md z-50 flex items-center justify-between 
+            px-5 py-3 md:hidden"
           >
             <button
               onClick={() => setMobileMenuOpen(true)}
-              className="p-2 rounded-md bg-[#FFC107] text-[#0A2463] hover:bg-[#e0a800] transition"
+              className="p-2 rounded-md bg-[#f97316] text-white hover:bg-[#ff8c3a] transition"
             >
               <Menu size={22} />
             </button>
-            <h1 className="text-lg font-bold text-[#0A2463] select-none">
-              Mojad Fitness
+            <h1 className="text-xl font-headline tracking-wider text-[#f97316] select-none">
+              IRON PULSE
             </h1>
           </header>
         )}
@@ -80,13 +80,10 @@ export default function LayoutWrapper({
         {/* ===== Main Content (add margin-top for fixed header) ===== */}
         <main
           className="
-    flex-1 w-full max-w-full overflow-x-hidden
-    p-0         /* ⬅️ no padding on mobile */
-    sm:p-0
-    md:p-0
-    lg:p-0
-    mt-[64px] md:mt-0
-  "
+            flex-1 w-full max-w-full overflow-x-hidden
+            p-0 sm:p-0 md:p-0 lg:p-0
+            mt-[56px] md:mt-0
+          "
         >
           {children}
         </main>

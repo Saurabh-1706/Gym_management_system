@@ -109,29 +109,29 @@ export default function RegistrationPage() {
   };
 
   return (
-    <div className="min-h-screen w-full bg-[#E9ECEF] px-4 sm:px-8 lg:px-10 py-6 sm:py-8 lg:py-10 relative flex flex-col">
+    <div className="min-h-screen w-full bg-[#0F0F0F] px-4 sm:px-8 lg:px-10 py-6 sm:py-8 lg:py-10 relative flex flex-col font-body">
       {/* Heading */}
       <div className="mb-6 text-center">
-        <h2 className="text-base sm:text-lg font-semibold text-[#212529] tracking-wider uppercase">
+        <h2 className="text-base sm:text-lg font-headline tracking-widest text-[#f97316] uppercase">
           Become a Member
         </h2>
-        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-[#0A2463] mt-2 leading-snug">
+        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-headline tracking-wider text-white mt-2 leading-snug">
           Register Now
         </h1>
-        <p className="text-sm sm:text-base text-[#212529] mt-3">
+        <p className="text-sm sm:text-base text-zinc-400 mt-2">
           Join today & unlock exclusive benefits 🚀
         </p>
       </div>
 
       {/* Card */}
-      <div className="bg-white rounded-3xl p-6 sm:p-8 lg:p-10 max-w-4xl w-full mx-auto shadow-lg hover:shadow-xl transition duration-500">
+      <div className="glass-card rounded-2xl p-6 sm:p-8 lg:p-10 max-w-4xl w-full mx-auto shadow-lg border border-zinc-800">
         <form
           className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8"
           onSubmit={handleSubmit}
         >
           {/* Full Name */}
           <div>
-            <label className="block text-sm sm:text-base lg:text-lg font-semibold mb-2 text-[#212529]">
+            <label className="text-xs font-semibold text-[#e0c0b1] uppercase tracking-widest mb-2 block ml-1">
               Full Name
             </label>
             <input
@@ -140,14 +140,14 @@ export default function RegistrationPage() {
               value={form.name}
               onChange={handleChange}
               placeholder="Enter full name"
-              className="w-full px-4 py-2.5 sm:px-5 sm:py-3 text-base sm:text-lg rounded-xl border border-[#ADB5BD] focus:ring-2 focus:ring-[#0A2463] focus:outline-none bg-white"
+              className="input-dark w-full px-4 py-2.5 rounded-xl text-sm sm:text-base"
               required
             />
           </div>
 
           {/* Date of Birth */}
           <div>
-            <label className="block text-sm sm:text-base lg:text-lg font-semibold mb-2 text-[#212529]">
+            <label className="text-xs font-semibold text-[#e0c0b1] uppercase tracking-widest mb-2 block ml-1">
               Date of Birth
             </label>
             <input
@@ -155,14 +155,14 @@ export default function RegistrationPage() {
               name="dob"
               value={form.dob}
               onChange={handleChange}
-              className="w-full px-4 py-2.5 sm:px-5 sm:py-3 text-base sm:text-lg rounded-xl border border-[#ADB5BD] focus:ring-2 focus:ring-[#0A2463] focus:outline-none text-[#212529] bg-white"
+              className="input-dark w-full px-4 py-2.5 rounded-xl text-sm sm:text-base text-[#e5e2e1]"
               required
             />
           </div>
 
           {/* Join Date */}
           <div>
-            <label className="block text-sm sm:text-base lg:text-lg font-semibold mb-2 text-[#212529]">
+            <label className="text-xs font-semibold text-[#e0c0b1] uppercase tracking-widest mb-2 block ml-1">
               Date of Registration
             </label>
             <input
@@ -170,14 +170,14 @@ export default function RegistrationPage() {
               name="date"
               value={form.date}
               onChange={handleChange}
-              className="w-full px-4 py-2.5 sm:px-5 sm:py-3 text-base sm:text-lg rounded-xl border border-[#ADB5BD] focus:ring-2 focus:ring-[#0A2463] focus:outline-none text-[#212529] bg-white"
+              className="input-dark w-full px-4 py-2.5 rounded-xl text-sm sm:text-base text-[#e5e2e1]"
               required
             />
           </div>
 
           {/* Email */}
           <div>
-            <label className="block text-sm sm:text-base lg:text-lg font-semibold mb-2 text-[#212529]">
+            <label className="text-xs font-semibold text-[#e0c0b1] uppercase tracking-widest mb-2 block ml-1">
               Email Address
             </label>
             <input
@@ -186,10 +186,10 @@ export default function RegistrationPage() {
               value={form.email}
               onChange={handleChange}
               placeholder="example@email.com"
-              className="w-full px-4 py-2.5 sm:px-5 sm:py-3 text-base sm:text-lg rounded-xl border border-[#ADB5BD] focus:ring-2 focus:ring-[#0A2463] focus:outline-none text-[#212529] bg-white"
+              className="input-dark w-full px-4 py-2.5 rounded-xl text-sm sm:text-base text-[#e5e2e1]"
             />
             {errors.email && (
-              <p className="text-red-500 text-xs sm:text-sm mt-1">
+              <p className="text-red-400 text-xs sm:text-sm mt-1">
                 {errors.email}
               </p>
             )}
@@ -197,7 +197,7 @@ export default function RegistrationPage() {
 
           {/* Mobile */}
           <div className="md:col-span-2">
-            <label className="block text-sm sm:text-base lg:text-lg font-semibold mb-2 text-[#212529]">
+            <label className="text-xs font-semibold text-[#e0c0b1] uppercase tracking-widest mb-2 block ml-1">
               Contact No.
             </label>
             <input
@@ -206,11 +206,11 @@ export default function RegistrationPage() {
               value={form.mobile}
               onChange={handleChange}
               placeholder="Enter phone number"
-              className="w-full px-4 py-2.5 sm:px-5 sm:py-3 text-base sm:text-lg rounded-xl border border-[#ADB5BD] focus:ring-2 focus:ring-[#0A2463] focus:outline-none text-[#212529] bg-white"
+              className="input-dark w-full px-4 py-2.5 rounded-xl text-sm sm:text-base text-[#e5e2e1]"
               required
             />
             {errors.mobile && (
-              <p className="text-red-500 text-xs sm:text-sm mt-1">
+              <p className="text-red-400 text-xs sm:text-sm mt-1">
                 {errors.mobile}
               </p>
             )}
@@ -220,7 +220,7 @@ export default function RegistrationPage() {
           <div className="md:col-span-2 flex flex-col sm:flex-row justify-end mt-4 sm:mt-6 gap-3 sm:gap-6">
             <button
               type="submit"
-              className="w-full sm:w-auto bg-[#0A2463] text-white text-base sm:text-lg px-6 sm:px-10 py-2.5 sm:py-3 rounded-xl font-bold shadow-md hover:shadow-lg hover:scale-105 transform transition"
+              className="btn-primary w-full sm:w-auto px-6 sm:px-10 py-2.5 rounded-xl font-headline text-xl tracking-wider text-white shadow cursor-pointer"
             >
               🚀 Register
             </button>
@@ -235,9 +235,9 @@ export default function RegistrationPage() {
                   dob: "",
                 })
               }
-              className="w-full sm:w-auto bg-[#ADB5BD] text-[#212529] text-base sm:text-lg px-6 sm:px-10 py-2.5 sm:py-3 rounded-xl font-semibold hover:bg-gray-400 transition"
+              className="btn-secondary w-full sm:w-auto px-6 sm:px-10 py-2.5 rounded-xl font-headline text-xl tracking-wider text-white shadow cursor-pointer"
             >
-              ❌ Cancel
+              Cancel
             </button>
           </div>
         </form>
@@ -245,29 +245,23 @@ export default function RegistrationPage() {
 
       {/* Popup Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 animate-fadeIn">
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
           <div
-            className={`rounded-3xl p-6 sm:p-8 shadow-2xl text-center max-w-sm w-full mx-4 animate-slideUp ${
-              modalType === "success" ? "bg-white" : "bg-red-50"
+            className={`p-6 sm:p-8 rounded-2xl shadow-2xl text-center max-w-sm w-full mx-4 border transition-all ${
+              modalType === "success"
+                ? "bg-green-950/20 text-[#22c55e] border-[#22c55e]/25 backdrop-blur-md"
+                : "bg-red-950/20 text-red-400 border border-red-500/25 backdrop-blur-md"
             }`}
           >
-            <h2
-              className={`text-2xl sm:text-3xl font-bold mb-3 ${
-                modalType === "success" ? "text-green-600" : "text-red-600"
-              }`}
-            >
+            <h2 className="text-2xl sm:text-3xl font-headline tracking-wider mb-3">
               {modalType === "success" ? "✅ Success!" : "⚠️ Error!"}
             </h2>
-            <p className="text-sm sm:text-lg text-gray-700 mb-6">
+            <p className="text-sm sm:text-lg mb-6">
               {modalMessage}
             </p>
             <button
               onClick={() => setShowModal(false)}
-              className={`${
-                modalType === "success"
-                  ? "bg-green-600 hover:bg-green-700"
-                  : "bg-red-600 hover:bg-red-700"
-              } text-white px-6 py-2 rounded-xl font-semibold transition text-sm sm:text-base`}
+              className="btn-primary px-6 py-2 rounded-xl font-headline text-lg tracking-wider text-white shadow cursor-pointer"
             >
               OK
             </button>

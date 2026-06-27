@@ -328,14 +328,14 @@ export default function MemberProfilePage() {
 
   if (loading)
     return (
-      <div className="flex items-center justify-center min-h-screen bg-[#E9ECEF]">
+      <div className="flex items-center justify-center min-h-screen bg-[#0F0F0F]">
         <Loader text="Loading member profile..." />
       </div>
     );
 
   if (!member)
     return (
-      <div className="flex items-center justify-center min-h-screen text-red-500 text-xl">
+      <div className="flex items-center justify-center min-h-screen text-red-550 text-xl bg-[#0F0F0F]">
         Member not found ❌
       </div>
     );
@@ -468,11 +468,11 @@ export default function MemberProfilePage() {
   const currentPaymentStatus = latestPayment?.paymentStatus || "Unpaid";
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#E9ECEF] via-[#F8F9FA] to-white px-3 sm:px-3 lg:px-6 py-4 sm:py-6 lg:py-8 space-y-6 lg:space-y-10">
+    <div className="min-h-screen bg-[#0F0F0F] text-[#e5e2e1] px-4 sm:px-6 lg:px-8 py-6 space-y-6 lg:space-y-10 font-body">
       {/* Header */}
       <div className="mb-4 sm:mb-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 sm:gap-6">
-        <h1 className="flex items-center gap-3 sm:gap-4 text-2xl sm:text-3xl lg:text-4xl font-extrabold text-[#0A2463]">
-          <span className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-2xl bg-[#0A2463] text-[#FFC107] shadow-md">
+        <h1 className="flex items-center gap-3 sm:gap-4 text-3xl sm:text-4xl lg:text-5xl font-headline tracking-wider text-[#f97316]">
+          <span className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-2xl bg-[#f97316]/10 text-[#f97316] border border-[#f97316]/20 shadow-md">
             <UserCircle size={26} />
           </span>
           <span>Member Profile</span>
@@ -480,19 +480,19 @@ export default function MemberProfilePage() {
         <div className="flex gap-3 flex-wrap">
           <button
             onClick={() => setEditing(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-[#0A2463] text-white text-sm sm:text-base shadow hover:bg-[#152b7a] transition"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-zinc-800 text-[#e5e2e1] border border-zinc-700 text-sm sm:text-base shadow hover:bg-zinc-750 transition cursor-pointer"
           >
             <Edit size={18} /> Edit
           </button>
           <button
             onClick={() => setShowRenewModal(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-[#FFC107] text-[#0A2463] font-semibold text-sm sm:text-base shadow hover:bg-[#e0a800] transition"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#f97316] hover:bg-[#ff8c3a] text-white font-headline text-lg tracking-wider shadow transition cursor-pointer animate-pulse"
           >
             <RefreshCcw size={18} /> Renew Plan
           </button>
           <button
             onClick={() => setShowDeleteModal(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-red-600 text-white text-sm sm:text-base shadow hover:bg-red-700 transition"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-650 text-white text-sm sm:text-base shadow hover:bg-red-700 transition cursor-pointer"
           >
             <Trash2 size={18} /> Delete
           </button>
@@ -502,15 +502,15 @@ export default function MemberProfilePage() {
       {/* Member Card */}
       {!editing && (
         <div className="max-w-6xl mx-auto">
-          <div className="relative bg-white rounded-3xl p-6 sm:p-8 lg:p-10 shadow-lg border border-gray-200">
+          <div className="relative glass-card rounded-2xl p-6 sm:p-8 lg:p-10 shadow-lg border border-zinc-800">
             {/* Desktop badge – top-right */}
             {member.status && (
               <span
-                className={`hidden md:inline-flex absolute top-5 right-5 px-4 py-2 rounded-full text-sm font-semibold shadow-lg
+                className={`hidden md:inline-flex absolute top-5 right-5 px-4 py-2 rounded-xl text-sm font-semibold shadow-lg
     ${
       membershipStatus === "Active"
-        ? "bg-green-600 text-white"
-        : "bg-red-600 text-white"
+        ? "bg-[#22c55e]/15 text-[#22c55e] border border-[#22c55e]/25"
+        : "bg-red-500/15 text-red-400 border border-red-500/25"
     }`}
               >
                 {membershipStatus}
@@ -525,17 +525,17 @@ export default function MemberProfilePage() {
                     <img
                       src={newProfilePicture || member?.profilePicture!}
                       alt={member?.name || "Member"}
-                      className="w-full h-full rounded-full object-cover shadow-md border-4 border-[#FFC107] cursor-pointer"
+                      className="w-full h-full rounded-full object-cover shadow-md border-4 border-[#f97316] cursor-pointer"
                       onClick={() => setShowLightbox(true)}
                     />
                   ) : (
-                    <div className="w-full h-full rounded-full bg-[#FFC107] flex items-center justify-center text-white text-3xl sm:text-4xl font-bold shadow-md">
+                    <div className="w-full h-full rounded-full bg-[#f97316] flex items-center justify-center text-white text-3xl sm:text-4xl font-headline tracking-widest shadow-md">
                       {member?.name ? getInitials(member.name) : "NA"}
                     </div>
                   )}
 
                   {/* Camera input (opens camera on phone) */}
-                  <label className="absolute bottom-0 right-0 bg-white p-2 rounded-full shadow cursor-pointer hover:bg-gray-100">
+                  <label className="absolute bottom-0 right-0 bg-[#131313] border border-zinc-800 p-2 rounded-full shadow cursor-pointer hover:bg-white/10 text-primary">
                     <input
                       type="file"
                       accept="image/*"
@@ -543,28 +543,28 @@ export default function MemberProfilePage() {
                       className="hidden"
                       onChange={handleProfilePictureChange}
                     />
-                    <Camera size={20} className="text-[#0A2463]" />
+                    <Camera size={20} className="text-[#f97316]" />
                   </label>
 
                   {/* Gallery / file input */}
-                  <label className="absolute bottom-0 left-0 bg-white p-2 rounded-full shadow cursor-pointer hover:bg-gray-100">
+                  <label className="absolute bottom-0 left-0 bg-[#131313] border border-zinc-800 p-2 rounded-full shadow cursor-pointer hover:bg-white/10 text-primary">
                     <input
                       type="file"
                       accept="image/*"
                       className="hidden"
                       onChange={handleProfilePictureChange}
                     />
-                    <ImagePlus size={20} className="text-[#0A2463]" />
+                    <ImagePlus size={20} className="text-[#f97316]" />
                   </label>
 
                   {/* Upload Status */}
                   {uploading && (
-                    <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[10px] sm:text-xs text-blue-600 font-semibold">
+                    <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[10px] sm:text-xs text-[#f97316] font-semibold">
                       Uploading...
                     </span>
                   )}
                   {uploadSuccess && (
-                    <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[10px] sm:text-xs text-green-600 font-semibold">
+                    <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[10px] sm:text-xs text-[#22c55e] font-semibold">
                       Saved ✔
                     </span>
                   )}
@@ -579,19 +579,19 @@ export default function MemberProfilePage() {
                   )}
                 </div>
 
-                <h2 className="mt-3 sm:mt-4 text-xl sm:text-2xl font-bold text-[#0A2463] text-center">
+                <h2 className="mt-3 sm:mt-4 text-2xl font-headline tracking-wider text-[#f97316] text-center">
                   {member.name}
                 </h2>
 
                 {/* Mobile status badge (no overflow) */}
                 {member.status && (
                   <span
-                    className={`mt-2 md:hidden inline-flex px-3 py-1 rounded-full text-xs font-semibold
-    ${
-      membershipStatus === "Active"
-        ? "bg-green-100 text-green-700 border border-green-300"
-        : "bg-red-100 text-red-700 border border-red-300"
-    }`}
+                    className={`mt-2 md:hidden inline-flex px-3 py-1 rounded-xl text-xs font-semibold
+     ${
+       membershipStatus === "Active"
+         ? "bg-[#22c55e]/15 text-[#22c55e] border border-[#22c55e]/25"
+         : "bg-red-500/15 text-red-400 border border-red-500/25"
+     }`}
                   >
                     {membershipStatus}
                   </span>
@@ -599,14 +599,14 @@ export default function MemberProfilePage() {
               </div>
 
               {/* Details */}
-              <div className="md:col-span-2 space-y-3 sm:space-y-4 text-[#212529] text-sm sm:text-base lg:text-lg">
+              <div className="md:col-span-2 space-y-3 sm:space-y-4 text-[#e0c0b1] text-sm sm:text-base lg:text-lg">
                 <p className="flex flex-wrap items-center gap-2 sm:gap-3">
-                  <Phone size={18} className="text-purple-600" />
-                  <strong>Mobile:</strong> <span>{member.mobile}</span>
+                  <Phone size={18} className="text-purple-400" />
+                  <strong className="text-[#e5e2e1]">Mobile:</strong> <span>{member.mobile}</span>
                 </p>
                 <p className="flex flex-wrap items-center gap-2 sm:gap-3">
-                  <Calendar size={18} className="text-pink-600" />
-                  <strong>Date of Birth:</strong>
+                  <Calendar size={18} className="text-pink-400" />
+                  <strong className="text-[#e5e2e1]">Date of Birth:</strong>
                   <span>
                     {new Date(member.dob).toLocaleDateString("en-GB")}
                   </span>
@@ -614,14 +614,14 @@ export default function MemberProfilePage() {
 
                 {member.email && (
                   <p className="flex flex-wrap items-center gap-2 sm:gap-3">
-                    <Mail size={18} className="text-red-600" />
-                    <strong>Email:</strong> <span>{member.email}</span>
+                    <Mail size={18} className="text-red-400" />
+                    <strong className="text-[#e5e2e1]">Email:</strong> <span>{member.email}</span>
                   </p>
                 )}
 
                 <p className="flex flex-wrap items-center gap-2 sm:gap-3">
-                  <Calendar size={18} className="text-blue-600" />
-                  <strong>Registration Date:</strong>
+                  <Calendar size={18} className="text-blue-400" />
+                  <strong className="text-[#e5e2e1]">Registration Date:</strong>
                   <span>
                     {member.joinDate
                       ? new Date(member.joinDate).toLocaleDateString("en-GB")
@@ -630,8 +630,8 @@ export default function MemberProfilePage() {
                 </p>
 
                 <p className="flex flex-wrap items-center gap-2 sm:gap-3">
-                  <Calendar size={18} className="text-indigo-600" />
-                  <strong>Renewal Date:</strong>
+                  <Calendar size={18} className="text-indigo-400" />
+                  <strong className="text-[#e5e2e1]">Renewal Date:</strong>
                   <span>
                     {member.payments && member.payments.length > 0
                       ? new Date(
@@ -644,22 +644,22 @@ export default function MemberProfilePage() {
                 </p>
 
                 <p className="flex flex-wrap items-center gap-2 sm:gap-3">
-                  <CreditCard size={18} className="text-green-600" />
-                  <strong>Current Plan:</strong>
-                  <span>{currentPlan}</span>
+                  <CreditCard size={18} className="text-[#22c55e]" />
+                  <strong className="text-[#e5e2e1]">Current Plan:</strong>
+                  <span className="px-2.5 py-0.5 bg-white/5 border border-white/5 text-zinc-300 rounded-full text-xs font-semibold">{currentPlan}</span>
                   {currentPaymentStatus === "Paid" ? (
-                    <span className="ml-2 px-3 py-1 text-xs sm:text-sm font-semibold rounded-full bg-green-100 text-green-700 border border-green-300">
+                    <span className="ml-2 px-3 py-1 text-xs sm:text-sm font-semibold rounded-xl bg-[#22c55e]/15 text-[#22c55e] border border-[#22c55e]/25">
                       Paid
                     </span>
                   ) : (
-                    <span className="ml-2 px-3 py-1 text-xs sm:text-sm font-semibold rounded-full bg-red-100 text-red-700 border border-red-300">
+                    <span className="ml-2 px-3 py-1 text-xs sm:text-sm font-semibold rounded-xl bg-red-500/15 text-red-400 border border-red-500/25">
                       Unpaid
                     </span>
                   )}
                 </p>
 
-                <p className="flex flex-wrap items-center gap-2 sm:gap-3 text-[#ff0707] font-semibold">
-                  <ClockAlert size={18} className="text-red-600" />
+                <p className="flex flex-wrap items-center gap-2 sm:gap-3 text-red-450 font-semibold">
+                  <ClockAlert size={18} className="text-red-500" />
                   <span>Membership Ends On:</span>
                   <span>
                     {member.plan === "No Plan"
@@ -692,42 +692,29 @@ export default function MemberProfilePage() {
 
       {/* Payment History */}
       {!editing && (
-        <div className="max-w-6xl mx-auto bg-white rounded-3xl border border-gray-200 shadow-md px-3 sm:px-3 lg:px-8 py-5 sm:py-7">
+        <div className="max-w-6xl mx-auto glass-card rounded-2xl border border-zinc-800 shadow-md px-4 sm:px-6 lg:px-8 py-5 sm:py-7">
           <div className="flex items-center justify-between mb-4 sm:mb-6">
-            <h3 className="text-xl sm:text-2xl lg:text-3xl font-bold text-[#0A2463] flex items-center gap-2">
-              <History size={22} className="text-[#FFC107]" />
+            <h3 className="text-2xl sm:text-3xl font-headline tracking-wider text-[#f97316] flex items-center gap-2">
+              <History size={22} className="text-[#f97316]" />
               Payment History
             </h3>
           </div>
 
           {member.payments && member.payments.length > 0 ? (
-            // ➜ card is fixed, only table content scrolls (like coach page)
-            <div className="w-full overflow-x-auto -mx-1 sm:mx-0">
-              <div className="table-scroll rounded-2xl border border-slate-100">
-                <table className="w-full bg-white text-[11px] sm:text-sm lg:text-base">
-                  <thead className="bg-[#FFC107] text-[#0A2463] uppercase tracking-wider">
-                    <tr>
-                      <th className="text-center px-2 sm:px-3 lg:px-4 py-2 sm:py-3">
-                        Plan
-                      </th>
-                      <th className="text-center px-2 sm:px-3 lg:px-4 py-2 sm:py-3">
-                        Amount (₹)
-                      </th>
-                      <th className="text-center px-2 sm:px-3 lg:px-4 py-2 sm:py-3">
-                        Mode
-                      </th>
-                      <th className="text-center px-2 sm:px-3 lg:px-4 py-2 sm:py-3">
-                        Date
-                      </th>
-                      <th className="text-center px-2 sm:px-3 lg:px-4 py-2 sm:py-3">
-                        Due Date
-                      </th>
-                      <th className="text-center px-2 sm:px-3 lg:px-4 py-2 sm:py-3">
-                        Status
-                      </th>
+            <div className="w-full overflow-x-auto">
+              <div className="rounded-xl border border-zinc-800 overflow-hidden bg-[#0A0A0A]">
+                <table className="w-full text-left border-collapse text-xs sm:text-sm">
+                  <thead>
+                    <tr className="border-b border-zinc-800 bg-zinc-900/50 text-[#e0c0b1] font-headline text-base tracking-wider uppercase">
+                      <th className="px-4 py-3.5">Plan</th>
+                      <th className="px-4 py-3.5 text-center">Amount (₹)</th>
+                      <th className="px-4 py-3.5 text-center">Mode</th>
+                      <th className="px-4 py-3.5 text-center">Date</th>
+                      <th className="px-4 py-3.5 text-center">Due Date</th>
+                      <th className="px-4 py-3.5 text-center">Status</th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="divide-y divide-zinc-900 text-zinc-300">
                     {member.payments
                       ?.slice()
                       .reverse()
@@ -742,29 +729,25 @@ export default function MemberProfilePage() {
                         return payment.installments.map((inst, iIdx) => (
                           <tr
                             key={`${pIdx}-${iIdx}`}
-                            className={`${
-                              (pIdx + iIdx) % 2 === 0
-                                ? "bg-gray-50"
-                                : "bg-white"
-                            } hover:bg-gray-100`}
+                            className="hover:bg-white/5 transition"
                           >
-                            <td className="px-2 sm:px-3 lg:px-4 py-2 sm:py-3 font-medium text-[#0A2463] text-center whitespace-nowrap">
+                            <td className="px-4 py-3.5 font-medium text-[#e5e2e1] whitespace-nowrap">
                               {payment.plan}
                             </td>
-                            <td className="px-2 sm:px-3 lg:px-4 py-2 sm:py-3 font-semibold text-green-600 text-center whitespace-nowrap">
+                            <td className="px-4 py-3.5 font-semibold text-[#22c55e] text-center whitespace-nowrap">
                               ₹{inst.amountPaid}
                             </td>
-                            <td className="px-2 sm:px-3 lg:px-4 py-2 sm:py-3 text-[#212529] text-center whitespace-nowrap">
+                            <td className="px-4 py-3.5 text-center whitespace-nowrap text-zinc-400">
                               {inst.modeOfPayment || "—"}
                             </td>
-                            <td className="px-2 sm:px-3 lg:px-4 py-2 sm:py-3 text-gray-600 text-center whitespace-nowrap">
+                            <td className="px-4 py-3.5 text-center whitespace-nowrap text-zinc-400">
                               {inst.paymentDate
                                 ? new Date(inst.paymentDate).toLocaleDateString(
                                     "en-GB"
                                   )
                                 : "—"}
                             </td>
-                            <td className="px-2 sm:px-3 lg:px-4 py-2 sm:py-3 text-gray-600 text-center whitespace-nowrap">
+                            <td className="px-4 py-3.5 text-center whitespace-nowrap text-zinc-400">
                               {isPaid
                                 ? "—"
                                 : inst.dueDate
@@ -773,9 +756,9 @@ export default function MemberProfilePage() {
                                   )
                                 : "—"}
                             </td>
-                            <td className="px-2 sm:px-3 lg:px-4 py-2 sm:py-3 text-center whitespace-nowrap">
+                            <td className="px-4 py-3.5 text-center whitespace-nowrap">
                               {isPaid ? (
-                                <span className="px-2 sm:px-3 py-1 text-[10px] sm:text-xs font-semibold rounded-full bg-green-100 text-green-700 border border-green-300">
+                                <span className="inline-flex px-2.5 py-1 text-xs font-semibold rounded-xl bg-[#22c55e]/15 text-[#22c55e] border border-[#22c55e]/25">
                                   Paid
                                 </span>
                               ) : (
@@ -789,7 +772,7 @@ export default function MemberProfilePage() {
                                     setShowPayModal(true);
                                     setPayAmount(remaining);
                                   }}
-                                  className="px-2 sm:px-3 py-1 text-[10px] sm:text-xs font-semibold rounded-full bg-red-100 text-red-700 border border-red-300 hover:bg-red-200 transition"
+                                  className="inline-flex px-2.5 py-1 text-xs font-semibold rounded-xl bg-red-500/15 text-red-400 border border-red-500/25 hover:bg-red-500/30 transition cursor-pointer"
                                 >
                                   Pending ₹{remaining.toFixed(2)}
                                 </button>
@@ -803,7 +786,7 @@ export default function MemberProfilePage() {
               </div>
             </div>
           ) : (
-            <p className="text-gray-500 text-center py-4 text-sm sm:text-base">
+            <p className="text-zinc-500 text-center py-6 text-sm sm:text-base">
               No payments recorded yet.
             </p>
           )}
@@ -812,9 +795,9 @@ export default function MemberProfilePage() {
 
       {/* Edit Form */}
       {editing && memberData && (
-        <div className="mt-4 sm:mt-6 bg-white px-4 sm:px-6 lg:px-8 py-6 sm:py-8 rounded-3xl max-w-3xl mx-auto shadow-xl border border-gray-200">
-          <h3 className="text-xl sm:text-2xl font-bold text-[#0A2463] mb-4 sm:mb-6 flex items-center gap-2">
-            <Edit size={24} className="text-[#0A2463]" />
+        <div className="mt-4 sm:mt-6 glass-card px-4 sm:px-6 lg:px-8 py-6 sm:py-8 rounded-2xl max-w-3xl mx-auto shadow-xl border border-zinc-800">
+          <h3 className="text-2xl font-headline tracking-wider text-[#f97316] mb-4 sm:mb-6 flex items-center gap-2 uppercase">
+            <Edit size={24} className="text-[#f97316]" />
             Edit Member
           </h3>
 
@@ -859,7 +842,7 @@ export default function MemberProfilePage() {
             className="grid grid-cols-1 gap-4"
           >
             <div className="flex flex-col">
-              <label className="mb-1.5 text-sm sm:text-base font-semibold text-gray-700">
+              <label className="mb-1.5 text-xs font-semibold text-[#e0c0b1] uppercase tracking-widest block ml-1">
                 Name
               </label>
               <input
@@ -870,12 +853,12 @@ export default function MemberProfilePage() {
                 }
                 required
                 placeholder="Full Name"
-                className="w-full px-4 py-2.5 rounded-xl text-sm sm:text-base border border-gray-300 bg-gray-50 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#FFC107] transition"
+                className="input-dark w-full px-4 py-2.5 rounded-xl text-sm sm:text-base"
               />
             </div>
 
             <div className="flex flex-col">
-              <label className="mb-1.5 text-sm sm:text-base font-semibold text-gray-700">
+              <label className="mb-1.5 text-xs font-semibold text-[#e0c0b1] uppercase tracking-widest block ml-1">
                 Mobile
               </label>
               <input
@@ -886,12 +869,12 @@ export default function MemberProfilePage() {
                 }
                 required
                 placeholder="Mobile Number"
-                className="w-full px-4 py-2.5 rounded-xl border text-sm sm:text-base border-gray-300 bg-gray-50 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#FFC107] transition"
+                className="input-dark w-full px-4 py-2.5 rounded-xl text-sm sm:text-base"
               />
             </div>
 
             <div className="flex flex-col">
-              <label className="mb-1.5 text-sm sm:text-base font-semibold text-gray-700">
+              <label className="mb-1.5 text-xs font-semibold text-[#e0c0b1] uppercase tracking-widest block ml-1">
                 Email
               </label>
               <input
@@ -902,21 +885,21 @@ export default function MemberProfilePage() {
                 }
                 required
                 placeholder="Email Address"
-                className="w-full px-4 py-2.5 rounded-xl border text-sm sm:text-base border-gray-300 bg-gray-50 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#FFC107] transition"
+                className="input-dark w-full px-4 py-2.5 rounded-xl text-sm sm:text-base"
               />
             </div>
 
             <div className="flex justify-end gap-3 mt-3 sm:mt-4">
               <button
                 type="submit"
-                className="bg-green-600 text-white px-5 py-2.5 rounded-xl hover:bg-green-700 transition font-semibold shadow text-sm sm:text-base"
+                className="btn-primary px-5 py-2.5 rounded-xl font-headline text-xl tracking-wider text-white shadow cursor-pointer"
               >
                 Save Changes
               </button>
               <button
                 type="button"
                 onClick={() => setEditing(false)}
-                className="bg-gray-500 text-white px-5 py-2.5 rounded-xl hover:bg-gray-600 transition font-semibold shadow text-sm sm:text-base"
+                className="btn-secondary px-5 py-2.5 rounded-xl font-headline text-xl tracking-wider text-white shadow cursor-pointer"
               >
                 Cancel
               </button>
@@ -927,25 +910,25 @@ export default function MemberProfilePage() {
 
       {/* Renew Modal */}
       {showRenewModal && (
-        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm overflow-y-auto">
-          <div className="min-h-full flex items-center justify-center px-3 py-6">
-            <div className="bg-white p-6 sm:p-8 lg:p-10 rounded-3xl max-w-3xl w-full mx-auto shadow-2xl border border-gray-200">
-              <h3 className="text-xl sm:text-2xl lg:text-3xl font-bold text-[#0A2463] mb-4 sm:mb-6 flex items-center gap-2 sm:gap-3">
-                <RefreshCcw size={26} className="text-[#FFC107]" />
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm overflow-y-auto">
+          <div className="min-h-full flex items-center justify-center px-4 py-6">
+            <div className="glass-card p-6 sm:p-8 lg:p-10 rounded-2xl max-w-3xl w-full mx-auto shadow-2xl border border-zinc-800 text-[#e5e2e1]">
+              <h3 className="text-2xl sm:text-3xl font-headline tracking-wider text-[#f97316] mb-4 sm:mb-6 flex items-center gap-2 sm:gap-3 uppercase">
+                <RefreshCcw size={26} className="text-[#f97316]" />
                 Avail Membership
               </h3>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                 {/* Plan Selection */}
                 <div className="flex flex-col">
-                  <label className="text-[#0A2463] text-sm sm:text-base font-semibold mb-2">
+                  <label className="text-xs font-semibold text-[#e0c0b1] uppercase tracking-widest mb-2">
                     Select Plan <span className="text-red-500">*</span>
                   </label>
                   <select
                     required
                     value={renewPlan}
                     onChange={(e) => setRenewPlan(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-lg border border-gray-300 bg-gray-50 text-sm sm:text-base text-[#0A2463] focus:ring-2 focus:ring-[#FFC107]"
+                    className="w-full px-4 py-2.5 rounded-xl bg-[#050505] border border-zinc-800 text-sm sm:text-base text-[#e5e2e1] focus:border-[#f97316] outline-none cursor-pointer"
                   >
                     <option value="" disabled hidden>
                       Select Plan
@@ -976,13 +959,13 @@ export default function MemberProfilePage() {
 
                 {/* Payment Option */}
                 <div className="flex flex-col">
-                  <label className="text-[#0A2463] text-sm sm:text-base font-semibold mb-2">
+                  <label className="text-xs font-semibold text-[#e0c0b1] uppercase tracking-widest mb-2">
                     Payment Option <span className="text-red-500">*</span>
                   </label>
                   <select
                     value={paymentOption}
                     onChange={(e) => setPaymentOption(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-lg border border-gray-300 bg-gray-50 text-sm sm:text-base text-[#0A2463] focus:ring-2 focus:ring-[#FFC107]"
+                    className="w-full px-4 py-2.5 rounded-xl bg-[#050505] border border-zinc-800 text-sm sm:text-base text-[#e5e2e1] focus:border-[#f97316] outline-none cursor-pointer"
                   >
                     <option value="One Time">One Time</option>
                     <option value="Installment">Installment</option>
@@ -993,7 +976,7 @@ export default function MemberProfilePage() {
                 {renewPlan === "Custom" && (
                   <>
                     <div className="flex flex-col">
-                      <label className="text-[#0A2463] text-sm sm:text-base font-semibold mb-2">
+                      <label className="text-xs font-semibold text-[#e0c0b1] uppercase tracking-widest mb-2">
                         Custom Validity
                       </label>
                       <input
@@ -1004,17 +987,17 @@ export default function MemberProfilePage() {
                         onChange={(e) =>
                           setCustomValidity(Number(e.target.value))
                         }
-                        className="w-full px-4 py-2.5 rounded-lg border border-gray-300 bg-gray-50 text-sm sm:text-base text-[#0A2463]"
+                        className="input-dark w-full px-4 py-2.5 rounded-xl text-sm sm:text-base"
                       />
                     </div>
                     <div className="flex flex-col">
-                      <label className="text-[#0A2463] text-sm sm:text-base font-semibold mb-2">
+                      <label className="text-xs font-semibold text-[#e0c0b1] uppercase tracking-widest mb-2">
                         Validity Type
                       </label>
                       <select
                         value={customUnit}
                         onChange={(e) => setCustomUnit(e.target.value)}
-                        className="w-full px-4 py-2.5 rounded-lg border border-gray-300 bg-gray-50 text-sm sm:text-base text-[#0A2463]"
+                        className="w-full px-4 py-2.5 rounded-xl bg-[#050505] border border-zinc-800 text-sm sm:text-base text-[#e5e2e1] focus:border-[#f97316] outline-none cursor-pointer"
                       >
                         <option value="days">Days</option>
                         <option value="months">Months</option>
@@ -1027,7 +1010,7 @@ export default function MemberProfilePage() {
                 {paymentOption === "One Time" && (
                   <>
                     <div className="flex flex-col md:col-span-2 space-y-3">
-                      <label className="text-[#0A2463] text-sm sm:text-base font-semibold mb-1">
+                      <label className="text-xs font-semibold text-[#e0c0b1] uppercase tracking-widest mb-1">
                         Amount Paid (₹)
                       </label>
                       <div className="flex items-center gap-2 text-xs sm:text-sm">
@@ -1035,8 +1018,9 @@ export default function MemberProfilePage() {
                           type="checkbox"
                           checked={useDefaultPrice}
                           onChange={(e) => setUseDefaultPrice(e.target.checked)}
+                          className="accent-[#f97316]"
                         />
-                        <span className="text-gray-700">
+                        <span className="text-zinc-400">
                           Use default plan price (
                           {renewPlan &&
                           allPlans.find((p) => p.name === renewPlan)?.amount
@@ -1056,7 +1040,7 @@ export default function MemberProfilePage() {
                               ?.amount || ""
                           }
                           disabled
-                          className="w-full px-4 py-2.5 rounded-lg border border-gray-300 bg-gray-100 text-gray-700 text-sm sm:text-base"
+                          className="input-dark w-full px-4 py-2.5 rounded-xl text-sm sm:text-base opacity-60"
                         />
                       ) : (
                         <input
@@ -1066,14 +1050,14 @@ export default function MemberProfilePage() {
                           onChange={(e) =>
                             setCustomPrice(Number(e.target.value))
                           }
-                          className="w-full px-4 py-2.5 rounded-lg border border-gray-300 bg-gray-50 text-sm sm:text-base text-[#0A2463]"
+                          className="input-dark w-full px-4 py-2.5 rounded-xl text-sm sm:text-base"
                         />
                       )}
                     </div>
 
                     <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                       <div className="flex flex-col">
-                        <label className="text-[#0A2463] text-sm sm:text-base font-semibold mb-2">
+                        <label className="text-xs font-semibold text-[#e0c0b1] uppercase tracking-widest mb-2">
                           Date of Join <span className="text-red-500">*</span>
                         </label>
                         <input
@@ -1084,18 +1068,18 @@ export default function MemberProfilePage() {
                             new Date().toISOString().split("T")[0]
                           }
                           onChange={(e) => setJoinDateInput(e.target.value)}
-                          className="w-full px-4 py-2.5 rounded-lg border border-gray-300 bg-gray-50 text-sm sm:text-base text-[#0A2463]"
+                          className="input-dark w-full px-4 py-2.5 rounded-xl text-sm sm:text-base"
                         />
                       </div>
                       <div className="flex flex-col">
-                        <label className="text-[#0A2463] text-sm sm:text-base font-semibold mb-2">
+                        <label className="text-xs font-semibold text-[#e0c0b1] uppercase tracking-widest mb-2">
                           Payment Mode <span className="text-red-500">*</span>
                         </label>
                         <select
                           required
                           value={renewMode}
                           onChange={(e) => setRenewMode(e.target.value)}
-                          className="w-full px-4 py-2.5 rounded-lg border border-gray-300 bg-gray-50 text-sm sm:text-base text-[#0A2463]"
+                          className="w-full px-4 py-2.5 rounded-xl bg-[#050505] border border-zinc-800 text-sm sm:text-base text-[#e5e2e1] focus:border-[#f97316] outline-none cursor-pointer"
                         >
                           <option value="" disabled hidden>
                             Select Payment Mode
@@ -1112,7 +1096,7 @@ export default function MemberProfilePage() {
                 {paymentOption === "Installment" && (
                   <>
                     <div className="flex flex-col md:col-span-2 space-y-3">
-                      <label className="text-[#0A2463] text-sm sm:text-base font-semibold mb-1">
+                      <label className="text-xs font-semibold text-[#e0c0b1] uppercase tracking-widest mb-1">
                         Actual Amount (₹)
                       </label>
                       <div className="flex items-center gap-2 text-xs sm:text-sm">
@@ -1120,8 +1104,9 @@ export default function MemberProfilePage() {
                           type="checkbox"
                           checked={useDefaultPrice}
                           onChange={(e) => setUseDefaultPrice(e.target.checked)}
+                          className="accent-[#f97316]"
                         />
-                        <span className="text-gray-700">
+                        <span className="text-zinc-400">
                           Use default plan price (
                           {renewPlan &&
                           allPlans.find((p) => p.name === renewPlan)?.amount
@@ -1142,7 +1127,7 @@ export default function MemberProfilePage() {
                               ?.amount || ""
                           }
                           disabled
-                          className="w-full px-4 py-2.5 rounded-lg border border-gray-300 bg-gray-100 text-gray-700 text-sm sm:text-base"
+                          className="input-dark w-full px-4 py-2.5 rounded-xl text-sm sm:text-base opacity-60"
                         />
                       ) : (
                         <input
@@ -1152,13 +1137,13 @@ export default function MemberProfilePage() {
                           onChange={(e) =>
                             setActualAmount(Number(e.target.value))
                           }
-                          className="w-full px-4 py-2.5 rounded-lg border border-gray-300 bg-gray-50 text-sm sm:text-base text-[#0A2463]"
+                          className="input-dark w-full px-4 py-2.5 rounded-xl text-sm sm:text-base"
                         />
                       )}
                     </div>
 
                     <div className="flex flex-col">
-                      <label className="text-[#0A2463] text-sm sm:text-base font-semibold mb-2">
+                      <label className="text-xs font-semibold text-[#e0c0b1] uppercase tracking-widest mb-2">
                         Installment Fee (₹)
                       </label>
                       <input
@@ -1168,12 +1153,12 @@ export default function MemberProfilePage() {
                           setInstallmentFee(Number(e.target.value))
                         }
                         placeholder="Enter extra fee"
-                        className="w-full px-4 py-2.5 rounded-lg border border-gray-300 bg-gray-50 text-sm sm:text-base text-[#0A2463]"
+                        className="input-dark w-full px-4 py-2.5 rounded-xl text-sm sm:text-base"
                       />
                     </div>
 
                     <div className="flex flex-col">
-                      <label className="text-[#0A2463] text-sm sm:text-base font-semibold mb-2">
+                      <label className="text-xs font-semibold text-[#e0c0b1] uppercase tracking-widest mb-2">
                         Amount Paid (₹)
                       </label>
                       <input
@@ -1181,12 +1166,12 @@ export default function MemberProfilePage() {
                         required
                         value={amountPaid}
                         onChange={(e) => setAmountPaid(Number(e.target.value))}
-                        className="w-full px-4 py-2.5 rounded-lg border border-gray-300 bg-gray-50 text-sm sm:text-base"
+                        className="input-dark w-full px-4 py-2.5 rounded-xl text-sm sm:text-base"
                       />
                     </div>
 
                     <div className="flex flex-col">
-                      <label className="text-[#0A2463] text-sm sm:text-base font-semibold mb-2">
+                      <label className="text-xs font-semibold text-[#e0c0b1] uppercase tracking-widest mb-2">
                         Remaining Amount (₹)
                       </label>
                       <input
@@ -1203,25 +1188,25 @@ export default function MemberProfilePage() {
                             (Number(amountPaid) || 0),
                           0
                         )}
-                        className="w-full px-4 py-2.5 rounded-lg border border-gray-300 bg-gray-100 text-gray-700 text-sm sm:text-base"
+                        className="input-dark w-full px-4 py-2.5 rounded-xl text-sm sm:text-base opacity-60"
                       />
                     </div>
 
                     <div className="flex flex-col">
-                      <label className="text-[#0A2463] text-sm sm:text-base font-semibold mb-2">
+                      <label className="text-xs font-semibold text-[#e0c0b1] uppercase tracking-widest mb-2">
                         Due Date
                       </label>
                       <input
                         type="date"
                         value={dueDate}
                         onChange={(e) => setDueDate(e.target.value)}
-                        className="w-full px-4 py-2.5 rounded-lg border border-gray-300 bg-gray-50 text-sm sm:text-base"
+                        className="input-dark w-full px-4 py-2.5 rounded-xl text-sm sm:text-base"
                       />
                     </div>
 
                     <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                       <div className="flex flex-col">
-                        <label className="text-[#0A2463] text-sm sm:text-base font-semibold mb-2">
+                        <label className="text-xs font-semibold text-[#e0c0b1] uppercase tracking-widest mb-2">
                           Date of Join <span className="text-red-500">*</span>
                         </label>
                         <input
@@ -1232,18 +1217,18 @@ export default function MemberProfilePage() {
                             new Date().toISOString().split("T")[0]
                           }
                           onChange={(e) => setJoinDateInput(e.target.value)}
-                          className="w-full px-4 py-2.5 rounded-lg border border-gray-300 bg-gray-50 text-sm sm:text-base text-[#0A2463]"
+                          className="input-dark w-full px-4 py-2.5 rounded-xl text-sm sm:text-base"
                         />
                       </div>
                       <div className="flex flex-col">
-                        <label className="text-[#0A2463] text-sm sm:text-base font-semibold mb-2">
+                        <label className="text-xs font-semibold text-[#e0c0b1] uppercase tracking-widest mb-2">
                           Payment Mode <span className="text-red-500">*</span>
                         </label>
                         <select
                           required
                           value={renewMode}
                           onChange={(e) => setRenewMode(e.target.value)}
-                          className="w-full px-4 py-2.5 rounded-lg border border-gray-300 bg-gray-50 text-sm sm:text-base text-[#0A2463]"
+                          className="w-full px-4 py-2.5 rounded-xl bg-[#050505] border border-zinc-800 text-sm sm:text-base text-[#e5e2e1] focus:border-[#f97316] outline-none cursor-pointer"
                         >
                           <option value="" disabled hidden>
                             Select Payment Mode
@@ -1260,13 +1245,13 @@ export default function MemberProfilePage() {
               <div className="flex justify-end gap-3 sm:gap-4 mt-6">
                 <button
                   onClick={handleRenew}
-                  className="bg-green-600 text-white px-5 sm:px-6 py-2.5 sm:py-3 rounded-xl hover:bg-green-700 transition font-semibold shadow text-sm sm:text-base"
+                  className="btn-primary px-5 sm:px-6 py-2.5 rounded-xl font-headline text-xl tracking-wider text-white shadow cursor-pointer"
                 >
                   Confirm Renewal
                 </button>
                 <button
                   onClick={() => setShowRenewModal(false)}
-                  className="bg-gray-500 text-white px-5 sm:px-6 py-2.5 sm:py-3 rounded-xl hover:bg-gray-600 transition font-semibold shadow text-sm sm:text-base"
+                  className="btn-secondary px-5 sm:px-6 py-2.5 rounded-xl font-headline text-xl tracking-wider text-white shadow cursor-pointer"
                 >
                   Cancel
                 </button>
@@ -1278,33 +1263,33 @@ export default function MemberProfilePage() {
 
       {/* Pay Remaining Modal */}
       {showPayModal && selectedPayment && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/40">
-          <div className="bg-white p-6 sm:p-8 rounded-3xl max-w-md w-full mx-3 shadow-2xl border border-gray-200">
-            <h3 className="text-xl sm:text-2xl font-bold text-[#0A2463] mb-4 sm:mb-6 text-center">
+        <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/60">
+          <div className="glass-card p-6 sm:p-8 rounded-2xl max-w-md w-full mx-3 shadow-2xl border border-zinc-800 text-[#e5e2e1]">
+            <h3 className="text-2xl sm:text-3xl font-headline tracking-wider text-[#f97316] mb-4 sm:mb-6 text-center uppercase">
               Pay Remaining Amount
             </h3>
 
-            <div className="space-y-4 sm:space-y-5">
+            <div className="space-y-4 sm:space-y-5 text-left">
               <div>
-                <label className="text-[#0A2463] text-sm sm:text-base font-semibold mb-2 block">
+                <label className="text-xs font-semibold text-[#e0c0b1] uppercase tracking-widest mb-2 block ml-1">
                   Remaining Amount
                 </label>
                 <input
                   type="number"
                   value={payAmount}
                   onChange={(e) => setPayAmount(Number(e.target.value))}
-                  className="w-full px-4 py-2.5 rounded-lg border border-gray-300 bg-gray-50 text-sm sm:text-base text-[#0A2463] focus:ring-2 focus:ring-[#FFC107] focus:outline-none"
+                  className="input-dark w-full px-4 py-2.5 rounded-xl text-sm sm:text-base"
                 />
               </div>
 
               <div>
-                <label className="text-[#0A2463] text-sm sm:text-base font-semibold mb-2 block">
+                <label className="text-xs font-semibold text-[#e0c0b1] uppercase tracking-widest mb-2 block ml-1">
                   Mode of Payment
                 </label>
                 <select
                   value={payMode}
                   onChange={(e) => setPayMode(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-lg border border-gray-300 bg-gray-50 text-sm sm:text-base text-[#0A2463] focus:ring-2 focus:ring-[#FFC107] focus:outline-none"
+                  className="w-full px-4 py-2.5 rounded-xl bg-[#050505] border border-zinc-800 text-sm sm:text-base text-[#e5e2e1] focus:border-[#f97316] outline-none cursor-pointer"
                 >
                   <option value="" disabled hidden>
                     Select Payment Mode
@@ -1358,7 +1343,7 @@ export default function MemberProfilePage() {
                     });
                   }
                 }}
-                className="bg-green-600 text-white px-5 sm:px-6 py-2.5 sm:py-3 rounded-xl hover:bg-green-700 transition font-semibold shadow text-sm sm:text-base"
+                className="btn-primary px-5 sm:px-6 py-2.5 rounded-xl font-headline text-xl tracking-wider text-white shadow cursor-pointer"
               >
                 Confirm Payment
               </button>
@@ -1368,7 +1353,7 @@ export default function MemberProfilePage() {
                   setPayMode("");
                   setPayAmount("");
                 }}
-                className="bg-gray-500 text-white px-5 sm:px-6 py-2.5 sm:py-3 rounded-xl hover:bg-gray-600 transition font-semibold shadow text-sm sm:text-base"
+                className="btn-secondary px-5 sm:px-6 py-2.5 rounded-xl font-headline text-xl tracking-wider text-white shadow cursor-pointer"
               >
                 Cancel
               </button>
@@ -1379,17 +1364,17 @@ export default function MemberProfilePage() {
 
       {/* Delete Modal */}
       {showDeleteModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/40">
-          <div className="bg-white p-6 sm:p-8 rounded-3xl max-w-md w-full mx-3 shadow-2xl border border-gray-200">
-            <h3 className="text-xl sm:text-2xl font-bold text-red-600 mb-4 sm:mb-6 flex items-center gap-2 sm:gap-3">
-              <Trash2 size={24} className="text-red-600" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/60">
+          <div className="glass-card p-6 sm:p-8 rounded-2xl max-w-md w-full mx-3 shadow-2xl border border-zinc-800 text-[#e5e2e1] text-center">
+            <h3 className="text-2xl sm:text-3xl font-headline tracking-wider text-red-500 mb-4 sm:mb-6 flex items-center justify-center gap-2 sm:gap-3 uppercase">
+              <Trash2 size={24} className="text-red-500" />
               Delete Member
             </h3>
-            <p className="text-gray-700 mb-5 sm:mb-6 text-sm sm:text-base">
+            <p className="text-zinc-300 mb-5 sm:mb-6 text-sm sm:text-base">
               Are you sure you want to permanently delete{" "}
-              <strong>{member.name}</strong>?
+              <strong className="text-[#e5e2e1]">{member.name}</strong>?
             </p>
-            <div className="flex justify-end gap-3 sm:gap-4">
+            <div className="flex justify-center gap-3 sm:gap-4">
               <button
                 onClick={async () => {
                   try {
@@ -1418,13 +1403,13 @@ export default function MemberProfilePage() {
                     setShowDeleteModal(false);
                   }
                 }}
-                className="bg-red-600 text-white px-5 sm:px-6 py-2.5 sm:py-3 rounded-xl hover:bg-red-700 transition font-semibold shadow text-sm sm:text-base"
+                className="bg-red-650 text-white px-5 sm:px-6 py-2.5 rounded-xl hover:bg-red-700 transition font-headline text-xl tracking-wider shadow cursor-pointer"
               >
                 Confirm Delete
               </button>
               <button
                 onClick={() => setShowDeleteModal(false)}
-                className="bg-gray-500 text-white px-5 sm:px-6 py-2.5 sm:py-3 rounded-xl hover:bg-gray-600 transition font-semibold shadow text-sm sm:text-base"
+                className="btn-secondary px-5 sm:px-6 py-2.5 rounded-xl font-headline text-xl tracking-wider text-white shadow cursor-pointer"
               >
                 Cancel
               </button>
@@ -1435,16 +1420,16 @@ export default function MemberProfilePage() {
 
       {/* Feedback Modal */}
       {showFeedbackModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
           <div
-            className={`p-5 sm:p-6 rounded-3xl shadow-2xl text-center max-w-sm w-full mx-4 transition-all
+            className={`p-5 sm:p-6 rounded-2xl shadow-2xl text-center max-w-sm w-full mx-4 transition-all
         ${
           showFeedbackModal.type === "success"
-            ? "bg-green-50 text-green-700 border border-green-300"
-            : "bg-red-50 text-red-700 border border-red-300"
+            ? "bg-green-950/20 text-[#22c55e] border border-[#22c55e]/25 backdrop-blur-md"
+            : "bg-red-950/20 text-red-400 border border-red-500/25 backdrop-blur-md"
         }`}
           >
-            <h3 className="text-xl sm:text-2xl font-bold mb-2">
+            <h3 className="text-xl sm:text-2xl font-headline tracking-wider mb-2">
               {showFeedbackModal.type === "success" ? "✅ Success" : "❌ Error"}
             </h3>
             <p className="text-sm sm:text-lg">{showFeedbackModal.message}</p>
