@@ -1,9 +1,13 @@
 import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import CoachModel from "@/models/Coach";
+import { withTenantGuard, TenantGuardError } from "@/lib/tenantGuard";
+
 
 export async function POST(req: Request) {
-  try {
+  
+    const { tenantId } = await withTenantGuard(req);
+try {
     await connectToDatabase();
     const { coachId, amount, date, modeOfPayment } = await req.json();
 
@@ -11,7 +15,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: "Missing fields" });
     }
 
-    const coach = await CoachModel.findById(coachId);
+    const coach = await CoachModel.findOne({ _id: coachId, tenantId });
     if (!coach)
       return NextResponse.json({ success: false, error: "Coach not found" });
 
@@ -24,6 +28,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true, coach });
   } catch (err) {
+    if (err instanceof TenantGuardError) return err.response;
     console.error("Error paying salary:", err);
     return NextResponse.json({
       success: false,

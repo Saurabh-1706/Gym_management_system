@@ -23,7 +23,7 @@ export default function LoginPage() {
     });
 
     if (res?.ok) {
-      router.push("/");
+      window.location.href = "/";
     } else {
       alert(res?.error || "Invalid credentials");
     }
@@ -51,7 +51,7 @@ export default function LoginPage() {
         </div>
 
         {/* Login Card */}
-        <div className="glass-card rounded-2xl p-8 md:p-10">
+        <div className="glass-card rounded-xl p-8 md:p-10">
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Email Input Group */}
             <div className="space-y-2">
@@ -70,7 +70,7 @@ export default function LoginPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="name@example.com"
                   required
-                  className="input-dark w-full pl-12 pr-4 py-3.5 rounded-xl text-[#e5e2e1] placeholder:text-zinc-650"
+                  className="input-dark w-full pl-12 pr-4 py-3.5 rounded-lg text-[#e5e2e1] placeholder:text-zinc-650"
                 />
               </div>
             </div>
@@ -94,7 +94,7 @@ export default function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   required
-                  className="input-dark w-full pl-12 pr-11 py-3.5 rounded-xl text-[#e5e2e1] placeholder:text-zinc-655"
+                  className="input-dark w-full pl-12 pr-11 py-3.5 rounded-lg text-[#e5e2e1] placeholder:text-zinc-655"
                 />
                 <button
                   type="button"
@@ -110,7 +110,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="btn-primary w-full py-3.5 rounded-xl font-headline text-2xl tracking-widest shadow-lg active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              className="btn-primary w-full py-3.5 rounded-lg font-headline text-2xl tracking-widest shadow-lg active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
               {loading ? "SIGNING IN..." : "SIGN IN"}
             </button>

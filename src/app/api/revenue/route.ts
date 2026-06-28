@@ -4,6 +4,8 @@ import Member from "@/models/Member";
 import Coach from "@/models/Coach";
 import ElectricityBill from "@/models/ElectricityBill";
 import Miscellaneous from "@/models/Miscellaneous";
+import { withTenantGuard, TenantGuardError } from "@/lib/tenantGuard";
+
 
 // Types
 type Payment = {
@@ -20,8 +22,10 @@ type Salary = {
   name?: string;
 };
 
-export async function GET() {
-  try {
+export async function GET(req: Request) {
+  
+    const { tenantId } = await withTenantGuard(req);
+try {
     await connectToDatabase();
 
     const today = new Date();
@@ -32,7 +36,7 @@ export async function GET() {
     const currentMonthYear = `${currentMonthName} ${currentYear}`;
 
     // --- Members ---
-    const members = await Member.find({});
+    const members = await Member.find({ tenantId });
     const filteredMembers: Payment[] = members.flatMap((m) =>
       (m.payments || [])
         .filter((p: Payment) => {
@@ -43,7 +47,7 @@ export async function GET() {
     );
 
     // --- Coaches ---
-    const coaches = await Coach.find({});
+    const coaches = await Coach.find({ tenantId });
     const filteredCoaches: Salary[] = coaches.flatMap((c) =>
       (c.salaryHistory || [])
         .filter((s: Salary) => {
@@ -54,10 +58,10 @@ export async function GET() {
     );
 
     // --- Miscellaneous ---
-    const misc = await Miscellaneous.find({ date: miscMonthKey });
+    const misc = await Miscellaneous.find({ date: miscMonthKey, tenantId });
 
     // --- Electricity ---
-    const electricity = await ElectricityBill.find({ month: currentMonthYear });
+    const electricity = await ElectricityBill.find({ month: currentMonthYear, tenantId });
 
     // --- Totals ---
     const totalMembership = filteredMembers.reduce((sum, p) => sum + (p.price || 0), 0);
@@ -75,6 +79,7 @@ export async function GET() {
       totals: { totalMembership, totalCoachSalary, totalMisc, totalElectricity, totalRevenue },
     });
   } catch (error) {
+    if (error instanceof TenantGuardError) return error.response;
     console.error("Error fetching revenue:", error);
     return NextResponse.json({ error: "Failed to fetch revenue" }, { status: 500 });
   }

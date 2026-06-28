@@ -1,12 +1,16 @@
 import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import Member from "@/models/Member";
+import { withTenantGuard, TenantGuardError } from "@/lib/tenantGuard";
+
 
 // --------------------
 // GET all members (with optional date filter)
 // --------------------
 export async function GET(req: Request) {
-  try {
+  
+    const { tenantId } = await withTenantGuard(req);
+try {
     await connectToDatabase();
     const { searchParams } = new URL(req.url);
     const from = searchParams.get("from");
@@ -20,9 +24,10 @@ export async function GET(req: Request) {
       };
     }
 
-    const members = await Member.find(filter).sort({ joinDate: -1 });
+    const members = await Member.find({ ...filter, tenantId }).sort({ joinDate: -1 });
     return NextResponse.json({ success: true, members });
   } catch (error) {
+    if (error instanceof TenantGuardError) return error.response;
     console.error("❌ Error fetching members:", error);
     return NextResponse.json(
       { success: false, message: "Failed to fetch members" },
@@ -33,7 +38,9 @@ export async function GET(req: Request) {
 
 
 export async function POST(req: Request) {
-  try {
+  
+    const { tenantId } = await withTenantGuard(req);
+try {
     await connectToDatabase();
     const body = await req.json();
     const { name, mobile, email, dob, date, profilePicture } = body;
@@ -57,6 +64,7 @@ export async function POST(req: Request) {
     nextDay.setUTCDate(nextDay.getUTCDate() + 1);
 
     const existingMember = await Member.findOne({
+      tenantId,
       mobile,
       dob: { $gte: dobDate, $lt: nextDay },
     });
@@ -87,6 +95,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true, member: newMember });
   } catch (error) {
+    if (error instanceof TenantGuardError) return error.response;
     console.error("❌ Error adding member:", error);
     return NextResponse.json(
       { success: false, message: "Failed to register member" },

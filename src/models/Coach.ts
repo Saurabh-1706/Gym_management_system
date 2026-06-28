@@ -11,6 +11,7 @@ const salaryHistorySchema = new mongoose.Schema(
 
 // Coach schema
 const coachSchema = new mongoose.Schema({
+  tenantId: { type: mongoose.Schema.Types.ObjectId, ref: 'Tenant', required: true, index: true },
   name: { type: String, required: true },
   mobile: { type: String, required: true },
   email: { type: String },
@@ -18,7 +19,11 @@ const coachSchema = new mongoose.Schema({
   joinDate: { type: Date, default: Date.now, immutable: true }, // auto-set on registration
   profilePicture: { type: String }, // optional URL
   salaryHistory: [salaryHistorySchema],
+  createdAt: { type: Date, default: Date.now },
 });
+
+// Compound index
+coachSchema.index({ tenantId: 1, createdAt: -1 });
 
 // Export model
 const CoachModel = mongoose.models.Coach || mongoose.model("Coach", coachSchema);

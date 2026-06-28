@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import Member from "@/models/Member";
+import { withTenantGuard, TenantGuardError } from "@/lib/tenantGuard";
+
 
 // ------------------
 // Helper: Calculate Expiry Date
@@ -86,11 +88,13 @@ function determineStatus(member: any): "Active" | "Inactive" {
 // GET: fetch single member
 // ------------------
 export async function GET(req: Request, context: any) {
-  try {
+  
+    const { tenantId } = await withTenantGuard(req);
+try {
     await connectToDatabase();
 
     const { id } = context.params;
-    const member = await Member.findById(id);
+    const member = await Member.findOne({ _id: id, tenantId });
     if (!member)
       return NextResponse.json({ success: false, message: "Member not found" }, { status: 404 });
 
@@ -99,6 +103,7 @@ export async function GET(req: Request, context: any) {
 
     return NextResponse.json({ success: true, member });
   } catch (error) {
+    if (error instanceof TenantGuardError) return error.response;
     console.error("❌ Error fetching member:", error);
     return NextResponse.json({ success: false, message: "Failed to fetch member" }, { status: 500 });
   }
@@ -108,12 +113,14 @@ export async function GET(req: Request, context: any) {
 // PUT: update / renew / pay remaining
 // ------------------
 export async function PUT(req: Request, context: any) {
-  try {
+  
+    const { tenantId } = await withTenantGuard(req);
+try {
     await connectToDatabase();
 
     const { id } = context.params;
     const body = await req.json();
-    const member = await Member.findById(id);
+    const member = await Member.findOne({ _id: id, tenantId });
     if (!member)
       return NextResponse.json({ success: false, message: "Member not found" }, { status: 404 });
 
@@ -199,6 +206,7 @@ export async function PUT(req: Request, context: any) {
 
     return NextResponse.json({ success: true, member });
   } catch (error) {
+    if (error instanceof TenantGuardError) return error.response;
     console.error("❌ Error updating member:", error);
     return NextResponse.json({ success: false, message: "Failed to update member" }, { status: 500 });
   }
@@ -208,16 +216,19 @@ export async function PUT(req: Request, context: any) {
 // DELETE: delete member
 // ------------------
 export async function DELETE(req: Request, context: any) {
-  try {
+  
+    const { tenantId } = await withTenantGuard(req);
+try {
     await connectToDatabase();
 
     const { id } = context.params;
-    const deleted = await Member.findByIdAndDelete(id);
+    const deleted = await Member.findOneAndDelete({ _id: id, tenantId });
     if (!deleted)
       return NextResponse.json({ success: false, message: "Member not found" }, { status: 404 });
 
     return NextResponse.json({ success: true, message: "Member deleted successfully" });
   } catch (error) {
+    if (error instanceof TenantGuardError) return error.response;
     console.error("❌ Delete member error:", error);
     return NextResponse.json({ success: false, message: "Failed to delete member" }, { status: 500 });
   }

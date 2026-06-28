@@ -1,9 +1,13 @@
 import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import Member from "@/models/Member"; // ✅ use your centralized model
+import { withTenantGuard, TenantGuardError } from "@/lib/tenantGuard";
+
 
 export async function POST(req: Request) {
-  try {
+  
+    const { tenantId } = await withTenantGuard(req);
+try {
     await connectToDatabase();
     const body = await req.json();
     const { name, mobile, email, dob, profilePicture } = body;
@@ -22,6 +26,7 @@ export async function POST(req: Request) {
     nextDay.setDate(nextDay.getDate() + 1);
 
     const existingMember = await Member.findOne({
+      tenantId,
       mobile,
       dob: { $gte: dobDate, $lt: nextDay },
     });
@@ -36,13 +41,14 @@ export async function POST(req: Request) {
 
     // ✅ Create new member (without plan or payments)
     const newMember = new Member({
+      tenantId,
       name,
       mobile,
       email,
       dob: new Date(dob),
       profilePicture: profilePicture || "",
       plan: null,
-      status: "Inactive", // not active until a plan/payment is added
+      status: "Inactive",
       payments: [],
     });
 
@@ -50,6 +56,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true, member: newMember });
   } catch (error) {
+    if (error instanceof TenantGuardError) return error.response;
     console.error("❌ Registration error:", error);
     return NextResponse.json({
       success: false,

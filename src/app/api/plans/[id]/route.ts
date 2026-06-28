@@ -2,9 +2,13 @@ import { connectToDatabase } from "@/lib/mongodb";
 import PlanModel from "@/models/Plan";
 import { NextResponse } from "next/server";
 import { Types } from "mongoose";
+import { withTenantGuard, TenantGuardError } from "@/lib/tenantGuard";
+
 
 export async function DELETE(req: Request, context: any) {
-  const { id } = context.params;
+  
+    const { tenantId } = await withTenantGuard(req);
+const { id } = context.params;
 
   if (!Types.ObjectId.isValid(id)) {
     return NextResponse.json(
@@ -15,7 +19,7 @@ export async function DELETE(req: Request, context: any) {
 
   try {
     await connectToDatabase();
-    const result = await PlanModel.findByIdAndDelete(id);
+    const result = await PlanModel.findOneAndDelete({ _id: id, tenantId });
 
     if (!result) {
       return NextResponse.json(
@@ -26,6 +30,7 @@ export async function DELETE(req: Request, context: any) {
 
     return NextResponse.json({ success: true, message: "Plan deleted" });
   } catch (error) {
+    if (error instanceof TenantGuardError) return error.response;
     console.error("❌ Delete plan error:", error);
     return NextResponse.json(
       { success: false, message: "Server error" },
@@ -36,7 +41,9 @@ export async function DELETE(req: Request, context: any) {
 
 // ----------------- PUT /api/plans/:id -----------------
 export async function PUT(req: Request, context: any) {
-  const { id } = context.params;
+  
+    const { tenantId } = await withTenantGuard(req);
+const { id } = context.params;
 
   if (!Types.ObjectId.isValid(id)) {
     return NextResponse.json(
@@ -58,8 +65,8 @@ export async function PUT(req: Request, context: any) {
 
     await connectToDatabase();
 
-    const updatedPlan = await PlanModel.findByIdAndUpdate(
-      id,
+    const updatedPlan = await PlanModel.findOneAndUpdate(
+      { _id: id, tenantId },
       { name, validity, amount, validityType },
       { new: true }
     );
@@ -73,6 +80,7 @@ export async function PUT(req: Request, context: any) {
 
     return NextResponse.json({ success: true, plan: updatedPlan });
   } catch (error) {
+    if (error instanceof TenantGuardError) return error.response;
     console.error("❌ Update plan error:", error);
     return NextResponse.json(
       { success: false, message: "Server error" },

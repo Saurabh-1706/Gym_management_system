@@ -15,6 +15,7 @@ import {
   ChevronRight,
   Package,
 } from "lucide-react";
+import GymLogo from "@/components/navbar/GymLogo";
 
 interface NavbarProps {
   onLinkClick?: () => void;
@@ -45,14 +46,23 @@ export default function Navbar({ onLinkClick }: NavbarProps) {
   const { data: session } = useSession();
   const [openSubmenu, setOpenSubmenu] = useState<string | null>(null);
 
+  const slug = session?.user?.tenantSlug || "";
+
+
+  const getHref = (path: string) => {
+    if (!slug) return path;
+    if (path === "/") return `/${slug}/dashboard`;
+    return `/${slug}${path}`;
+  };
+
   useEffect(() => {
     const currentItemWithSubmenu = navItems.find(
-      (item) => item.submenu && pathname.startsWith(item.href)
+      (item) => item.submenu && pathname.startsWith(getHref(item.href))
     );
     if (currentItemWithSubmenu) {
       setOpenSubmenu(currentItemWithSubmenu.href);
     }
-  }, [pathname]);
+  }, [pathname, slug]);
 
   return (
     <div className="flex flex-col h-full bg-[#0e0e0e] text-[#e5e2e1] p-4 sm:p-5">
@@ -60,16 +70,12 @@ export default function Navbar({ onLinkClick }: NavbarProps) {
       <div className="overflow-y-auto flex-1 pr-1 scrollbar-thin">
         {/* ===== Logo Section ===== */}
         <Link
-          href="/"
+          href={slug ? `/${slug}/dashboard` : "/"}
           className="block mb-8 text-center"
           onClick={onLinkClick}
         >
-          <div className="flex flex-col items-center">
-            <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center border border-primary/20 mb-2">
-              <span className="text-[#f97316] font-bold text-2xl">⚡</span>
-            </div>
-            <span className="font-headline text-3xl tracking-widest text-[#f97316]">IRON PULSE</span>
-            <span className="text-[10px] uppercase tracking-[0.25em] text-[#e0c0b1] opacity-70">Elite Performance</span>
+          <div className="flex flex-col items-center gap-2">
+            <GymLogo size="lg" showName={true} />
           </div>
         </Link>
 
@@ -77,7 +83,8 @@ export default function Navbar({ onLinkClick }: NavbarProps) {
         <nav className="space-y-1.5">
           {navItems.map((item) => {
             const hasSubmenu = item.submenu && item.submenu.length > 0;
-            const isActive = !hasSubmenu && pathname === item.href;
+            const itemHref = getHref(item.href);
+            const isActive = !hasSubmenu && pathname === itemHref;
 
             return (
               <div key={item.href}>
@@ -103,11 +110,12 @@ export default function Navbar({ onLinkClick }: NavbarProps) {
                     {openSubmenu === item.href && (
                       <div className="ml-8 mt-1 flex flex-col gap-1 border-l border-zinc-800 pl-3">
                         {item.submenu.map((sub) => {
-                          const isSubActive = pathname === sub.href;
+                          const subHref = getHref(sub.href);
+                          const isSubActive = pathname === subHref;
                           return (
                             <Link
                               key={sub.href}
-                              href={sub.href}
+                              href={subHref}
                               onClick={onLinkClick}
                               className={`px-3 py-1.5 rounded-md text-xs font-body transition-all ${
                                 isSubActive
@@ -124,7 +132,7 @@ export default function Navbar({ onLinkClick }: NavbarProps) {
                   </div>
                 ) : (
                   <Link
-                    href={item.href}
+                    href={itemHref}
                     onClick={onLinkClick}
                     className={`flex items-center gap-3 px-4 py-2.5 rounded-lg text-base transition-all ${
                       isActive

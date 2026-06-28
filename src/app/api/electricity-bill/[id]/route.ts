@@ -2,11 +2,14 @@
 import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import ElectricityBill from "@/models/ElectricityBill";
+import { withTenantGuard, TenantGuardError } from "@/lib/tenantGuard";
 
-export async function PUT(
-  req: Request,
+
+export async function PUT(req: Request,
   context: any) {
-  const { id } = await context.params;
+  
+    const { tenantId } = await withTenantGuard(req);
+const { id } = await context.params;
 
   try {
     await connectToDatabase();
@@ -22,8 +25,8 @@ export async function PUT(
       );
     }
 
-    const updated = await ElectricityBill.findByIdAndUpdate(
-      id,
+    const updated = await ElectricityBill.findOneAndUpdate(
+      { _id: id, tenantId },
       { month, year, amount },
       { new: true }
     );
@@ -37,6 +40,7 @@ export async function PUT(
 
     return NextResponse.json({ success: true, bill: updated });
   } catch (error) {
+    if (error instanceof TenantGuardError) return error.response;
     console.error("❌ Update bill error:", error);
     return NextResponse.json(
       { success: false, error: "Failed to update bill" },
@@ -47,14 +51,16 @@ export async function PUT(
 
 export async function DELETE(
   req: Request,
-  context: { params: Promise<{ id: string }> } // 🔹 same fix here
+  context: { params: Promise<{ id: string }> }
 ) {
-  try {
+  
+    const { tenantId } = await withTenantGuard(req);
+try {
     await connectToDatabase();
 
     const { id } = await context.params;
 
-    const deleted = await ElectricityBill.findByIdAndDelete(id);
+    const deleted = await ElectricityBill.findOneAndDelete({ _id: id, tenantId });
 
     if (!deleted) {
       return NextResponse.json(
@@ -68,6 +74,7 @@ export async function DELETE(
       message: "Bill deleted successfully",
     });
   } catch (error) {
+    if (error instanceof TenantGuardError) return error.response;
     console.error("❌ Delete bill error:", error);
     return NextResponse.json(
       { success: false, error: "Failed to delete bill" },

@@ -5,8 +5,12 @@ import { Loader2 } from "lucide-react";
 
 export default function Loader({
   text,
+  gymName,
+  gymLogo,
 }: {
   text?: string;
+  gymName?: string;
+  gymLogo?: string;
 }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const mainRef = useRef<HTMLDivElement | null>(null);
@@ -247,9 +251,56 @@ export default function Loader({
         className="relative z-10 flex flex-col items-center justify-center text-center px-6 transition-transform duration-100 ease-out"
       >
         {/* Brand Identity Section */}
-        <div className="mb-12 cursor-default select-none">
+        <div className="mb-12 cursor-default select-none flex flex-col items-center gap-4">
+          {/* Gym Logo / Avatar with animated pulse ring */}
+          <div className="relative flex items-center justify-center">
+            {/* Outer glow ring */}
+            <span
+              className="absolute rounded-full animate-ping opacity-30"
+              style={{
+                width: 80,
+                height: 80,
+                backgroundColor: "#f97316",
+              }}
+            />
+            {/* Spinner ring */}
+            <span
+              className="absolute rounded-full border-2 border-t-transparent animate-spin"
+              style={{
+                width: 90,
+                height: 90,
+                borderColor: "#f97316",
+              }}
+            />
+            {/* Logo or initials */}
+            {gymLogo ? (
+              <img
+                src={gymLogo}
+                alt={gymName || "Gym Logo"}
+                className="w-16 h-16 rounded-full object-cover z-10 border-2 border-[#f97316]/40"
+              />
+            ) : (
+              <div
+                className="w-16 h-16 rounded-full z-10 flex items-center justify-center border-2 border-[#f97316]/30"
+                style={{ background: "#1a1a1a" }}
+              >
+                {gymName ? (
+                  <span className="font-headline text-2xl text-[#f97316]">
+                    {gymName
+                      .split(" ")
+                      .slice(0, 2)
+                      .map((w) => w[0])
+                      .join("")}
+                  </span>
+                ) : (
+                  <span className="text-[#f97316] font-bold text-2xl">⚡</span>
+                )}
+              </div>
+            )}
+          </div>
+
           <h1 className="font-headline text-5xl sm:text-6xl md:text-7xl text-[#f97316] tracking-wider drop-shadow-[0_0_15px_rgba(249,115,22,0.4)] uppercase">
-            IRON PULSE
+            {gymName || "IRON PULSE"}
           </h1>
           <p className="font-body text-xs sm:text-sm text-[#e0c0b1] tracking-[0.5em] mt-[-5px] opacity-80 uppercase">
             Elite Performance

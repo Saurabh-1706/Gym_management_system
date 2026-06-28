@@ -34,6 +34,7 @@ paymentSchema.pre("save", function (next) {
 
 // Member schema
 const memberSchema = new Schema({
+  tenantId: { type: mongoose.Schema.Types.ObjectId, ref: 'Tenant', required: true, index: true },
   name: { type: String, required: true },
   mobile: { type: String, required: true },
   email: { type: String },
@@ -44,7 +45,11 @@ const memberSchema = new Schema({
   date: { type: Date, default: null },
   status: { type: String, default: "Inactive" },
   payments: { type: [paymentSchema], default: [] },
+  createdAt: { type: Date, default: Date.now },
 });
+
+// Compound index
+memberSchema.index({ tenantId: 1, createdAt: -1 });
 
 const Member = models.Member || model("Member", memberSchema);
 export default Member;

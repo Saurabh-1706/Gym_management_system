@@ -1,9 +1,10 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Bebas_Neue } from "next/font/google";
 import "./globals.css";
 import Providers from "@/components/providers";
 import LayoutWrapper from "@/components/LayoutWrapper";
 import { LoaderProvider } from "@/context/LoaderContext";
+import { GymProvider } from "@/context/GymContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -27,15 +28,16 @@ const bebasNeue = Bebas_Neue({
   preload: true,
 });
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+};
+
 export const metadata: Metadata = {
   title: "Gym Management System",
   description: "A modern gym automation dashboard",
-  viewport: {
-    width: "device-width",
-    initialScale: 1,
-    maximumScale: 1,
-    userScalable: false,
-  },
 };
 
 export default function RootLayout({
@@ -54,11 +56,13 @@ export default function RootLayout({
         `}
         style={{ fontFamily: "var(--font-geist-sans), system-ui, sans-serif" }}
       >
-        <LoaderProvider>
-          <Providers>
-            <LayoutWrapper>{children}</LayoutWrapper>
+        <Providers>
+            <GymProvider>
+              <LoaderProvider>
+                <LayoutWrapper>{children}</LayoutWrapper>
+              </LoaderProvider>
+            </GymProvider>
           </Providers>
-        </LoaderProvider>
       </body>
     </html>
   );
