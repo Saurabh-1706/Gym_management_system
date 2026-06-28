@@ -15,7 +15,6 @@ import {
   ClockAlert,
   Camera,
   ImagePlus, // ⬅️ add this
-  Download,
 } from "lucide-react";
 
 import ImageCropper from "@/components/ImageCropper";
@@ -112,30 +111,6 @@ export default function MemberProfilePage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [showCropper, setShowCropper] = useState(false);
   const [showLightbox, setShowLightbox] = useState(false);
-  const [exporting, setExporting] = useState(false);
-
-  const handleExportPDF = async () => {
-    try {
-      setExporting(true);
-      const res = await fetch(`/api/reports/member/${id}`);
-      if (!res.ok) throw new Error("Failed to export member report");
-
-      const blob = await res.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `Member_Report_${member?.name.replace(/\s+/g, "_")}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.URL.revokeObjectURL(url);
-    } catch (err) {
-      console.error(err);
-      alert("Error exporting PDF");
-    } finally {
-      setExporting(false);
-    }
-  };
 
   const [paymentOption, setPaymentOption] = useState("One Time");
   const [actualAmount, setActualAmount] = useState<number | "">("");
@@ -514,13 +489,6 @@ export default function MemberProfilePage() {
             className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#f97316] hover:bg-[#ff8c3a] text-white font-headline text-lg tracking-wider shadow transition cursor-pointer animate-pulse"
           >
             <RefreshCcw size={18} /> Renew Plan
-          </button>
-          <button
-            onClick={handleExportPDF}
-            disabled={exporting}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-zinc-800 text-[#e5e2e1] border border-zinc-700 text-sm sm:text-base shadow hover:bg-zinc-750 transition cursor-pointer disabled:opacity-50"
-          >
-            <Download size={18} /> {exporting ? "Exporting..." : "Export PDF"}
           </button>
           <button
             onClick={() => setShowDeleteModal(true)}

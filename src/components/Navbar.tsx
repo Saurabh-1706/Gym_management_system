@@ -14,7 +14,6 @@ import {
   LogOut,
   ChevronRight,
   Package,
-  UserCheck,
 } from "lucide-react";
 import GymLogo from "@/components/navbar/GymLogo";
 
@@ -27,7 +26,6 @@ const navItems = [
   { label: "Registration", href: "/registration", icon: <ClipboardList size={22} /> },
   { label: "Plan", href: "/plan", icon: <Calendar size={22} /> },
   { label: "View Members", href: "/members", icon: <Users size={22} /> },
-  { label: "Attendance", href: "/attendance", icon: <UserCheck size={22} /> },
   { label: "Coach", href: "/coach", icon: <Dumbbell size={22} /> },
   { label: "Inventory", href: "/inventory", icon: <Package size={24} /> },
   {
