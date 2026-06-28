@@ -541,7 +541,7 @@ export default function DashboardPage() {
             <div className="flex items-baseline gap-2">
               <h2 className="font-headline text-4xl text-cyan-400">
                 ₹
-                {allMembers
+                {(allMembers
                   .reduce((acc, m) => {
                     if (!m.payments) return acc;
 
