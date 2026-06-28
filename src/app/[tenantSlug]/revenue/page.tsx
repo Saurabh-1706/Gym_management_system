@@ -10,8 +10,6 @@ import {
   BarChart as BarIcon,
   PieChart as PieIcon,
 } from "lucide-react";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
 import {
   BarChart,
   Bar,
@@ -103,6 +101,7 @@ export default function RevenuePage() {
   // ✅ New states for custom date range
   const [customStart, setCustomStart] = useState("");
   const [customEnd, setCustomEnd] = useState("");
+  const [exporting, setExporting] = useState(false);
 
   // ✅ Detect mobile to tweak charts
   const [isMobile, setIsMobile] = useState(false);
@@ -218,176 +217,38 @@ export default function RevenuePage() {
     }
   };
 
-  // ✅ Export PDF (same as before)
+  // ✅ Export PDF by calling Next.js API reports
   const exportPDF = async (useCustom = false) => {
-    const doc = new jsPDF("p", "pt", "a4");
-    const fmt = (a: number) => `Rs. ${a.toLocaleString("en-IN")}`;
-    const logoPath = "/Layer 0 Frame.png";
+    try {
+      setExporting(true);
+      let url = `/api/reports/financial`;
+      if (useCustom && customStart && customEnd) {
+        url += `?from=${customStart}&to=${customEnd}`;
+      } else {
+        url += `?month=${selectedMonth}&year=${selectedYear}`;
+      }
 
-    const logoData = await fetch(logoPath)
-      .then((res) => res.blob())
-      .then(
-        (blob) =>
-          new Promise<string>((resolve) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve(reader.result as string);
-            reader.readAsDataURL(blob);
-          })
-      );
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("Failed to export financial report");
 
-    const monthName = monthNames[selectedMonth];
-    const generatedDate = new Date().toLocaleDateString("en-GB");
-
-    doc.addImage(logoData, "PNG", 40, 25, 60, 60);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(22);
-    doc.text("REVENUE REPORT", 120, 50);
-
-    doc.setFontSize(12);
-    if (useCustom && customStart && customEnd) {
-      doc.text(
-        `Custom Range: ${new Date(customStart).toLocaleDateString(
-          "en-GB"
-        )} - ${new Date(customEnd).toLocaleDateString("en-GB")}`,
-        120,
-        70
-      );
-    } else {
-      doc.text(`Month: ${monthName} ${selectedYear}`, 120, 70);
-    }
-    doc.text(`Generated on: ${generatedDate}`, 120, 85);
-
-    autoTable(doc, {
-      startY: 110,
-      head: [["Category", "Amount (Rs.)"]],
-      body: [
-        ["Membership Revenue", fmt(totalMemberRevenue)],
-        ["Coach Salaries", fmt(totalCoachSalary)],
-        ["Miscellaneous Expenses", fmt(totalMisc)],
-        ["Electricity Bills", fmt(totalElectricity)],
-        ["Total Revenue", fmt(totalRevenue)],
-      ],
-      headStyles: {
-        fillColor: [255, 204, 0],
-        textColor: [0, 0, 0],
-        fontStyle: "bold",
-        halign: "center",
-        fontSize: 12,
-        lineWidth: 0.2,
-        lineColor: [0, 0, 0],
-      },
-      styles: {
-        fontSize: 10,
-        halign: "center",
-        textColor: [0, 0, 0],
-        cellPadding: 8,
-        lineColor: [200, 200, 200],
-        lineWidth: 0.1,
-      },
-      alternateRowStyles: {
-        fillColor: [245, 245, 245],
-      },
-      didParseCell: (data) => {
-        if (data.row.index === 4 && data.section === "body") {
-          data.cell.styles.fontStyle = "bold";
-          data.cell.styles.fillColor = [255, 230, 153];
-        }
-      },
-      margin: { left: 40, right: 40 },
-    });
-
-    let y = (doc as any).lastAutoTable.finalY + 40;
-
-    if (memberPayments.length > 0) {
-      doc.setFont("helvetica", "bold");
-      doc.text("MEMBER PAYMENTS", 40, y);
-      y += 10;
-      const rows = memberPayments.map((p, i) => [
-        i + 1,
-        p.memberName,
-        p.plan,
-        p.date,
-        fmt(p.amount),
-        p.mode,
-      ]);
-      autoTable(doc, {
-        head: [["Sr.No", "Member Name", "Plan", "Date", "Amount", "Mode"]],
-        body: rows,
-        startY: y + 10,
-        styles: { fontSize: 9, textColor: [0, 0, 0] },
-        margin: { left: 40, right: 40 },
-      });
-      y = (doc as any).lastAutoTable.finalY + 35;
-    }
-
-    if (coachPayments.length > 0) {
-      doc.setFont("helvetica", "bold");
-      doc.text("COACH SALARY PAYMENTS", 40, y);
-      y += 10;
-      const rows = coachPayments.map((s, i) => [
-        i + 1,
-        s.coachName,
-        s.date,
-        fmt(s.amount),
-      ]);
-      autoTable(doc, {
-        head: [["Sr.No", "Coach Name", "Paid On", "Amount (Rs.)"]],
-        body: rows,
-        startY: y + 10,
-        styles: { fontSize: 9, textColor: [0, 0, 0] },
-        margin: { left: 40, right: 40 },
-      });
-      y = (doc as any).lastAutoTable.finalY + 35;
-    }
-
-    if (filteredMisc.length > 0) {
-      doc.setFont("helvetica", "bold");
-      doc.text("MISCELLANEOUS EXPENSES", 40, y);
-      y += 10;
-      const rows = filteredMisc.map((m, i) => [
-        i + 1,
-        m.name,
-        new Date(m.date).toLocaleDateString("en-GB"),
-        fmt(m.amount),
-      ]);
-      autoTable(doc, {
-        head: [["Sr.No", "Expense Name", "Date", "Amount (Rs.)"]],
-        body: rows,
-        startY: y + 10,
-        styles: { fontSize: 9, textColor: [0, 0, 0] },
-        margin: { left: 40, right: 40 },
-      });
-      y = (doc as any).lastAutoTable.finalY + 35;
-    }
-
-    if (filteredElectricity.length > 0) {
-      doc.setFont("helvetica", "bold");
-      doc.text("ELECTRICITY BILLS", 40, y);
-      y += 10;
-      const rows = filteredElectricity.map((e, i) => [
-        i + 1,
-        e.month,
-        e.year,
-        fmt(e.amount),
-      ]);
-      autoTable(doc, {
-        head: [["Sr.No", "Month", "Year", "Amount (Rs.)"]],
-        body: rows,
-        startY: y + 10,
-        styles: { fontSize: 9, textColor: [0, 0, 0] },
-        margin: { left: 40, right: 40 },
-      });
-      y = (doc as any).lastAutoTable.finalY + 25;
-    }
-
-    doc.setFont("helvetica", "italic");
-    doc.setFontSize(10);
-
-    doc.save(
-      useCustom && customStart && customEnd
+      const blob = await res.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = downloadUrl;
+      const filename = useCustom
         ? `Gym_Revenue_Report_${customStart}_to_${customEnd}.pdf`
-        : `Gym_Revenue_Report_${monthName}_${selectedYear}.pdf`
-    );
+        : `Gym_Revenue_Report_${monthNames[selectedMonth]}_${selectedYear}.pdf`;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+    } catch (err) {
+      console.error(err);
+      alert("Error exporting PDF");
+    } finally {
+      setExporting(false);
+    }
   };
 
   const filterSelectClass =
@@ -441,9 +302,10 @@ export default function RevenuePage() {
           {/* Standard PDF button */}
           <button
             onClick={() => exportPDF(false)}
-            className="btn-primary w-full sm:w-auto px-5 py-2 rounded-lg font-headline text-lg tracking-wider text-white shadow cursor-pointer transition"
+            disabled={exporting}
+            className="btn-primary w-full sm:w-auto px-5 py-2 rounded-lg font-headline text-lg tracking-wider text-white shadow cursor-pointer transition disabled:opacity-50"
           >
-            Export PDF
+            {exporting ? "Exporting..." : "Export PDF"}
           </button>
 
           {/* Custom Range */}
@@ -468,14 +330,14 @@ export default function RevenuePage() {
 
             <button
               onClick={() => exportPDF(true)}
-              disabled={!customStart || !customEnd}
+              disabled={!customStart || !customEnd || exporting}
               className={`w-full sm:w-auto px-5 py-2 rounded-xl shadow font-headline text-lg tracking-wider transition ${
-                customStart && customEnd
+                customStart && customEnd && !exporting
                   ? "bg-[#f97316] hover:bg-[#ff8c3a] text-white cursor-pointer"
                   : "bg-zinc-800 text-zinc-500 border border-zinc-700 cursor-not-allowed"
               }`}
             >
-              Export Custom PDF
+              {exporting ? "Exporting..." : "Export Custom PDF"}
             </button>
           </div>
         </div>
