@@ -11,7 +11,7 @@ Manage members, coaches, plans, revenue, and inventory — all within a secure, 
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4-38bdf8?logo=tailwindcss)](https://tailwindcss.com)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-**[🚀 Live Demo](https://gym-management-system-kappa.vercel.app)** · **[📂 GitHub](https://github.com/Saurabh-1706/Gym_management_system)**
+**[🚀 Live Demo](https://gymsphere-hub.vercel.app/)** · **[📂 GitHub](https://github.com/Saurabh-1706/Gym_management_system)**
 
 </div>
 
