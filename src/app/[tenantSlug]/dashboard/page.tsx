@@ -442,7 +442,7 @@ export default function DashboardPage() {
                                 : "—"}
                             </td>
                             <td className="px-4 py-3 text-right font-semibold text-red-500">
-                              ₹{pendingAmount.toLocaleString("en-IN")}
+                              ₹{(pendingAmount || 0).toLocaleString("en-IN")}
                             </td>
                           </tr>
                         );
@@ -581,7 +581,7 @@ export default function DashboardPage() {
                     }, 0);
 
                     return acc + monthPayments;
-                  }, 0)
+                  }, 0) || 0)
                   .toLocaleString("en-IN")}
               </h2>
               <span className="text-zinc-400 text-xs font-medium">Estimated</span>

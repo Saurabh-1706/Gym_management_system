@@ -9,8 +9,8 @@ export async function middleware(req: NextRequest) {
     const firstSegment = segments[0];
 
     // Skip API, NextAuth, onboarding, assets, static files, and login/auth paths
-    const excludedPrefixes = ["api", "auth", "onboarding", "not-found", "_next", "favicon.ico", "logo-removebg-preview.png"];
-    if (!excludedPrefixes.includes(firstSegment)) {
+    const excludedPrefixes = ["api", "auth", "onboarding", "not-found", "_next", "favicon.ico", "logo-removebg-preview.png", "screenshots", "images", "Layer 0 Frame.png"];
+    if (!excludedPrefixes.includes(firstSegment) && !firstSegment.includes(".")) {
       const slug = firstSegment;
 
       try {
