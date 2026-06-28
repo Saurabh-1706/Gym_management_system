@@ -24,6 +24,8 @@
     "critters": "^0.0.23",
     "dotenv": "^17.2.3",
     "fs": "^0.0.1-security",
+    "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.8",
     "lucide-react": "^0.536.0",
     "mongodb": "5.5",
     "mongoose": "^8.19.1",
