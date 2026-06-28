@@ -82,6 +82,7 @@ try {
 
     // ✅ Create new member using provided joinDate (exact date)
     const newMember = await Member.create({
+      tenantId,
       name,
       mobile,
       email,
